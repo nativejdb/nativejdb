@@ -1,0 +1,7 @@
+[EXECUTABLE]
+debugeeImg
+
+[DEBUG_INFO]
+sources
+debugeeImg
+
