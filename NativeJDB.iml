@@ -10,9 +10,7 @@
     </content>
     <orderEntry type="module-library">
       <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/../sa-jdi.jar!/" />
-        </CLASSES>
+        <CLASSES />
         <JAVADOC />
         <SOURCES>
           <root url="file:///usr/local/Cellar/openjdk@11/11.0.12/libexec/openjdk.jdk/Contents/Home" />

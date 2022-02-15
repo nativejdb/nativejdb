@@ -31,7 +31,10 @@ import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.VMDisconnectedException;
 import gdb.mi.service.command.commands.MICommand;
+import gdb.mi.service.command.output.MIBreakInsertInfo;
+import gdb.mi.service.command.output.MIBreakListInfo;
 import jdwp.jdi.*;
+import gdb.mi.service.command.output.MIInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +45,25 @@ import java.util.List;
  */
 @SuppressWarnings({"unused", "DanglingJavadoc"})
 public class JDWP {
+
+    /**
+     * The default JDI request timeout when no preference is set.
+     */
+    public static final int DEF_REQUEST_TIMEOUT = 300000;
+    /*
+     * A global counter for all command, the token will be use to identify uniquely a command.
+     * Unless the value wraps around which is unlikely.
+     */
+    static int fTokenIdCounter = 0;
+
+    static int getNewTokenId() {
+        int count = ++fTokenIdCounter;
+        // If we ever wrap around.
+        if (count <= 0) {
+            count = fTokenIdCounter = 1;
+        }
+        return count;
+    }
 
     static class VirtualMachine {
         static final int COMMAND_SET = 1;
@@ -225,7 +247,11 @@ public class JDWP {
                 try {
                     System.out.println("Queueing MI command to suspend application");
                     MICommand cmd = gc.getCommandFactory().createMIExecInterrupt();
-                    gc.queueCommand(cmd);
+                    int tokenID = getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                    reply.getMIOutput().toString();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -246,9 +272,12 @@ public class JDWP {
                 try {
                     System.out.println("Queueing MI command to resume application");
                     MICommand cmd = gc.getCommandFactory().createMIExecContinue();
-                    gc.queueCommand(cmd);
+                    int tokenID = getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                    reply.getMIOutput().toString();
                 } catch (Exception e) {
-                    System.out.println(e);
                     e.printStackTrace();
                 }
             }
@@ -269,7 +298,10 @@ public class JDWP {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 System.out.println("Queueing MI command to exit application");
                 MICommand cmd = gc.getCommandFactory().createMIGDBExit();
-                gc.queueCommand(cmd);
+                int tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
             }
         }
 
@@ -2156,13 +2188,17 @@ public class JDWP {
                                 long index = command.readLong();
 
                                 LocationImpl loc = new LocationImpl(refType.methodById(methodId), index);
-                                System.out.println("ClassID: "+refType+" MethodID: "+methodId+" Index:"+index+" Tag: "+typeTag+" Source line#: "+loc.lineNumber());
+                                //System.out.println("ClassID: "+refType+" MethodID: "+methodId+" Index:"+index+" Tag: "+typeTag+" Source line#: "+loc.lineNumber());
                                 //String str = command.getTokenId() + "-break-insert --source "+refType.name()+".java --line "+ loc.lineNumber() +"\n";
 
                                 String location = refType.name()+".java" + ":" + loc.lineNumber();
-                                System.out.println("Queueing MI command to insert breakpoint at"+location);
+                                System.out.println("Queueing MI command to insert breakpoint at "+location);
                                 MICommand cmd = gc.getCommandFactory().createMIBreakInsert(false, false, "", 0, location, "0", false, false);
-                                gc.queueCommand(cmd);
+                                int tokenID = getNewTokenId();
+                                gc.queueCommand(tokenID, cmd);
+
+                                MIBreakInsertInfo reply = (MIBreakInsertInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                                System.out.println(reply.getMIBreakpoints()[0].getNumber());
                             }
                         }
 
@@ -2173,7 +2209,10 @@ public class JDWP {
                     try {
                         System.out.println("Queueing MI command to step");
                         MICommand cmd = gc.getCommandFactory().createMIExecStep();
-                        gc.queueCommand(cmd);
+                        int tokenID = getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -2200,7 +2239,10 @@ public class JDWP {
                     try {
                         System.out.println("Queueing MI command to list breakpoints");
                         MICommand cmd = gc.getCommandFactory().createMIBreakList();
-                        gc.queueCommand(cmd);
+                        int tokenID = getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIBreakListInfo reply = (MIBreakListInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
 
                         //parse output to get bkpt number that matches source line #
                         /*
@@ -2209,7 +2251,10 @@ public class JDWP {
 
                         String[] array = {"1"};
                         MICommand cmdDel = gc.getCommandFactory().createMIBreakDelete(array);
-                        gc.queueCommand(cmdDel);
+                        tokenID = getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIInfo ireply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -2232,7 +2277,10 @@ public class JDWP {
                     try {
                         System.out.println("Queueing MI command to list breakpoints");
                         MICommand cmd = gc.getCommandFactory().createMIBreakList();
-                        gc.queueCommand(cmd);
+                        int tokenID = getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIBreakListInfo reply = (MIBreakListInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                         //parse output to get all bkpt numbers
                         /*
                             bkpt={number="2",type="breakpoint",disp="keep",enabled="y",addr="0x00010114",func="foo",file="hello.c",line="13",times="0"}
@@ -2240,7 +2288,10 @@ public class JDWP {
 
                         String[] array = {"1"};
                         MICommand cmdDel = gc.getCommandFactory().createMIBreakDelete(array);
-                        gc.queueCommand(cmdDel);
+                        tokenID = getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIInfo ireply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

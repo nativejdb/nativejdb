@@ -61,6 +61,9 @@ public abstract class AbstractMIControl {
 	private final Map<Integer, CommandHandle> fRxCommands = Collections
 			.synchronizedMap(new HashMap<Integer, CommandHandle>());
 
+	private Map<Integer, MIInfo> fReplyPackets = Collections
+		.synchronizedMap(new HashMap<Integer, MIInfo>());
+
 	/**
 	 *   Current command which have not been handed off to the backend yet.
 	 */
@@ -85,12 +88,6 @@ public abstract class AbstractMIControl {
 	/**
 	 * Starts the threads that process the debugger input/output/error channels.
 	 * To be invoked by the initialization routine of the extending class.
-	 *
-	 *
-	 * @param inStream
-	 * @param outStream
-	 * @param errorStream
-	 * @since 4.1
 	 */
 	public void startCommandProcessing(InputStream inStream, OutputStream outStream, InputStream errorStream) {
 
@@ -108,9 +105,9 @@ public abstract class AbstractMIControl {
 		}
 	}
 
-	public CommandHandle queueCommand(final MICommand<MIInfo> miCommand) {
+	public CommandHandle queueCommand(int id, final MICommand<MIInfo> miCommand) {
 
-		final CommandHandle handle = new CommandHandle(miCommand);
+		final CommandHandle handle = new CommandHandle(id, miCommand);
 
 		// If the command control stopped processing commands, just return an error immediately.
 			/*
@@ -132,30 +129,67 @@ public abstract class AbstractMIControl {
 		if (!fCommandQueue.isEmpty()) {
 			final CommandHandle handle = fCommandQueue.remove(0);
 			if (handle != null) {
-				if (!(handle.getCommand() instanceof RawCommand)) {
-					// Only generate a token id if the command is not a RawCommand
-					// RawCommands are sent to GDB without an answer expected, so we don't
-					// need a token id.  In fact, GDB will fail if we send one in this case.
-					handle.generateTokenId();
-				}
 				fTxCommands.add(handle);
 			}
 		}
 	}
 
-	/*
-	 * A global counter for all command, the token will be use to identify uniquely a command.
-	 * Unless the value wraps around which is unlikely.
-	 */
-	private int fTokenIdCounter = 0;
-
-	private int getNewTokenId() {
-		int count = ++fTokenIdCounter;
-		// If we ever wrap around.
-		if (count <= 0) {
-			count = fTokenIdCounter = 1;
+	private void addResponse(int id, MIInfo response) {
+		synchronized (fReplyPackets) {
+			fReplyPackets.put(id, response);
+			fReplyPackets.notifyAll();
 		}
-		return count;
+	}
+
+	private MIInfo removeResponse(int id) {
+		return fReplyPackets.remove(id);
+	}
+
+	/**
+	 * Returns a response for the command with token ID id
+	 */
+	public MIInfo getResponse(int id, long timeToWait) {
+		MIInfo response = null;
+		long remainingTime = timeToWait;
+		synchronized (fReplyPackets) {
+			final long timeBeforeWait = System.currentTimeMillis();
+			// Wait until reply is available.
+			while (remainingTime > 0) {
+				response = removeResponse(id);
+				if (response != null) {
+					break;
+				}
+				try {
+					waitForResponse(remainingTime, fReplyPackets);
+				}
+				// just stop waiting for the reply and treat it as a timeout
+				catch (InterruptedException e) {
+
+				}
+				long waitedTime = System.currentTimeMillis() - timeBeforeWait;
+				remainingTime = timeToWait - waitedTime;
+			}
+		}
+		if (response == null) {
+			synchronized (fReplyPackets) {
+				response = removeResponse(id);
+			}
+		}
+
+		return response;
+	}
+
+	/**
+	 * Wait for a response from GDB.
+	 */
+	private void waitForResponse(long timeToWait, Object lock)
+			throws InterruptedException {
+		if (timeToWait == 0)
+			return;
+		else if (timeToWait < 0)
+			lock.wait();
+		else
+			lock.wait(timeToWait);
 	}
 
 	/*
@@ -167,20 +201,13 @@ public abstract class AbstractMIControl {
 		private MICommand<MIInfo> fCommand;
 		private int fTokenId;
 
-		CommandHandle(MICommand<MIInfo> c) {
+		CommandHandle(int id, MICommand<MIInfo> c) {
 			fCommand = c;
-			fTokenId = -1; // Only initialize to a real value when needed
+			fTokenId = id;
 		}
 
 		public MICommand<MIInfo> getCommand() {
 			return fCommand;
-		}
-
-		// This method allows us to generate the token Id when we area actually going to use
-		// it.  It is meant to help order the token ids based on when commands will actually
-		// be sent
-		public void generateTokenId() {
-			fTokenId = getNewTokenId();
 		}
 
 		public Integer getTokenId() {
@@ -304,17 +331,7 @@ public abstract class AbstractMIControl {
 			}
 		}
 
-		private MIResult findResultRecord(MIResult[] results, String variable) {
-			for (int i = 0; i < results.length; i++) {
-				if (variable.equals(results[i].getVariable())) {
-					return results[i];
-				}
-			}
-			return null;
-		}
-
 		void processMIOutput(String line) {
-
 			MIParser.RecordType recordType = fMiParser.getRecordType(line);
 
 			if (recordType == MIParser.RecordType.ResultRecord) {
@@ -327,12 +344,17 @@ public abstract class AbstractMIControl {
 				int id = rr.getToken();
 
 				final CommandHandle commandHandle = fRxCommands.remove(id);
-
+				final MIOutput response;
+				final MIInfo result;
+				
 				if (commandHandle != null) {
-					final MIOutput response = new MIOutput(rr,
+					response = new MIOutput(rr,
 							fAccumulatedOOBRecords.toArray(new MIOOBRecord[fAccumulatedOOBRecords.size()]));
 					fAccumulatedOOBRecords.clear();
 					fAccumulatedStreamRecords.clear();
+
+					result = commandHandle.getCommand().getResult(response);
+					//System.out.println("MI command output received for: " + commandHandle.getCommand() + ": " + result);
 				} else {
 					/*
 					 *  GDB apparently can sometimes send multiple responses to the same command.  In those cases,
@@ -340,12 +362,13 @@ public abstract class AbstractMIControl {
 					 *  as events multiple times, do not include the accumulated OOB record list in the response
 					 *  MIOutput object.
 					 */
-					final MIOutput response = new MIOutput(rr, new MIOOBRecord[0]);
-
+					response = new MIOutput(rr, new MIOOBRecord[0]);
+					result = new MIInfo(response);
+					//System.out.println("MI asynchronous output received: " + result);
 
 				}
+				addResponse(id, result);
 			} else if (recordType == MIParser.RecordType.OOBRecord) {
-				// Process OOBs
 				final MIOOBRecord oob = fMiParser.parseMIOOBRecord(line);
 
 				fAccumulatedOOBRecords.add(oob);
@@ -372,9 +395,10 @@ public abstract class AbstractMIControl {
 						fAccumulatedStreamRecords.remove(0);
 					}
 				}
+				//System.out.println("MI asynchronous output received: " + response);
 			}
+			
 			processNextQueuedCommand();
-
 		}
 	}
 
@@ -390,7 +414,6 @@ public abstract class AbstractMIControl {
 	 * because we cannot differentiate between inferior errors printouts
 	 * and GDB error printouts.
 	 *
-	 * See bug 327617 for details.
 	 */
 	private class ErrorThread extends Thread {
 		private final InputStream fErrorStream;

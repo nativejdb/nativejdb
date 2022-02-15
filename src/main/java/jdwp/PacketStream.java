@@ -50,26 +50,19 @@ public class PacketStream {
     final Packet pkt;
     ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
     private boolean isCommitted = false;
-    private int fTokenId;
 
-    PacketStream(GDBControl gc, int id, int cmdSet, int cmd, int tokenId) {
+    PacketStream(GDBControl gc, int id, int cmdSet, int cmd) {
         this.gc = gc;
         this.pkt = new Packet();
         pkt.id = id;
         pkt.cmdSet = (short) cmdSet;
         pkt.cmd = (short) cmd;
-        fTokenId = tokenId;
     }
 
-    PacketStream(GDBControl gc, Packet pkt, int tokenId) {
+    PacketStream(GDBControl gc, Packet pkt) {
         this.gc = gc;
         this.pkt = pkt;
         this.isCommitted = true; /* read only stream */
-        fTokenId = tokenId;
-    }
-
-    public Integer getTokenId() {
-        return fTokenId;
     }
 
     int id() {
