@@ -114,7 +114,7 @@ public class GDBControl extends AbstractMIControl {
         return result;
     }
 
-    void sendToTarget(Packet pkt) {
+    public void sendToTarget(Packet pkt) {
         try {
             myConnection.writePacket(pkt.toByteArray());
         } catch (IOException e) {

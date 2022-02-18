@@ -128,7 +128,7 @@ public class Packet {
         return p;
     }
 
-    Packet()
+    public Packet()
     {
         id = uniqID();
         flags = Reply;

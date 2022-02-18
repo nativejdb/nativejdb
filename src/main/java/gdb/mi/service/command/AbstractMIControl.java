@@ -63,7 +63,7 @@ public abstract class AbstractMIControl {
 
 	private Map<Integer, MIInfo> fReplyPackets = Collections
 		.synchronizedMap(new HashMap<Integer, MIInfo>());
-
+	private List<Listener> fEventProcessors = new ArrayList<>();
 	/**
 	 *   Current command which have not been handed off to the backend yet.
 	 */
@@ -83,6 +83,20 @@ public abstract class AbstractMIControl {
 
 	public CommandFactory getCommandFactory() {
 		return fCommandFactory;
+	}
+
+	public void addEventListener(Listener processor) {
+		fEventProcessors.add(processor);
+	}
+
+	public void removeEventListener(Listener processor) {
+		fEventProcessors.remove(processor);
+	}
+
+	private void processEvent(MIInfo output) {
+		for (Listener processor : fEventProcessors) {
+			processor.onEvent(output);
+		}
 	}
 
 	/**
@@ -364,6 +378,7 @@ public abstract class AbstractMIControl {
 					 */
 					response = new MIOutput(rr, new MIOOBRecord[0]);
 					result = new MIInfo(response);
+					processEvent(result);
 					//System.out.println("MI asynchronous output received: " + result);
 
 				}
@@ -395,7 +410,9 @@ public abstract class AbstractMIControl {
 						fAccumulatedStreamRecords.remove(0);
 					}
 				}
-				//System.out.println("MI asynchronous output received: " + response);
+				MIInfo result = new MIInfo(response);
+				processEvent(result);
+				//System.out.println("********* MI asynchronous output received: " + response);
 			}
 			
 			processNextQueuedCommand();
