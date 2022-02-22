@@ -7,6 +7,8 @@ import jdwp.Packet;
 public class AsyncListener implements Listener{
 	GDBControl gc;
 
+	byte SUSPEND_ALL = 2;
+
 	public AsyncListener(GDBControl gc) {
 		this.gc = gc;
 		this.gc.addEventListener(this);
@@ -20,6 +22,6 @@ public class AsyncListener implements Listener{
 	}
 
 	private Packet translate(MIInfo info) {
-		return new Packet();
+		 return new Packet(); //TODO
 	}
 }
