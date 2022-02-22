@@ -73,7 +73,7 @@ public class JDWPProxy {
 
 
         try {
-            gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, null); //TODO: add error stream
+            gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, gdbControl.gdbError);
 
             while (true) {
                 byte[] b = connection.readPacket();

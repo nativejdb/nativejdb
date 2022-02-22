@@ -448,7 +448,10 @@ public abstract class AbstractMIControl {
 				String line;
 				while ((line = reader.readLine()) != null) {
 					// Create an error MI out-of-band record so that our gdb console prints it.
-					final MIOOBRecord oob = fMiParser.parseMIOOBRecord("&" + line + "\n"); //$NON-NLS-1$//$NON-NLS-2$
+					final MIOOBRecord oob = fMiParser.parseMIOOBRecord("&" + line + "\n");
+					final MIOutput response = new MIOutput(oob, new MIStreamRecord[0]);
+					MIInfo result = new MIInfo(response);
+					processEvent(result);
 				}
 			} catch (IOException e) {
 				// Socket is shut down.
