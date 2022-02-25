@@ -161,11 +161,22 @@ public class JDWP {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                List<ThreadReferenceImpl> allThreads = gc.vm.allThreads();
-                answer.writeInt(allThreads.size());
-                for (ThreadReferenceImpl thread : allThreads) {
-                    answer.writeObjectRef(thread.uniqueID());
+                System.out.println("Queueing MI command to get all threads application");
+                MICommand cmd = gc.getCommandFactory().createMIThreadInfo();
+                int tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = Error.INTERNAL;
                 }
+
+                System.out.println("All threads result: " + reply);
+//                List<ThreadReferenceImpl> allThreads = gc.vm.allThreads();
+//                answer.writeInt(allThreads.size());
+//                for (ThreadReferenceImpl thread : allThreads) {
+//                    answer.writeObjectRef(thread.uniqueID());
+//                }
             }
         }
 
