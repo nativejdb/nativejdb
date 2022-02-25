@@ -30,12 +30,13 @@ import java.util.List;
  */
 public class MIBreakInsertInfo extends MIInfo {
 
-	MIBreakpoint[] breakpoints;
+	MIBreakpoint bpt;
+	byte eventKind;
+	byte suspendPolicy;
+	int requestID;
 
 	public MIBreakInsertInfo(MIOutput record) {
 		super(record);
-		breakpoints = null;
-		List<MIBreakpoint> aList = new ArrayList<>(1);
 		if (isDone()) {
 			MIResultRecord rr = record.getMIResultRecord();
 			if (rr != null) {
@@ -43,12 +44,11 @@ public class MIBreakInsertInfo extends MIInfo {
 				for (int i = 0; i < results.length; i++) {
 					String var = results[i].getVariable();
 					MIValue val = results[i].getMIValue();
-					MIBreakpoint bpt = null;
 					if (var.equals("wpt")) { //$NON-NLS-1$
 						if (val instanceof MITuple) {
-							bpt = createMIBreakpoint((MITuple) val);
-							bpt.setEnabled(true);
-							bpt.setWriteWatchpoint(true);
+							this.bpt = createMIBreakpoint((MITuple) val);
+							this.bpt.setEnabled(true);
+							this.bpt.setWriteWatchpoint(true);
 						}
 					} else if (var.equals("bkpt")) { //$NON-NLS-1$
 						if (val instanceof MITuple) {
@@ -67,17 +67,37 @@ public class MIBreakInsertInfo extends MIInfo {
 							bpt.setEnabled(true);
 						}
 					}
-					if (bpt != null) {
-						aList.add(bpt);
-					}
 				}
 			}
 		}
-		breakpoints = aList.toArray(new MIBreakpoint[aList.size()]);
 	}
 
-	public MIBreakpoint[] getMIBreakpoints() {
-		return breakpoints;
+	public MIBreakpoint getMIBreakpoint() {
+		return bpt;
+	}
+
+	public int getMIBreakpointRequestID() {
+		return requestID;
+	}
+
+	public byte getMIBreakpointEventKind() {
+		return eventKind;
+	}
+
+	public byte getMIBreakpointSuspendPolicy() {
+		return suspendPolicy;
+	}
+
+	public void setMIBreakpointRequestID(int id) {
+		this.requestID = id;
+	}
+
+	public void setMIBreakpointEventKind(byte eventKind) {
+		this.eventKind = eventKind;
+	}
+
+	public void setMIBreakpointSuspendPolicy(byte suspendPolicy) {
+		this.suspendPolicy = suspendPolicy;
 	}
 
 	/**

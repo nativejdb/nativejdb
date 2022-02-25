@@ -128,10 +128,17 @@ public class Packet {
         return p;
     }
 
-    Packet()
+    public Packet()
     {
         id = uniqID();
         flags = Reply;
+        data = nullData;
+    }
+
+    public Packet(short fgs)
+    {
+        id = uniqID();
+        flags = fgs;
         data = nullData;
     }
 

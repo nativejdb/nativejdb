@@ -27,6 +27,8 @@ package jdwp;
 
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.connect.spi.Connection;
+import gdb.mi.service.command.Listener;
+import gdb.mi.service.command.MIRunControlEventProcessor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -64,38 +66,24 @@ public class JDWPProxy {
         }
     }
 
-    /*
-     * A global counter for all command, the token will be use to identify uniquely a command.
-     * Unless the value wraps around which is unlikely.
-     */
-    static int fTokenIdCounter = 0;
-
-    static int getNewTokenId() {
-        int count = ++fTokenIdCounter;
-        // If we ever wrap around.
-        if (count <= 0) {
-            count = fTokenIdCounter = 1;
-        }
-        return count;
-    }
-
     public static void reply(Connection connection, jdwp.jdi.VirtualMachineImpl vm) throws IOException {
 
         GDBControl gdbControl = new GDBControl(connection, vm);
+        Listener asyncListener = new MIRunControlEventProcessor(gdbControl);
+
 
         try {
-            gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, null); //TODO: add error stream
+            gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, gdbControl.gdbError);
 
             while (true) {
                 byte[] b = connection.readPacket();
                 Packet p = Packet.fromByteArray(b);
                 int cmdSet = p.cmdSet;
                 int cmd = p.cmd;
-                int tokenId = getNewTokenId();
-                PacketStream packetStream = new PacketStream(gdbControl, p.id, cmdSet, cmd, tokenId);
+                PacketStream packetStream = new PacketStream(gdbControl, p.id, cmdSet, cmd);
                 Command command = COMMANDS.get(cmdSet).get(cmd);
                 try {
-                    command.reply(gdbControl, packetStream, new PacketStream(gdbControl, p, tokenId));
+                    command.reply(gdbControl, packetStream, new PacketStream(gdbControl, p));
                 } catch (VMDisconnectedException vde) {
                     throw  vde;
                 } catch (Exception e) {

@@ -43,6 +43,7 @@ public class GDBControl extends AbstractMIControl {
 
     OutputStream gdbInput = null;
     InputStream  gdbOutput = null;
+    InputStream  gdbError = null;
     BufferedReader outputReader = null;
 
     public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
@@ -59,6 +60,7 @@ public class GDBControl extends AbstractMIControl {
             Process process = builder.start();
             gdbInput = process.getOutputStream();
             gdbOutput = process.getInputStream();
+            gdbError = process.getErrorStream();
             outputReader = new BufferedReader(new InputStreamReader(gdbOutput, "UTF-8"));
 
             byte[] com = ("-environment-directory "+src+"\n").getBytes();
@@ -114,7 +116,7 @@ public class GDBControl extends AbstractMIControl {
         return result;
     }
 
-    void sendToTarget(Packet pkt) {
+    public void sendToTarget(Packet pkt) {
         try {
             myConnection.writePacket(pkt.toByteArray());
         } catch (IOException e) {
