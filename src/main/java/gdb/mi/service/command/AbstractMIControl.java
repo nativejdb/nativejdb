@@ -451,7 +451,7 @@ public abstract class AbstractMIControl {
 					final MIOOBRecord oob = fMiParser.parseMIOOBRecord("&" + line + "\n");
 					final MIOutput response = new MIOutput(oob, new MIStreamRecord[0]);
 					MIInfo result = new MIInfo(response);
-					processEvent(result);
+					processEvent(response);
 				}
 			} catch (IOException e) {
 				// Socket is shut down.
