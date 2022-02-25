@@ -93,7 +93,7 @@ public abstract class AbstractMIControl {
 		fEventProcessors.remove(processor);
 	}
 
-	private void processEvent(MIInfo output) {
+	private void processEvent(MIOutput output) {
 		for (Listener processor : fEventProcessors) {
 			processor.onEvent(output);
 		}
@@ -378,7 +378,7 @@ public abstract class AbstractMIControl {
 					 */
 					response = new MIOutput(rr, new MIOOBRecord[0]);
 					result = new MIInfo(response);
-					processEvent(result);
+					processEvent(response);
 					//System.out.println("MI asynchronous output received: " + result);
 
 				}
@@ -410,8 +410,8 @@ public abstract class AbstractMIControl {
 						fAccumulatedStreamRecords.remove(0);
 					}
 				}
-				MIInfo result = new MIInfo(response);
-				processEvent(result);
+
+				processEvent(response);
 				//System.out.println("********* MI asynchronous output received: " + response);
 			}
 			

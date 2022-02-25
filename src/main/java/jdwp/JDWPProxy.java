@@ -27,8 +27,8 @@ package jdwp;
 
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.connect.spi.Connection;
-import gdb.mi.service.command.AsyncListener;
 import gdb.mi.service.command.Listener;
+import gdb.mi.service.command.MIRunControlEventProcessor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -69,7 +69,7 @@ public class JDWPProxy {
     public static void reply(Connection connection, jdwp.jdi.VirtualMachineImpl vm) throws IOException {
 
         GDBControl gdbControl = new GDBControl(connection, vm);
-        Listener asyncListener = new AsyncListener(gdbControl);
+        Listener asyncListener = new MIRunControlEventProcessor(gdbControl);
 
 
         try {

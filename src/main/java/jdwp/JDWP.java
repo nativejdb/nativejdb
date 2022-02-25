@@ -54,6 +54,7 @@ public class JDWP {
      * Global maps to store breakpoint information for both async (by bkpt#) and sync (by requestID) processing
      */
     static Map<Integer, MIBreakInsertInfo> bkptsByBreakpointNumber = new HashMap<>(); //for async events processing
+    static Map<Integer, LocationImpl> bkptsLocation = new HashMap<>(); //for async events processing
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
 
     /**
@@ -2215,9 +2216,10 @@ public class JDWP {
                                 reply.setMIBreakpointEventKind(eventKind);
                                 reply.setMIBreakpointSuspendPolicy(suspendPolicy);
 
+                                Integer bkptNumber = Integer.valueOf(reply.getMIBreakpoint().getNumber());
                                 bkptsByRequestID.put(Integer.valueOf(reply.getMIBreakpointRequestID()), reply);
-                                bkptsByBreakpointNumber.put(Integer.valueOf(reply.getMIBreakpoint().getNumber()), reply);
-
+                                bkptsByBreakpointNumber.put(bkptNumber, reply);
+                                bkptsLocation.put(bkptNumber, loc);
                                 answer.writeInt(reply.getMIBreakpointRequestID());
                             }
                         }

@@ -135,6 +135,13 @@ public class Packet {
         data = nullData;
     }
 
+    public Packet(short fgs)
+    {
+        id = uniqID();
+        flags = fgs;
+        data = nullData;
+    }
+
     static synchronized private int uniqID()
     {
         /*

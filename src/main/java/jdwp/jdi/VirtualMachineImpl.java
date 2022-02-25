@@ -704,6 +704,16 @@ public class VirtualMachineImpl {
    }
 
     public ThreadReferenceImpl getThreadById(long id) {
+        // Start Hack
+        if (id == 1) { //asking for main thread
+            for (ThreadReferenceImpl thread : allThreads()) {
+                if ("main".equals(thread.name())) {
+                    return thread;
+                }
+            }
+        }
+        // End Hack
+
         for (ThreadReferenceImpl thread : allThreads()) {
             if (thread.uniqueID() == id) {
                 return thread;

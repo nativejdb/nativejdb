@@ -65,11 +65,20 @@ public class PacketStream {
         this.isCommitted = true; /* read only stream */
     }
 
+    // To be used for commands going back to the IDE
+    PacketStream(GDBControl gc) {
+        this.gc = gc;
+        this.pkt = new Packet(Packet.NoFlags);
+        pkt.cmdSet = (short) 64;
+        pkt.cmd = (short) 100;
+    }
+
+
     int id() {
         return pkt.id;
     }
 
-    void send() {
+    public void send() {
         if (!isCommitted) {
             pkt.data = dataStream.toByteArray();
             gc.sendToTarget(pkt);
