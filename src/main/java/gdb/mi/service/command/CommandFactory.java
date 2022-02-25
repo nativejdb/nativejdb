@@ -46,10 +46,7 @@
 package gdb.mi.service.command;
 
 import gdb.mi.service.command.commands.*;
-import gdb.mi.service.command.output.MIBreakInsertInfo;
-import gdb.mi.service.command.output.MIBreakListInfo;
-import gdb.mi.service.command.output.MIGDBVersionInfo;
-import gdb.mi.service.command.output.MIInfo;
+import gdb.mi.service.command.output.*;
 
 /**
  * Factory to create MI/CLI commands for NativeJDB POC. More to be added as use cases increase
@@ -192,5 +189,7 @@ public class CommandFactory {
 	public MICommand<MIGDBVersionInfo> createMIGDBVersion() {
 		return new MIGDBVersion();
 	}
+
+	public MICommand<MIThreadInfoInfo> createMIThreadInfo() { return new MIThreadInfo(); }
 
 }
