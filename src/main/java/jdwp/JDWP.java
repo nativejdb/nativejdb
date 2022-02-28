@@ -279,13 +279,13 @@ public class JDWP {
 
                 try {
                     System.out.println("Queueing MI command to suspend application");
-                    MICommand cmd = gc.getCommandFactory().createMIExecInterrupt();
+                    MICommand cmd = gc.getCommandFactory().createMIExecInterrupt(true);
                     int tokenID = getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
 
                     MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                     if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
-                        answer.pkt.errorCode = Error.INTERNAL;
+                        answer.pkt.errorCode = Error.VM_DEAD; // The virtual machine is not running.
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -306,13 +306,13 @@ public class JDWP {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 try {
                     System.out.println("Queueing MI command to resume application");
-                    MICommand cmd = gc.getCommandFactory().createMIExecContinue();
+                    MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
                     int tokenID = getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
 
                     MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                     if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
-                        answer.pkt.errorCode = Error.INTERNAL;
+                        answer.pkt.errorCode = Error.VM_DEAD; // The virtual machine is not running.
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -2323,20 +2323,40 @@ public class JDWP {
                     }
                 } else if (eventKind == EventKind.SINGLE_STEP) {
                     try {
-                        int count = command.readInt();
+                        byte suspendPolicy = command.readByte();
+                        int modifiersCount = command.readInt();
+                        for (int i = 0; i < modifiersCount; i++) {
+                            byte modKind = command.readByte();
+                            if (modKind == 10) {
+                                int threadId = (int) command.readObjectRef();
+                                int size = command.readInt();
+                                int depth = command.readInt(); //TODO use stepdepth for GDB commands
 
-                        System.out.println("Queueing MI command to step");
-                        MICommand cmd = gc.getCommandFactory().createMIExecStepInstruction(count);
-                        int tokenID = getNewTokenId();
-                        gc.queueCommand(tokenID, cmd);
+                                System.out.println("Queueing MI command to select thread:"+threadId);
+                                MICommand cmd = gc.getCommandFactory().createMISelectThread(threadId);
+                                int tokenID = getNewTokenId();
+                                gc.queueCommand(tokenID, cmd);
 
-                        MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                        if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
-                            answer.pkt.errorCode = Error.INTERNAL;
-                            return;
+                                MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                                    answer.pkt.errorCode = Error.INTERNAL;
+                                    return;
+                                }
+
+                                System.out.println("Queueing MI command to step by step size:"+size);
+                                cmd = gc.getCommandFactory().createMIExecStepInstruction(size);
+                                tokenID = getNewTokenId();
+                                gc.queueCommand(tokenID, cmd);
+
+                                reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                                    answer.pkt.errorCode = Error.INTERNAL;
+                                    return;
+                                }
+
+                                answer.writeInt(command.pkt.id); //requestID
+                            }
                         }
-
-                        answer.writeInt(command.pkt.id); //requestID
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
