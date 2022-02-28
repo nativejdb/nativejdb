@@ -192,4 +192,13 @@ public class CommandFactory {
 
 	public MICommand<MIThreadInfoInfo> createMIThreadInfo() { return new MIThreadInfo(); }
 
+	public MICommand<MIInfo> createMISelectThread(int threadNum) { return new MIThreadSelect(threadNum); }
+
+	public MICommand<MIStackInfoDepthInfo> createMIStackInfoDepth() { return new MIStackInfoDepth(); }
+
+	public MICommand<MIStackListFramesInfo> createMIStackListFrames() { return new MIStackListFrames(); }
+
+	public MICommand<MIListThreadGroupsInfo> createMIMIListThreadGroups() { return new MIListThreadGroups(); }
+
+
 }

@@ -26,16 +26,10 @@
 package jdwp;
 
 
-import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.ClassNotLoadedException;
-import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.VMDisconnectedException;
+import com.sun.jdi.*;
 import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.MIBreakInsertInfo;
-import gdb.mi.service.command.output.MIBreakListInfo;
-import gdb.mi.service.command.output.MIResultRecord;
+import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
-import gdb.mi.service.command.output.MIInfo;
 
 import java.util.*;
 
@@ -44,6 +38,12 @@ import java.util.*;
  */
 @SuppressWarnings({"unused", "DanglingJavadoc"})
 public class JDWP {
+
+    // hack
+    static ReferenceTypeImpl savedReferenceType = null;
+    static MethodImpl savedMethod = null;
+
+    //end hack
 
     /**
      * The default JDI request timeout when no preference is set.
@@ -56,6 +56,15 @@ public class JDWP {
     static Map<Integer, MIBreakInsertInfo> bkptsByBreakpointNumber = new HashMap<>(); //for async events processing
     static Map<Integer, LocationImpl> bkptsLocation = new HashMap<>(); //for async events processing
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
+
+
+    static Map<Integer, MIFrame> framesById = new HashMap<>();
+
+    static int fFrameId = 0;
+
+    static int getNewFrameId() {
+        return fFrameId++;
+    }
 
     /**
      * A global counter for all command, the token will be use to identify uniquely a command.
@@ -166,12 +175,18 @@ public class JDWP {
                 int tokenID = getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
-                MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                 if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
                     answer.pkt.errorCode = Error.INTERNAL;
                 }
 
-                System.out.println("All threads result: " + reply);
+                MIThread[] allThreads = reply.getThreadList();
+                answer.writeInt(allThreads.length);
+                for(MIThread thread: allThreads){
+                    answer.writeObjectRef(Integer.parseInt(thread.getThreadId()));
+                }
+
+
 //                List<ThreadReferenceImpl> allThreads = gc.vm.allThreads();
 //                answer.writeInt(allThreads.size());
 //                for (ThreadReferenceImpl thread : allThreads) {
@@ -1821,16 +1836,53 @@ public class JDWP {
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                try {
-                    List<StackFrameImpl> frames = thread.frames();
-                    answer.writeInt(frames.size());
-                    for (StackFrameImpl frame : frames) {
-                        Frame.write(frame,gc, answer);
-                    }
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = Error.INVALID_THREAD;
+                int threadId = (int) command.readObjectRef();
+
+                System.out.println("Queueing MI command to select a thread");
+                MICommand cmd = gc.getCommandFactory().createMISelectThread(threadId);
+                int tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = Error.INTERNAL;
                 }
+
+                System.out.println("Queueing MI command to get frames");
+                cmd = gc.getCommandFactory().createMIStackListFrames();
+                tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIStackListFramesInfo reply1 = (MIStackListFramesInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply1.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = Error.INTERNAL;
+                }
+
+                MIFrame[] frames = reply1.getMIFrames();
+                answer.writeInt(frames.length);
+
+                for (MIFrame frame: frames) {
+                    String function = frame.getFunction();
+                    int frameId = getNewFrameId();
+                    framesById.put(frameId, frame);
+                    answer.writeFrameRef(frameId);
+
+                    LocationImpl loc = new LocationImpl(savedMethod, frame.getLine());
+                    answer.writeLocation(loc);
+
+                }
+
+
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                try {
+//                    List<StackFrameImpl> frames = thread.frames();
+//                    answer.writeInt(frames.size());
+//                    for (StackFrameImpl frame : frames) {
+//                        Frame.write(frame,gc, answer);
+//                    }
+//                } catch (IncompatibleThreadStateException e) {
+//                    answer.pkt.errorCode = Error.INVALID_THREAD;
+//                }
             }
         }
 
@@ -1844,12 +1896,38 @@ public class JDWP {
             static final int COMMAND = 7;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                try {
-                    answer.writeInt(thread.frameCount());
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = Error.INVALID_THREAD;
+                int threadId = (int) command.readObjectRef();
+
+                System.out.println("Queueing MI command to select a thread");
+                MICommand cmd = gc.getCommandFactory().createMISelectThread(threadId);
+                int tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = Error.INTERNAL;
                 }
+
+                System.out.println("Queueing MI command to get frame count");
+                cmd = gc.getCommandFactory().createMIStackInfoDepth();
+                tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIStackInfoDepthInfo reply1 = (MIStackInfoDepthInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply1.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = Error.INTERNAL;
+                }
+
+                answer.writeInt(reply1.getDepth());
+
+//
+//
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                try {
+//                    answer.writeInt(thread.frameCount());
+//                } catch (IncompatibleThreadStateException e) {
+//                    answer.pkt.errorCode = Error.INVALID_THREAD;
+//                }
             }
         }
 
@@ -2212,6 +2290,11 @@ public class JDWP {
                                 long index = command.readLong();
                                 LocationImpl loc = new LocationImpl(refType.methodById(methodId), index);
                                 String location = refType.name()+".java" + ":" + loc.lineNumber();
+
+                                // hack
+                                savedReferenceType = refType;
+                                savedMethod = refType.methodById(methodId);
+                                //end hack
 
                                 System.out.println("Queueing MI command to insert breakpoint at "+location);
                                 MICommand cmd = gc.getCommandFactory().createMIBreakInsert(false, false, "", 0, location, "0", false, false);
