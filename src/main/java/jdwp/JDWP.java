@@ -204,6 +204,23 @@ public class JDWP {
             static final int COMMAND = 5;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+//                System.out.println("Queueing MI command to get top level thread groups");
+//                MICommand cmd = gc.getCommandFactory().createMIMIListThreadGroups();
+//                int tokenID = getNewTokenId();
+//                gc.queueCommand(tokenID, cmd);
+//
+//                MIListThreadGroupsInfo reply = (MIListThreadGroupsInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+//                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+//                    answer.pkt.errorCode = Error.INTERNAL;
+//                }
+//                MIListThreadGroupsInfo.IThreadGroupInfo[] groupList = reply.getGroupList();
+//                answer.writeInt(groupList.length);
+//                for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
+//                    // !!! Assuming that ids start with an i !!!
+//                    int id = Integer.parseInt(group.getGroupId().substring(1));
+//                    answer.writeObjectRef(id);
+//                }
+
                 List<ThreadGroupReferenceImpl> list = gc.vm.topLevelThreadGroups();
                 answer.writeInt(list.size());
                 for (ThreadGroupReferenceImpl group : list) {
@@ -1812,6 +1829,25 @@ public class JDWP {
             static final int COMMAND = 5;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+//                int threadId = (int) command.readObjectRef();
+//
+//                System.out.println("Queueing MI command to get thread groups");
+//                MICommand cmd = gc.getCommandFactory().createMIMIListThreadGroups();
+//                int tokenID = getNewTokenId();
+//                gc.queueCommand(tokenID, cmd);
+//
+//                MIListThreadGroupsInfo reply = (MIListThreadGroupsInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+//                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+//                    answer.pkt.errorCode = Error.INTERNAL;
+//                }
+//                MIListThreadGroupsInfo.IThreadGroupInfo[] groupList = reply.getGroupList();
+//                int id = 0;
+//                for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
+//                    // !!! Assuming that ids start with an i !!!
+//                    id = Integer.parseInt(group.getGroupId().substring(1));
+//                }
+//                answer.writeObjectRef(id);
+
                 ThreadReferenceImpl thread = command.readThreadReference();
                 answer.writeObjectRef(thread.threadGroup().uniqueID());
             }
@@ -1862,13 +1898,18 @@ public class JDWP {
                 answer.writeInt(frames.length);
 
                 for (MIFrame frame: frames) {
-                    String function = frame.getFunction();
                     int frameId = getNewFrameId();
                     framesById.put(frameId, frame);
                     answer.writeFrameRef(frameId);
+                    List<LocationImpl> list = ((ConcreteMethodImpl) savedMethod).getBaseLocations().lineMapper.get(frame.getLine());
+                    if (list != null && list.size() >= 1) {
+                        answer.writeLocation(list.get(0));
+                    } else {
+                        LocationImpl loc = new LocationImpl(savedMethod, frame.getLine());
+                        answer.writeLocation(loc);
+                    }
 
-                    LocationImpl loc = new LocationImpl(savedMethod, frame.getLine());
-                    answer.writeLocation(loc);
+
 
                 }
 
@@ -2456,6 +2497,8 @@ public class JDWP {
                         answer.writeValue(slotValue);
                     }
 
+                } catch (IndexOutOfBoundsException e) {
+                    // hack
                 } catch (IncompatibleThreadStateException e) {
                     e.printStackTrace();
                 }
