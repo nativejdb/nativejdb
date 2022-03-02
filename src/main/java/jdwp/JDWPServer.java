@@ -35,14 +35,27 @@ import java.io.IOException;
 
 public class JDWPServer {
     static final String WAITING_FOR_DEBUGGER = "Waiting for debugger on: ";
+    static final String SERVER_READY = "sa-jdwp server connected";
 
     public static void main(String[] args) throws Exception {
-        final VirtualMachineImpl vm =  VirtualMachineImpl.createVirtualMachineForPID(Integer.parseInt(args[0]), 0); //process ID
+        final VirtualMachineImpl vm = VirtualMachineImpl.createVirtualMachineForPID(Integer.parseInt(args[0]), 0); //process ID
 
+        // Attaching server
+//        String address = "host.docker.internal:8080"; // + args[1];
+//        System.out.println(SERVER_READY);
+//        System.out.println("Connecting to " + address);
+//
+//        final SocketTransportService socketTransportService = new SocketTransportService();
+//        final Connection connection = socketTransportService.attach(address, 0, 0);
+//
+//        System.out.println("Connected to " + address);
+
+        // Listening server
         final SocketTransportService socketTransportService = new SocketTransportService();
         final TransportService.ListenKey listenKey = socketTransportService.startListening(args[1]); //address
 
         System.err.println(WAITING_FOR_DEBUGGER + listenKey.address());
+
 
         // shutdown hook to clean-up the server in case of forced exit.
         Runtime.getRuntime().addShutdownHook(new Thread(
@@ -50,6 +63,7 @@ public class JDWPServer {
                     public void run() {
                         try {
                             vm.dispose();
+                            //connection.close();
                             socketTransportService.stopListening(listenKey);
                         } catch (IllegalArgumentException ignored) {
                         } catch (IOException e) {
@@ -58,6 +72,7 @@ public class JDWPServer {
                     }
                 }));
 
+        // Listening server
         Connection connection = socketTransportService.accept(listenKey, 0, 0);
         socketTransportService.stopListening(listenKey);
 
