@@ -200,5 +200,8 @@ public class CommandFactory {
 
 	public MICommand<MIListThreadGroupsInfo> createMIMIListThreadGroups() { return new MIListThreadGroups(); }
 
+	public MICommand<MiSourceFilesInfo> createMiFileListExecSourceFiles() {
+		return new MIFileListExecSourceFiles();
+	}
 
 }

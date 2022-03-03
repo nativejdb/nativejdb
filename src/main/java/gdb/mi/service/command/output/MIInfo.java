@@ -21,6 +21,10 @@ package gdb.mi.service.command.output;
 public class MIInfo {
 
 	private final MIOutput miOutput;
+	byte eventKind;
+	byte suspendPolicy;
+	int requestID;
+	int threadId;
 
 	public MIInfo(MIOutput record) {
 		miOutput = record;
@@ -28,6 +32,38 @@ public class MIInfo {
 
 	public MIOutput getMIOutput() {
 		return miOutput;
+	}
+
+	public int getMIInfoRequestID() {
+		return requestID;
+	}
+
+	public byte getMIInfoEventKind() {
+		return eventKind;
+	}
+
+	public byte getMIInfoSuspendPolicy() {
+		return suspendPolicy;
+	}
+
+	public int getMIInfoThreadID() {
+		return threadId;
+	}
+
+	public void setMIInfoRequestID(int id) {
+		this.requestID = id;
+	}
+
+	public void setMIInfoEventKind(byte eventKind) {
+		this.eventKind = eventKind;
+	}
+
+	public void setMIInfoSuspendPolicy(byte suspendPolicy) {
+		this.suspendPolicy = suspendPolicy;
+	}
+
+	public void setMIInfoThreadID(int id) {
+		this.threadId = id;
 	}
 
 	public boolean isDone() {

@@ -86,18 +86,6 @@ public class PacketStream {
         }
     }
 
-//    void waitForReply() throws JDWPException {
-//        if (!isCommitted) {
-//            throw new InternalException("waitForReply without send");
-//        }
-//
-//        vm.waitForTargetReply(pkt);
-//
-//        if (pkt.errorCode != Packet.ReplyNoError) {
-//            throw new JDWPException(pkt.errorCode);
-//        }
-//    }
-
     public void writeBoolean(boolean data) {
         if (data) {
             dataStream.write(1);

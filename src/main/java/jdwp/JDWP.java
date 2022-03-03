@@ -29,6 +29,7 @@ package jdwp;
 import com.sun.jdi.*;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
+import gdb.mi.service.command.output.MiSourceFilesInfo;
 import jdwp.jdi.*;
 
 import java.util.*;
@@ -56,6 +57,8 @@ public class JDWP {
     static Map<Integer, MIBreakInsertInfo> bkptsByBreakpointNumber = new HashMap<>(); //for async events processing
     static Map<Integer, LocationImpl> bkptsLocation = new HashMap<>(); //for async events processing
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
+
+    static Map<Integer, LocationImpl> stepLocation = new HashMap<>(); //for async events processing
 
 
     static Map<Integer, MIFrame> framesById = new HashMap<>();
@@ -140,19 +143,31 @@ public class JDWP {
 
             static class ClassInfo {
 
-                public static void write(ReferenceTypeImpl referenceType, GDBControl gc, PacketStream answer) {
-                    answer.writeByte(referenceType.tag());
+                public static void write(MiSourceFilesInfo.SourceFileInfo referenceType, PacketStream answer) {
+                    /*answer.writeByte(referenceType.tag());
                     answer.writeClassRef(referenceType.uniqueID());
                     answer.writeString(referenceType.signature());
-                    answer.writeInt(referenceType.ref().getClassStatus());
+                    answer.writeInt(referenceType.ref().getClassStatus());*/
+                    System.out.println("REFERENCE TYPES"+referenceType.toString());
                 }
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                List<ReferenceTypeImpl> referenceTypes = gc.vm.allClasses();
-                answer.writeInt(referenceTypes.size());
-                for (ReferenceTypeImpl referenceType : referenceTypes) {
-                    ClassInfo.write(referenceType, gc, answer);
+                System.out.println("Queueing MI command to get all classes info");
+                MICommand cmd = gc.getCommandFactory().createMiFileListExecSourceFiles();
+                int tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MiSourceFilesInfo reply = (MiSourceFilesInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = Error.VM_DEAD;
+                    return;
+                }
+
+                MiSourceFilesInfo.SourceFileInfo[] referenceTypes = reply.getSourceFiles();
+                answer.writeInt(referenceTypes.length);
+                for (MiSourceFilesInfo.SourceFileInfo referenceType : referenceTypes) {
+                    ClassInfo.write(referenceType, answer);
                 }
             }
         }
@@ -177,7 +192,8 @@ public class JDWP {
 
                 MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
                 if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
-                    answer.pkt.errorCode = Error.INTERNAL;
+                    answer.pkt.errorCode = Error.VM_DEAD;
+                    return;
                 }
 
                 MIThread[] allThreads = reply.getThreadList();
@@ -185,13 +201,6 @@ public class JDWP {
                 for(MIThread thread: allThreads){
                     answer.writeObjectRef(Integer.parseInt(thread.getThreadId()));
                 }
-
-
-//                List<ThreadReferenceImpl> allThreads = gc.vm.allThreads();
-//                answer.writeInt(allThreads.size());
-//                for (ThreadReferenceImpl thread : allThreads) {
-//                    answer.writeObjectRef(thread.uniqueID());
-//                }
             }
         }
 
@@ -587,6 +596,24 @@ public class JDWP {
                 for (ReferenceTypeImpl cls : allClasses) {
                     ClassInfo.write(cls, gc, answer);
                 }
+
+                System.out.println("Queueing MI command to get all classes info");
+                MICommand cmd = gc.getCommandFactory().createMiFileListExecSourceFiles();
+                int tokenID = getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MiSourceFilesInfo reply = (MiSourceFilesInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = Error.VM_DEAD;
+                    return;
+                }
+
+                MiSourceFilesInfo.SourceFileInfo[] referenceTypes = reply.getSourceFiles();
+                System.out.println("Length:"+referenceTypes.length);
+                /*answer.writeInt(referenceTypes.length);
+                for (MiSourceFilesInfo.SourceFileInfo referenceType : referenceTypes) {
+                    AllClasses.ClassInfo.write(referenceType, answer);
+                }*/
             }
         }
 
@@ -940,7 +967,7 @@ public class JDWP {
         /**
          * Returns information, including the generic signature if any,
          * for each method in a reference type.
-         * Inherited methodss are not included. The list of methods will
+         * Inherited methods are not included. The list of methods will
          * include constructors (identified with the name "&lt;init&gt;"),
          * the initialization method (identified with the name "&lt;clinit&gt;")
          * if present, and any synthetic methods created by the compiler.
@@ -2354,7 +2381,15 @@ public class JDWP {
                                     return;
                                 }
 
-                                answer.writeInt(command.pkt.id); //requestID
+                                reply.setMIInfoRequestID(command.pkt.id); //TODO maybe another unique ID??
+                                reply.setMIInfoEventKind(eventKind);
+                                reply.setMIInfoSuspendPolicy(suspendPolicy);
+                                reply.setMIInfoThreadID(threadId);
+
+                                LocationImpl loc = new LocationImpl();
+                                stepByBreakpointNumber.put(bkptNumber, reply);
+                                stepLocation.put(bkptNumber, loc);
+                                answer.writeInt(reply.getMIInfoRequestID());
                             }
                         }
                     } catch (Exception e) {
