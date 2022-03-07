@@ -24,7 +24,6 @@ public class MIInfo {
 	byte eventKind;
 	byte suspendPolicy;
 	int requestID;
-	int threadId;
 
 	public MIInfo(MIOutput record) {
 		miOutput = record;
@@ -46,10 +45,6 @@ public class MIInfo {
 		return suspendPolicy;
 	}
 
-	public int getMIInfoThreadID() {
-		return threadId;
-	}
-
 	public void setMIInfoRequestID(int id) {
 		this.requestID = id;
 	}
@@ -60,10 +55,6 @@ public class MIInfo {
 
 	public void setMIInfoSuspendPolicy(byte suspendPolicy) {
 		this.suspendPolicy = suspendPolicy;
-	}
-
-	public void setMIInfoThreadID(int id) {
-		this.threadId = id;
 	}
 
 	public boolean isDone() {

@@ -76,30 +76,6 @@ public class MIBreakInsertInfo extends MIInfo {
 		return bpt;
 	}
 
-	public int getMIBreakpointRequestID() {
-		return requestID;
-	}
-
-	public byte getMIBreakpointEventKind() {
-		return eventKind;
-	}
-
-	public byte getMIBreakpointSuspendPolicy() {
-		return suspendPolicy;
-	}
-
-	public void setMIBreakpointRequestID(int id) {
-		this.requestID = id;
-	}
-
-	public void setMIBreakpointEventKind(byte eventKind) {
-		this.eventKind = eventKind;
-	}
-
-	public void setMIBreakpointSuspendPolicy(byte suspendPolicy) {
-		this.suspendPolicy = suspendPolicy;
-	}
-
 	/**
 	 * Create a target specific MIBreakpoint
 	 *

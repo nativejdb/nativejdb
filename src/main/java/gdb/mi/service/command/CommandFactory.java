@@ -204,4 +204,12 @@ public class CommandFactory {
 		return new MIFileListExecSourceFiles();
 	}
 
+	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions() {
+		return new MISymbolInfoFunctions();
+	}
+
+	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions(String typeRegExp, String nameRegExp, int maxResults, boolean includeNonDebug) {
+		return new MISymbolInfoFunctions(typeRegExp, nameRegExp, maxResults, includeNonDebug);
+	}
+
 }

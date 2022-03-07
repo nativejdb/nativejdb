@@ -58,8 +58,7 @@ public class JDWP {
     static Map<Integer, LocationImpl> bkptsLocation = new HashMap<>(); //for async events processing
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
 
-    static Map<Integer, LocationImpl> stepLocation = new HashMap<>(); //for async events processing
-
+    static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing
 
     static Map<Integer, MIFrame> framesById = new HashMap<>();
 
@@ -148,7 +147,7 @@ public class JDWP {
                     answer.writeClassRef(referenceType.uniqueID());
                     answer.writeString(referenceType.signature());
                     answer.writeInt(referenceType.ref().getClassStatus());*/
-                    System.out.println("REFERENCE TYPES"+referenceType.toString());
+                    //System.out.println("REFERENCE TYPES"+referenceType.toString());
                 }
             }
 
@@ -159,7 +158,7 @@ public class JDWP {
                 gc.queueCommand(tokenID, cmd);
 
                 MiSourceFilesInfo reply = (MiSourceFilesInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.VM_DEAD;
                     return;
                 }
@@ -191,7 +190,7 @@ public class JDWP {
                 gc.queueCommand(tokenID, cmd);
 
                 MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.VM_DEAD;
                     return;
                 }
@@ -310,7 +309,7 @@ public class JDWP {
                     gc.queueCommand(tokenID, cmd);
 
                     MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                    if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                         answer.pkt.errorCode = Error.VM_DEAD; // The virtual machine is not running.
                     }
                 } catch (Exception e) {
@@ -337,7 +336,7 @@ public class JDWP {
                     gc.queueCommand(tokenID, cmd);
 
                     MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                    if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                         answer.pkt.errorCode = Error.VM_DEAD; // The virtual machine is not running.
                     }
                 } catch (Exception e) {
@@ -365,7 +364,7 @@ public class JDWP {
                 gc.queueCommand(tokenID, cmd);
 
                 MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.INTERNAL;
                 }
             }
@@ -604,6 +603,7 @@ public class JDWP {
                     answer.writeString(cls.signature());
                     answer.writeStringOrEmpty(cls.genericSignature());
                     answer.writeInt(cls.ref().getClassStatus());
+
                 }
             }
 
@@ -615,22 +615,21 @@ public class JDWP {
                 }
 
                 System.out.println("Queueing MI command to get all classes info");
-                MICommand cmd = gc.getCommandFactory().createMiFileListExecSourceFiles();
+                MICommand cmd = gc.getCommandFactory().createMiSymbolInfoFunctions();
                 int tokenID = getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
-                MiSourceFilesInfo reply = (MiSourceFilesInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                MiSymbolInfoFunctionsInfo reply = (MiSymbolInfoFunctionsInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.VM_DEAD;
                     return;
                 }
 
-                MiSourceFilesInfo.SourceFileInfo[] referenceTypes = reply.getSourceFiles();
-                System.out.println("Length:"+referenceTypes.length);
-                /*answer.writeInt(referenceTypes.length);
-                for (MiSourceFilesInfo.SourceFileInfo referenceType : referenceTypes) {
-                    AllClasses.ClassInfo.write(referenceType, answer);
-                }*/
+                MiSymbolInfoFunctionsInfo.SymbolFileInfo[] referenceTypes = reply.getSymbolFiles();
+                answer.writeInt(referenceTypes.length);
+                for (MiSymbolInfoFunctionsInfo.SymbolFileInfo referenceType : referenceTypes) {
+                    //ClassInfo.write(referenceType, answer);
+                }
             }
         }
 
@@ -647,7 +646,7 @@ public class JDWP {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 int count = command.readInt();
-                List<ReferenceTypeImpl> refs = new ArrayList<ReferenceTypeImpl>(count);
+                List<ReferenceTypeImpl> refs = new ArrayList<>(count);
                 for (int i = 0; i < count; i++) {
                     refs.add(command.readReferenceType());
                 }
@@ -1907,7 +1906,7 @@ public class JDWP {
                 gc.queueCommand(tokenID, cmd);
 
                 MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.INTERNAL;
                 }
 
@@ -1917,7 +1916,7 @@ public class JDWP {
                 gc.queueCommand(tokenID, cmd);
 
                 MIStackListFramesInfo reply1 = (MIStackListFramesInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply1.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.INTERNAL;
                 }
 
@@ -1935,22 +1934,7 @@ public class JDWP {
                         LocationImpl loc = new LocationImpl(savedMethod, frame.getLine());
                         answer.writeLocation(loc);
                     }
-
-
-
                 }
-
-
-//                ThreadReferenceImpl thread = command.readThreadReference();
-//                try {
-//                    List<StackFrameImpl> frames = thread.frames();
-//                    answer.writeInt(frames.size());
-//                    for (StackFrameImpl frame : frames) {
-//                        Frame.write(frame,gc, answer);
-//                    }
-//                } catch (IncompatibleThreadStateException e) {
-//                    answer.pkt.errorCode = Error.INVALID_THREAD;
-//                }
             }
         }
 
@@ -1972,7 +1956,7 @@ public class JDWP {
                 gc.queueCommand(tokenID, cmd);
 
                 MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.INTERNAL;
                 }
 
@@ -1982,20 +1966,11 @@ public class JDWP {
                 gc.queueCommand(tokenID, cmd);
 
                 MIStackInfoDepthInfo reply1 = (MIStackInfoDepthInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                if (reply1.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = Error.INTERNAL;
                 }
 
                 answer.writeInt(reply1.getDepth());
-
-//
-//
-//                ThreadReferenceImpl thread = command.readThreadReference();
-//                try {
-//                    answer.writeInt(thread.frameCount());
-//                } catch (IncompatibleThreadStateException e) {
-//                    answer.pkt.errorCode = Error.INVALID_THREAD;
-//                }
             }
         }
 
@@ -2370,19 +2345,19 @@ public class JDWP {
                                 gc.queueCommand(tokenID, cmd);
 
                                 MIBreakInsertInfo reply = (MIBreakInsertInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                                     answer.pkt.errorCode = Error.INTERNAL;
                                     return;
                                 }
-                                reply.setMIBreakpointRequestID(command.pkt.id); //TODO maybe another unique ID??
-                                reply.setMIBreakpointEventKind(eventKind);
-                                reply.setMIBreakpointSuspendPolicy(suspendPolicy);
+                                reply.setMIInfoRequestID(command.pkt.id); //TODO maybe another unique ID??
+                                reply.setMIInfoEventKind(eventKind);
+                                reply.setMIInfoSuspendPolicy(suspendPolicy);
 
                                 Integer bkptNumber = Integer.valueOf(reply.getMIBreakpoint().getNumber());
-                                bkptsByRequestID.put(Integer.valueOf(reply.getMIBreakpointRequestID()), reply);
+                                bkptsByRequestID.put(reply.getMIInfoRequestID(), reply);
                                 bkptsByBreakpointNumber.put(bkptNumber, reply);
                                 bkptsLocation.put(bkptNumber, loc);
-                                answer.writeInt(reply.getMIBreakpointRequestID());
+                                answer.writeInt(reply.getMIInfoRequestID());
                             }
                         }
 
@@ -2396,17 +2371,17 @@ public class JDWP {
                         for (int i = 0; i < modifiersCount; i++) {
                             byte modKind = command.readByte();
                             if (modKind == 10) {
-                                int threadId = (int) command.readObjectRef();
+                                long threadId = command.readObjectRef();
                                 int size = command.readInt();
                                 int depth = command.readInt(); //TODO use stepdepth for GDB commands
 
                                 System.out.println("Queueing MI command to select thread:"+threadId);
-                                MICommand cmd = gc.getCommandFactory().createMISelectThread(threadId);
+                                MICommand cmd = gc.getCommandFactory().createMISelectThread((int)threadId);
                                 int tokenID = getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
 
                                 MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                                     answer.pkt.errorCode = Error.INTERNAL;
                                     return;
                                 }
@@ -2417,19 +2392,16 @@ public class JDWP {
                                 gc.queueCommand(tokenID, cmd);
 
                                 reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                                     answer.pkt.errorCode = Error.INTERNAL;
                                     return;
                                 }
 
-                                reply.setMIInfoRequestID(command.pkt.id); //TODO maybe another unique ID??
+                                reply.setMIInfoRequestID(command.pkt.id);
                                 reply.setMIInfoEventKind(eventKind);
                                 reply.setMIInfoSuspendPolicy(suspendPolicy);
-                                reply.setMIInfoThreadID(threadId);
 
-                                LocationImpl loc = new LocationImpl();
-                                stepByBreakpointNumber.put(bkptNumber, reply);
-                                stepLocation.put(bkptNumber, loc);
+                                stepByThreadID.put(threadId, reply);
                                 answer.writeInt(reply.getMIInfoRequestID());
                             }
                         }
@@ -2458,7 +2430,7 @@ public class JDWP {
                 if (eventKind == JDWP.EventKind.BREAKPOINT) {
                     try {
                         int requestID = command.readInt();
-                        MIBreakInsertInfo bkptInfo = bkptsByRequestID.get(Integer.valueOf(requestID));
+                        MIBreakInsertInfo bkptInfo = bkptsByRequestID.get(requestID);
 
                         System.out.println("Queueing MI command to delete breakpoint");
                         String[] array = {bkptInfo.getMIBreakpoint().getNumber()};
@@ -2467,11 +2439,11 @@ public class JDWP {
                         gc.queueCommand(tokenID, cmd);
 
                         MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                        if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                             answer.pkt.errorCode = Error.INTERNAL;
                             return;
                         }
-                        bkptsByRequestID.remove(Integer.valueOf(requestID));
+                        bkptsByRequestID.remove(requestID);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -2503,7 +2475,7 @@ public class JDWP {
                         gc.queueCommand(tokenID, cmd);
 
                         MIInfo reply = gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-                        if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                             answer.pkt.errorCode = Error.INTERNAL;
                             return;
                         }
@@ -3312,7 +3284,7 @@ public class JDWP {
         int INVOKE_NONVIRTUAL = 0x02;
     }
 
-    private static void notImplemented(PacketStream answer) {
+    static void notImplemented(PacketStream answer) {
         answer.pkt.errorCode = Error.NOT_IMPLEMENTED;
     }
 }
