@@ -200,5 +200,15 @@ public class CommandFactory {
 
 	public MICommand<MIListThreadGroupsInfo> createMIMIListThreadGroups() { return new MIListThreadGroups(); }
 
+	public MICommand<MiSourceFilesInfo> createMiFileListExecSourceFiles() {
+		return new MIFileListExecSourceFiles();
+	}
 
+	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions() {
+		return new MISymbolInfoFunctions();
+	}
+
+	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions(String typeRegExp, String nameRegExp, int maxResults, boolean includeNonDebug) {
+		return new MISymbolInfoFunctions(typeRegExp, nameRegExp, maxResults, includeNonDebug);
+	}
 }
