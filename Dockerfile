@@ -27,9 +27,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   vim \
   zlib1g-dev
 
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
-ENV PATH $PATH:$JAVA_HOME/bin
-
 #Graalvm exec jar in current dir downloaded from https://github.com/graalvm/graalvm-ce-builds/releases
 COPY graalvm ./graalvm
 ENV GRAALVM_HOME /jdwp/graalvm

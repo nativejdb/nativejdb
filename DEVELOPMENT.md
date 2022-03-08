@@ -58,7 +58,7 @@ To generate a native executable within the Linux environment in the Docker conta
 a. Build with the existing [Hello](./Hello) native executable and debug sources
 
 ```
-docker build -t nativejdb --build-arg REBUILD_EXEC="no" .
+make build REBUILD=no
 ```
 
 OR
@@ -66,7 +66,7 @@ OR
 b. Build with a newly generated native executable for Hello and generate its debug sources
 
 ```
-docker build -t nativejdb --build-arg REBUILD_EXEC="yes" .
+make build REBUILD=yes
 ```
 
 (Delete any old exited nativejdb containers via Docker Dekstop GUI before next step)
@@ -74,13 +74,13 @@ docker build -t nativejdb --build-arg REBUILD_EXEC="yes" .
 - Run the following command via a terminal to deploy docker container:
 
 ```
-docker run --privileged --name nativejdb -v $PWD/Hello:/jdwp/Hello -p 8080:8080 -p 8081:8081 nativejdb
+make run
 ```
 
 - Run the following command via a terminal to ssh into docker container:
 
 ```
-docker exec -it nativejdb /bin/bash
+make exec
 ```
 
 ### Connect IntelliJ Debugger to running Docker container:
