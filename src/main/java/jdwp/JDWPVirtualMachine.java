@@ -69,16 +69,21 @@ public class JDWPVirtualMachine {
 
             static class ClassInfo {
 
-                public static void write(MiSourceFilesInfo.SourceFileInfo referenceType, PacketStream answer) {
-                    /*answer.writeByte(referenceType.tag());
+                public static void write(ReferenceTypeImpl referenceType, PacketStream answer) {
+                    answer.writeByte(referenceType.tag());
                     answer.writeClassRef(referenceType.uniqueID());
                     answer.writeString(referenceType.signature());
-                    answer.writeInt(referenceType.ref().getClassStatus());*/
-                    //System.out.println("REFERENCE TYPES"+referenceType.toString());
+                    answer.writeInt(referenceType.ref().getClassStatus());
                 }
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+                List<ReferenceTypeImpl> referenceTypes = gc.vm.allClasses();
+                answer.writeInt(referenceTypes.size());
+                for (ReferenceTypeImpl referenceType : referenceTypes) {
+                    ClassInfo.write(referenceType, answer);
+                }
+
                 System.out.println("Queueing MI command to get all classes info");
                 MICommand cmd = gc.getCommandFactory().createMiFileListExecSourceFiles();
                 int tokenID = JDWP.getNewTokenId();
@@ -90,10 +95,10 @@ public class JDWPVirtualMachine {
                     return;
                 }
 
-                MiSourceFilesInfo.SourceFileInfo[] referenceTypes = reply.getSourceFiles();
-                answer.writeInt(referenceTypes.length);
-                for (MiSourceFilesInfo.SourceFileInfo referenceType : referenceTypes) {
-                    VirtualMachine.AllClasses.ClassInfo.write(referenceType, answer);
+                MiSourceFilesInfo.SourceFileInfo[] refTypes = reply.getSourceFiles();
+                answer.writeInt(refTypes.length);
+                for (MiSourceFilesInfo.SourceFileInfo referenceType : refTypes) {
+                    //ClassInfo.write(referenceType, answer);
                 }
             }
         }
@@ -530,7 +535,6 @@ public class JDWPVirtualMachine {
                     answer.writeString(cls.signature());
                     answer.writeStringOrEmpty(cls.genericSignature());
                     answer.writeInt(cls.ref().getClassStatus());
-
                 }
             }
 
@@ -538,7 +542,7 @@ public class JDWPVirtualMachine {
                 List<ReferenceTypeImpl> allClasses = gc.vm.allClasses();
                 answer.writeInt(allClasses.size());
                 for (ReferenceTypeImpl cls : allClasses) {
-                    VirtualMachine.AllClassesWithGeneric.ClassInfo.write(cls, gc, answer);
+                    ClassInfo.write(cls, gc, answer);
                 }
 
                 System.out.println("Queueing MI command to get all classes info");

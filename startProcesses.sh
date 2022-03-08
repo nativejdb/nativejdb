@@ -25,7 +25,7 @@ if [ "$REBUILD_NATIVE" = "yes" ]
 then
 #Usage: native-image [options] class [imagename] [options]
 # or  native-image [options] -jar jarfile [imagename] [options]
- cd $DEBUGEE_PATH && $GRAALVM_HOME/bin/native-image -g Hello $IMAGE_NAME && cd ..
+ cd $DEBUGEE_PATH && $GRAALVM_HOME/bin/native-image -g -O0 Hello $IMAGE_NAME && cd ..
 fi
 #***************End***************
 

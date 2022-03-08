@@ -78,6 +78,12 @@ public class GDBControl extends AbstractMIControl {
             gdbInput.flush();
             System.out.println(getGDBOutput());
 
+            //Send a JDWP packet to pause IDE?
+            /*PacketStream packetStream = new PacketStream(this);
+            if (packetStream != null) {
+                packetStream.send();
+            }*/
+
         } catch (IOException e) {
             e.printStackTrace();
         }

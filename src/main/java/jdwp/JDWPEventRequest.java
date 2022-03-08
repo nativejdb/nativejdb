@@ -94,7 +94,7 @@ public class JDWPEventRequest {
                                 }
 
                                 System.out.println("Queueing MI command to step by step size:"+size);
-                                cmd = gc.getCommandFactory().createMIExecStepInstruction(size);
+                                cmd = gc.getCommandFactory().createMIExecNext(size);
                                 tokenID = JDWP.getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
 
