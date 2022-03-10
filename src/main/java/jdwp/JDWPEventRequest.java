@@ -25,6 +25,14 @@ public class JDWPEventRequest {
         static class Set implements Command  {
             static final int COMMAND = 1;
 
+            private boolean differentBreakLine(MIBreakInsertInfo reply) {
+                int line = reply.getMIBreakpoint().getLine();
+                String originalLocation = reply.getMIBreakpoint().getOriginalLocation();
+                String originalLineString = originalLocation.substring(originalLocation.indexOf(":") + 1);
+                int originalLine = originalLineString != "" ? Integer.parseInt(originalLineString) : line;
+                return line != originalLine;
+            }
+
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 byte eventKind = command.readByte();
                 if (eventKind == JDWP.EventKind.BREAKPOINT) {
@@ -56,6 +64,12 @@ public class JDWPEventRequest {
                                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                                     return;
                                 }
+
+//                                if (differentBreakLine(reply)) { // This is an invalid location in the source to set a breakpoint
+//                                    answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
+//                                    return;
+//                                }
+
                                 reply.setMIInfoRequestID(command.pkt.id); //TODO maybe another unique ID??
                                 reply.setMIInfoEventKind(eventKind);
                                 reply.setMIInfoSuspendPolicy(suspendPolicy);
