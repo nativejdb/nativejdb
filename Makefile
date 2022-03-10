@@ -24,7 +24,10 @@ graalvm: ## Untar graalvm binary using downloaded tarfile in this current direct
 	mkdir -p graalvm
 	tar -xzf graalvm-ce-java11-linux-amd64-*.tar.gz -C graalvm --strip-components=1
 
-nativeimage: ## Run a container to generate a native image executable and debug sources for $CLASS_NAME app.
+compile: ## Build the NativeJDB source code.
+	mvn clean compile package
+
+nativeimage: ## Run a container to generate a native image executable and debug sources for CLASS_NAME app.
 	docker stop $(NATIVEIMAGE) && docker rm $(NATIVEIMAGE) || exit 0;
 	docker build -t $(NATIVEIMAGE) --build-arg CLASS_NAME=$(CLASSNAME) -f Dockerfile.native .
 	docker run --privileged --name $(NATIVEIMAGE) -v $(PWD)/apps:/jdwp/apps $(NATIVEIMAGE)
