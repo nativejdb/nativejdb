@@ -45,36 +45,35 @@ This produces a jar file `NativeJDB-1.0-SNAPSHOT.jar` under `/target` which is u
 To generate a native executable within the Linux environment in the Docker container, you will need to download graalvm binary from https://github.com/graalvm/graalvm-ce-builds/releases and untar `graalvm-ce-java11-linux-amd64-*.tar.gz` into the same `NativeJDB` directory.
 
 ```
- mkdir graalvm
- tar -xzf graalvm-ce-java11-linux-amd64-*.tar.gz -C graalvm --strip-components=1
+ make graalvm
 ```
 
-#### 2. Deploy Docker container containing NativeJDB and native executable (debuggee):
+#### 2. Run Docker container to start NativeJDB server to debug native executable (debuggee):
 
 - Start Docker Desktop
   
-- Run either of the following command via a terminal to build docker image (`REBUILD_EXEC` is a Dockerfile input knob to control re-building of a native image executable (generation takes a few mins):
-  
-a. Build with the existing [Hello](./Hello) native executable and debug sources
+- (Optional) Run the following command via a terminal to generate native image executable and debug sources for your application (generation takes a few mins):
 
+For existing example application (Hello), run this:
 ```
-make build REBUILD=no
-```
-
-OR
-
-b. Build with a newly generated native executable for Hello and generate its debug sources
-
-```
-make build REBUILD=yes
+make nativeimage
 ```
 
-(Delete any old exited nativejdb containers via Docker Dekstop GUI before next step)
-
-- Run the following command via a terminal to deploy docker container:
-
+For any other application, pass the class name as input arg to make target:
 ```
-make run
+make nativeimage CLASSNAME=****
+```
+
+- Run the following command via a terminal to deploy docker container running NativeJDB server to start debugging:
+
+For existing example application (Hello), run this:
+```
+make nativejdb 
+```
+
+For any other application, pass the class name as input arg to make target:
+```
+make nativejdb CLASSNAME=****
 ```
 
 - Run the following command via a terminal to ssh into docker container:

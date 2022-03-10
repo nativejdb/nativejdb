@@ -3,11 +3,9 @@ LABEL maintainer="Ansu Varghese <avarghese@us.ibm.com>"
 
 #Dockerfile input is the address to start the JDWP server on
 ARG ADDRESS_ARG="0.0.0.0:8080"
-#Dockerfile input is a knob to re-build native image executable (takes a few mins)
-ARG REBUILD_EXEC="no"
 #Dockerfile input is the relative path of the debuggee directory
-ARG DEBUGEE_ARG="Hello"
-#TODO: add input args to support class or jarfile option for native image exec
+ARG CLASS_NAME="Hello"
+#TODO: add input args to support jarfile option for native image exec
 
 EXPOSE 8080
 HEALTHCHECK CMD wget -q -O /dev/null http://localhost:8080/healthy || exit 1
@@ -16,7 +14,6 @@ WORKDIR /jdwp
 
 COPY startProcesses.sh .
 COPY target/NativeJDB-1.0-SNAPSHOT.jar .
-COPY $DEBUGEE_ARG ./$DEBUGEE_ARG
 
 RUN export DEBIAN_FRONTEND=noninteractive \
 && apt-get -qqy update \
@@ -33,10 +30,7 @@ ENV GRAALVM_HOME /jdwp/graalvm
 ENV PATH $PATH:$GRAALVM_HOME/bin
 RUN $GRAALVM_HOME/bin/gu install native-image
 
-ENV SOCKET_ADDRESS=$ADDRESS_ARG
-ENV REBUILD_NATIVE=$REBUILD_EXEC
-ENV DEBUGEE_PATH=$DEBUGEE_ARG
+ENV ADDRESS_ARG=$ADDRESS_ARG
+ENV CLASS_NAME=$CLASS_NAME
 
-WORKDIR /jdwp
-
-ENTRYPOINT ./startProcesses.sh -s $SOCKET_ADDRESS -b $REBUILD_NATIVE -d $DEBUGEE_PATH
+ENTRYPOINT ./startProcesses.sh -a $ADDRESS_ARG -c $CLASS_NAME
