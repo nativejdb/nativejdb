@@ -11,9 +11,6 @@ do
     esac
 done
 
-#Insert info of program to debug below (TODO: remove hardcoded class/jarfile)
-#***************Start***************
-javac apps/*.java
 java -cp apps $CLASS_NAME &
 PROCESS_ID=$(pgrep -nf "java -cp apps $CLASS_NAME")
 
