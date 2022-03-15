@@ -53,12 +53,12 @@ import gdb.mi.service.command.output.MIStackListFramesInfo;
  *
  */
 public class MIStackListFrames extends MICommand<MIStackListFramesInfo> {
-	public MIStackListFrames() {
-		super("-stack-list-frames"); //$NON-NLS-1$
+	public MIStackListFrames(String threadId) {
+		super("-stack-list-frames", new String[] {"--thread", threadId}); //$NON-NLS-1$
 	}
 
-	public MIStackListFrames(int low, int high) {
-		super("-stack-list-frames", new String[] { Integer.toString(low), Integer.toString(high) }); //$NON-NLS-1$
+	public MIStackListFrames(String threadId, int low, int high) {
+		super("-stack-list-frames", new String[] {"--thread", threadId, Integer.toString(low), Integer.toString(high) }); //$NON-NLS-1$
 	}
 
 	@Override

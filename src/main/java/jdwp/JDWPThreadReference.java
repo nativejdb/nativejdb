@@ -140,33 +140,24 @@ public class JDWPThreadReference {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 int threadId = (int) command.readObjectRef();
 
-                System.out.println("Queueing MI command to select a thread");
-                MICommand cmd = gc.getCommandFactory().createMISelectThread(threadId);
+                System.out.println("Queueing MI command to get frames");
+                MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
-                MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                MIStackListFramesInfo reply = (MIStackListFramesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
                 if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
 
-                System.out.println("Queueing MI command to get frames");
-                cmd = gc.getCommandFactory().createMIStackListFrames();
-                tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MIStackListFramesInfo reply1 = (MIStackListFramesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                }
-
-                MIFrame[] frames = reply1.getMIFrames();
+                MIFrame[] frames = reply.getMIFrames();
                 answer.writeInt(frames.length);
 
                 for (MIFrame frame: frames) {
-                    int frameId = JDWP.getNewFrameId();
-                    JDWP.framesById.put(frameId, frame);
+                    int frameId = frame.getLevel();
+                    //JDWP.framesById.put(frameId, frame);
                     answer.writeFrameRef(frameId);
+                    //Todo: frame.getAddress() must be converted to location
                     List<LocationImpl> list = ((ConcreteMethodImpl) JDWP.savedMethod).getBaseLocations().lineMapper.get(frame.getLine());
                     if (list != null && list.size() >= 1) {
                         answer.writeLocation(list.get(0));
@@ -190,27 +181,17 @@ public class JDWPThreadReference {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 int threadId = (int) command.readObjectRef();
 
-                System.out.println("Queueing MI command to select a thread");
-                MICommand cmd = gc.getCommandFactory().createMISelectThread(threadId);
+                System.out.println("Queueing MI command to get frame count");
+                MICommand cmd = gc.getCommandFactory().createMIStackInfoDepth(String.valueOf(threadId));
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
-                MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                MIStackInfoDepthInfo reply = (MIStackInfoDepthInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
                 if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
 
-                System.out.println("Queueing MI command to get frame count");
-                cmd = gc.getCommandFactory().createMIStackInfoDepth();
-                tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MIStackInfoDepthInfo reply1 = (MIStackInfoDepthInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                }
-
-                answer.writeInt(reply1.getDepth());
+                answer.writeInt(reply.getDepth());
             }
         }
 

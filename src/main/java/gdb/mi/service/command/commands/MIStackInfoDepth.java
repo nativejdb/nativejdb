@@ -26,12 +26,12 @@ import gdb.mi.service.command.output.MIStackInfoDepthInfo;
  */
 public class MIStackInfoDepth extends MICommand<MIStackInfoDepthInfo> {
 
-	public MIStackInfoDepth() {
-		super("-stack-info-depth"); //$NON-NLS-1$
+	public MIStackInfoDepth(String threadId) {
+		super("-stack-info-depth", new String[] {"--thread", threadId}); //$NON-NLS-1$
 	}
 
-	public MIStackInfoDepth(int maxDepth) {
-		super("-stack-info-depth", new String[] { Integer.toString(maxDepth) }); //$NON-NLS-1$
+	public MIStackInfoDepth(String threadId, int maxDepth) {
+		super("-stack-info-depth", new String[] {"--thread", threadId, Integer.toString(maxDepth) }); //$NON-NLS-1$
 	}
 
 	@Override
