@@ -65,10 +65,24 @@ public class JDWPEventRequest {
                                     return;
                                 }
 
-//                                if (differentBreakLine(reply)) { // This is an invalid location in the source to set a breakpoint
-//                                    answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
-//                                    return;
-//                                }
+                                if (differentBreakLine(reply)) { // This is an invalid location in the source to set a breakpoint
+                                    answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
+
+                                    // remove the breakpoint in GDB
+                                    System.out.println("Queueing MI command to disable breakpoint at "+location);
+                                    cmd = gc.getCommandFactory().createMIBreakDisable(reply.getMIBreakpoint().getNumber());
+                                    tokenID = JDWP.getNewTokenId();
+                                    gc.queueCommand(tokenID, cmd);
+
+                                    MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                                    if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                                        return;
+                                    }
+
+
+                                    return;
+                                }
 
                                 reply.setMIInfoRequestID(command.pkt.id); //TODO maybe another unique ID??
                                 reply.setMIInfoEventKind(eventKind);
