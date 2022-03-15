@@ -24,4 +24,4 @@ RUN $GRAALVM_HOME/bin/gu install native-image
 
 ENV CLASS_NAME=$CLASS_NAME
 
-ENTRYPOINT ./nativeImageGen.sh -n $CLASS_NAME
+ENTRYPOINT ./nativeImageGen.sh -c $CLASS_NAME

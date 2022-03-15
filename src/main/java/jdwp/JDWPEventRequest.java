@@ -47,7 +47,7 @@ public class JDWPEventRequest {
                                 long methodId = command.readMethodRef();
                                 long index = command.readLong();
                                 LocationImpl loc = new LocationImpl(refType.methodById(methodId), index);
-                                String location = refType.name()+".java" + ":" + loc.lineNumber();
+                                String location = refType.baseSourceName() + ":" + loc.lineNumber();
 
                                 // hack
                                 JDWP.savedReferenceType = refType;

@@ -40,8 +40,9 @@ public class HelloNew {
 
     public static void main(String[] args){
         Greeter greeter = Greeter.greeter(args);
-        greeter.greet();
-        System.exit(0);
+        while (true) {
+            greeter.greet();
+        }
     }
 }
 

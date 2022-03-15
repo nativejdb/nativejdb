@@ -84,7 +84,7 @@ public class JDWPVirtualMachine {
                     ClassInfo.write(referenceType, answer);
                 }
 
-                System.out.println("Queueing MI command to get all classes info");
+                /*System.out.println("Queueing MI command to get all classes info");
                 MICommand cmd = gc.getCommandFactory().createMiFileListExecSourceFiles();
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
@@ -99,7 +99,7 @@ public class JDWPVirtualMachine {
                 answer.writeInt(refTypes.length);
                 for (MiSourceFilesInfo.SourceFileInfo referenceType : refTypes) {
                     //ClassInfo.write(referenceType, answer);
-                }
+                }*/
             }
         }
 
@@ -545,7 +545,7 @@ public class JDWPVirtualMachine {
                     ClassInfo.write(cls, gc, answer);
                 }
 
-                System.out.println("Queueing MI command to get all classes info");
+                /*System.out.println("Queueing MI command to get all classes info");
                 MICommand cmd = gc.getCommandFactory().createMiSymbolInfoFunctions();
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
@@ -560,7 +560,7 @@ public class JDWPVirtualMachine {
                 answer.writeInt(referenceTypes.length);
                 for (MiSymbolInfoFunctionsInfo.SymbolFileInfo referenceType : referenceTypes) {
                     //ClassInfo.write(referenceType, answer);
-                }
+                }*/
             }
         }
 

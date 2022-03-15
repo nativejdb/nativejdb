@@ -54,7 +54,7 @@ public class JDWP {
 
     static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing
 
-    static Map<Integer, MIFrame> framesById = new HashMap<>();
+    //static Map<Integer, MIFrame> framesById = new HashMap<>();
 
     static int fFrameId = 0;
 

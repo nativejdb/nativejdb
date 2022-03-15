@@ -33,7 +33,7 @@ _Adding the `upstream` remote sets you up nicely for regularly
 
 To build the NativeJDB, run:
 ```
-mvn clean compile package
+make compile
 ```
 
 This produces a jar file `NativeJDB-1.0-SNAPSHOT.jar` under `/target` which is used in Docker container.
