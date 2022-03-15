@@ -36,7 +36,6 @@ import java.util.*;
 public class JDWP {
 
     // hack
-    static ReferenceTypeImpl savedReferenceType = null;
     static MethodImpl savedMethod = null;
     //end hack
 
@@ -53,14 +52,6 @@ public class JDWP {
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
 
     static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing
-
-    //static Map<Integer, MIFrame> framesById = new HashMap<>();
-
-    static int fFrameId = 0;
-
-    static int getNewFrameId() {
-        return fFrameId++;
-    }
 
     /**
      * A global counter for all command, the token will be use to identify uniquely a command.
