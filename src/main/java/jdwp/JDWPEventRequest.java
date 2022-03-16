@@ -50,7 +50,6 @@ public class JDWPEventRequest {
                                 String location = refType.baseSourceName() + ":" + loc.lineNumber();
 
                                 // hack
-                                JDWP.savedReferenceType = refType;
                                 JDWP.savedMethod = refType.methodById(methodId);
                                 //end hack
 
