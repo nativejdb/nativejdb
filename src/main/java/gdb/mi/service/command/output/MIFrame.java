@@ -117,13 +117,15 @@ public class MIFrame {
 						// To make the presentation consistent truncate the parameters. PR 46592
 						// However PR180059: only cut it if it is last brackets represent parameters,
 						// because gdb can return: func="(anonymous namespace)::func2((anonymous namespace)::Test*)"
-						int closing = str.lastIndexOf(')');
-						if (closing == str.length() - 1) {
-							int end = getMatchingBracketIndex(str, closing - 1);
-							if (end >= 0) {
-								func = str.substring(0, end);
-							}
-						}
+
+						// MV - Commenting this out because we need the argument types
+//						int closing = str.lastIndexOf(')');
+//						if (closing == str.length() - 1) {
+//							int end = getMatchingBracketIndex(str, closing - 1);
+//							if (end >= 0) {
+//								func = str.substring(0, end);
+//							}
+//						}
 					}
 				}
 			} else if (var.equals("file")) { //$NON-NLS-1$

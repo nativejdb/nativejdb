@@ -6,6 +6,7 @@ import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class JDWPThreadReference {
 
@@ -137,6 +138,45 @@ public class JDWPThreadReference {
                 }
             }
 
+            private boolean isPrimitive(String type) {
+                if (type.equals("byte") || type.equals("short") || type.equals("int") ||
+                        type.equals("long") || type.equals("float") || type.equals("double")
+                        || type.equals("boolean") || type.equals("char")) {
+                    return true;
+                }
+                return false;
+            }
+
+            private String normalizeFunc(String func) {
+                String start = func.substring(0, func.indexOf("("));
+                String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
+                String[] params = paramList.split(", ");
+                ArrayList<String> newParams = new ArrayList<>();
+                for (String param: params) {
+                    if (param.indexOf(" ") > 0) {
+                        param = param.substring(0, param.indexOf(" "));
+                    }
+                    if (!isPrimitive(param)) {
+                        param = "L" + param;
+                    }
+                    param = param.replace(".", "/");
+                    if (param.endsWith("[]")) { // array
+                        param = param.substring(0, param.indexOf("["));
+                        param = "[" + param + ";";
+                    }
+                    newParams.add(param);
+                }
+                String newParamList = "";
+                for (int i = 0; i < newParams.size(); i++) {
+                    if (i == 0) {
+                        newParamList += newParams.get(i);
+                    } else {
+                        newParamList += ", " + newParams.get(i);
+                    }
+                }
+                return start + "(" + newParamList + ")";
+            }
+
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 int threadId = (int) command.readObjectRef();
 
@@ -157,11 +197,17 @@ public class JDWPThreadReference {
                     int frameId = frame.getLevel();
                     //JDWP.framesById.put(frameId, frame);
                     answer.writeFrameRef(frameId);
+
                     //Todo: frame.getAddress() must be converted to location
-                    List<LocationImpl> list = ((ConcreteMethodImpl) JDWP.savedMethod).getBaseLocations().lineMapper.get(frame.getLine());
-                    if (list != null && list.size() >= 1) {
-                        answer.writeLocation(list.get(0));
-                    } else {
+                    String func = normalizeFunc(frame.getFunction());
+                    MethodImpl impl = MethodImpl.methods.get(func);
+                    if (impl != null) {
+                        List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(frame.getLine());
+                        if (list != null && list.size() >= 1) {
+                            answer.writeLocation(list.get(0));
+                        }
+                    }
+                     else {
                         LocationImpl loc = new LocationImpl(JDWP.savedMethod, frame.getLine());
                         answer.writeLocation(loc);
                     }

@@ -40,10 +40,14 @@ import com.sun.jdi.AbsentInformationException;
 import sun.jvm.hotspot.oops.Method;
 import sun.jvm.hotspot.oops.Symbol;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 public abstract class MethodImpl extends TypeComponentImpl {
     Method saMethod;
+
+    public static Map<String, MethodImpl> methods = new HashMap<>();
 
     public abstract int argSlotCount();
     abstract List<LocationImpl> allLineLocations(SDE.Stratum stratum) throws AbsentInformationException;
@@ -62,6 +66,9 @@ public abstract class MethodImpl extends TypeComponentImpl {
         super(declaringType);
         this.saMethod = saMethod;
         signature = saMethod.getSignature().asString();
+        String sigWithoutReturn = signature.substring(0, signature.indexOf(")") + 1);
+        String name = declaringType.name() + "::" +this.name() + sigWithoutReturn;
+        methods.put(name, this);
     }
 
     // Object ref() {
