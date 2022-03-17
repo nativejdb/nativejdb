@@ -1,7 +1,7 @@
 import java.io.*;
 
 public class Hello{
-        public static void main(String[] args) {
+        public static void main(String[] args) throws InterruptedException {
                 BufferedOutputStream writer = null;
                 try {
                         Thread.sleep(10000);
