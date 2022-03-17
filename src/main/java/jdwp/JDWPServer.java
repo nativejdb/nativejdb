@@ -38,7 +38,11 @@ public class JDWPServer {
     static final String SERVER_READY = "sa-jdwp server connected";
 
     public static void main(String[] args) throws Exception {
-        final VirtualMachineImpl vm = VirtualMachineImpl.createVirtualMachineForPID(Integer.parseInt(args[0]), 0); //process ID
+        String program = System.getProperty("program.class");
+        ProcessBuilder builder = new ProcessBuilder("java", "-cp", "apps", program);
+        Process p = builder.start();
+        System.out.println("PIDDD: " + p.pid());
+        final VirtualMachineImpl vm = VirtualMachineImpl.createVirtualMachineForPID((int)p.pid(), 0);
 
         // Attaching server
 //        String address = "host.docker.internal:8080"; // + args[1];
@@ -52,7 +56,7 @@ public class JDWPServer {
 
         // Listening server
         final SocketTransportService socketTransportService = new SocketTransportService();
-        final TransportService.ListenKey listenKey = socketTransportService.startListening(args[1]); //address
+        final TransportService.ListenKey listenKey = socketTransportService.startListening(args[0]); //address
 
         System.err.println(WAITING_FOR_DEBUGGER + listenKey.address());
 
