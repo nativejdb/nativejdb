@@ -42,6 +42,7 @@ public class JDWPServer {
         ProcessBuilder builder = new ProcessBuilder("java", "-cp", "apps", program);
         Process p = builder.start();
 
+        System.out.println("PID: " + p.pid());
         final VirtualMachineImpl vm = VirtualMachineImpl.createVirtualMachineForPID((int)p.pid(), 0);
 
         // Attaching server
