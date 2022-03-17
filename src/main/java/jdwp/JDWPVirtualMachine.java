@@ -269,7 +269,20 @@ public class JDWPVirtualMachine {
 
                     MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
                     if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
+                        if (reply.getErrorMsg().equals("The program is not being run.")) {
+                            // Need to run the program
+                            cmd = gc.getCommandFactory().createMIExecRun();
+                            tokenID = JDWP.getNewTokenId();
+                            gc.queueCommand(tokenID, cmd);
+
+                            MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                            if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                                answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                            }
+
+                        } else {
+                            answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

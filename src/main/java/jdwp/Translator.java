@@ -20,6 +20,11 @@ import gdb.mi.service.command.output.MIResult;
 import gdb.mi.service.command.output.MIValue;
 import gdb.mi.service.command.output.MIInfo;
 import jdwp.jdi.LocationImpl;
+import jdwp.jdi.MethodImpl;
+import jdwp.jdi.ConcreteMethodImpl;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Translator {
 
@@ -78,11 +83,58 @@ public class Translator {
 		packetStream.writeByte(info.getMIInfoEventKind());
 		packetStream.writeInt(info.getMIInfoRequestID());
 		packetStream.writeLong(threadID); // TODO!! Might need to use PacketStream.writeObjectRef()
-		LocationImpl loc = new LocationImpl(JDWP.savedMethod, event.getFrame().getLine());
-		packetStream.writeLocation(loc);
-		JDWP.stepByThreadID.remove(threadID);
+
+		String func = normalizeFunc(event.getFrame().getFunction());
+		MethodImpl impl = MethodImpl.methods.get(func);
+		if (impl != null) {
+			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(event.getFrame().getLine());
+			if (list != null && list.size() >= 1) {
+				packetStream.writeLocation(list.get(0));
+				JDWP.stepByThreadID.remove(threadID);
+				return packetStream;
+			}
+		}
 		return packetStream;
 	}
 
+	private static  boolean isPrimitive(String type) {
+		if (type.equals("byte") || type.equals("short") || type.equals("int") ||
+			type.equals("long") || type.equals("float") || type.equals("double")
+			|| type.equals("boolean") || type.equals("char")) {
+			return true;
+		}
+		return false;
+	}
+
+	public static String normalizeFunc(String func) {
+		String start = func.substring(0, func.indexOf("("));
+		String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
+		String[] params = paramList.split(", ");
+		ArrayList<String> newParams = new ArrayList<>();
+		for (String param: params) {
+			if (param.indexOf(" ") > 0) {
+				param = param.substring(0, param.indexOf(" "));
+			}
+			if (!isPrimitive(param)) {
+				param = "L" + param;
+			}
+			param = param.replace(".", "/");
+			if (param.endsWith("[]")) { // array
+				param = param.substring(0, param.indexOf("["));
+				param = "[" + param + ";";
+			}
+			newParams.add(param);
+		}
+		String newParamList = "";
+		for (int i = 0; i < newParams.size(); i++) {
+			if (i == 0) {
+				newParamList += newParams.get(i);
+			} else {
+				newParamList += ", " + newParams.get(i);
+			}
+		}
+		return start + "(" + newParamList + ")";
+	}
 }
+
 

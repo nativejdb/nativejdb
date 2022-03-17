@@ -35,10 +35,6 @@ import java.util.*;
  */
 public class JDWP {
 
-    // hack
-    static MethodImpl savedMethod = null;
-    //end hack
-
     /**
      * The default JDI request timeout when no preference is set.
      */

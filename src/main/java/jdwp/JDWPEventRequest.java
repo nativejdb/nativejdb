@@ -49,10 +49,6 @@ public class JDWPEventRequest {
                                 LocationImpl loc = new LocationImpl(refType.methodById(methodId), index);
                                 String location = refType.baseSourceName() + ":" + loc.lineNumber();
 
-                                // hack
-                                JDWP.savedMethod = refType.methodById(methodId);
-                                //end hack
-
                                 System.out.println("Queueing MI command to insert breakpoint at "+location);
                                 MICommand cmd = gc.getCommandFactory().createMIBreakInsert(false, false, "", 0, location, "0", false, false);
                                 int tokenID = JDWP.getNewTokenId();

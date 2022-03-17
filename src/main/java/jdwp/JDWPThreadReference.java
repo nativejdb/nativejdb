@@ -138,44 +138,7 @@ public class JDWPThreadReference {
                 }
             }
 
-            private boolean isPrimitive(String type) {
-                if (type.equals("byte") || type.equals("short") || type.equals("int") ||
-                        type.equals("long") || type.equals("float") || type.equals("double")
-                        || type.equals("boolean") || type.equals("char")) {
-                    return true;
-                }
-                return false;
-            }
 
-            private String normalizeFunc(String func) {
-                String start = func.substring(0, func.indexOf("("));
-                String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
-                String[] params = paramList.split(", ");
-                ArrayList<String> newParams = new ArrayList<>();
-                for (String param: params) {
-                    if (param.indexOf(" ") > 0) {
-                        param = param.substring(0, param.indexOf(" "));
-                    }
-                    if (!isPrimitive(param)) {
-                        param = "L" + param;
-                    }
-                    param = param.replace(".", "/");
-                    if (param.endsWith("[]")) { // array
-                        param = param.substring(0, param.indexOf("["));
-                        param = "[" + param + ";";
-                    }
-                    newParams.add(param);
-                }
-                String newParamList = "";
-                for (int i = 0; i < newParams.size(); i++) {
-                    if (i == 0) {
-                        newParamList += newParams.get(i);
-                    } else {
-                        newParamList += ", " + newParams.get(i);
-                    }
-                }
-                return start + "(" + newParamList + ")";
-            }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 int threadId = (int) command.readObjectRef();
@@ -191,26 +154,31 @@ public class JDWPThreadReference {
                 }
 
                 MIFrame[] frames = reply.getMIFrames();
-                answer.writeInt(frames.length);
+                int framesLength = 0;
+                List<Integer> frameIds = new ArrayList<>();
+                List<LocationImpl> locations = new ArrayList<>();
+
 
                 for (MIFrame frame: frames) {
                     int frameId = frame.getLevel();
                     //JDWP.framesById.put(frameId, frame);
-                    answer.writeFrameRef(frameId);
 
-                    //Todo: frame.getAddress() must be converted to location
-                    String func = normalizeFunc(frame.getFunction());
+
+                    String func = Translator.normalizeFunc(frame.getFunction());
                     MethodImpl impl = MethodImpl.methods.get(func);
                     if (impl != null) {
                         List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(frame.getLine());
                         if (list != null && list.size() >= 1) {
-                            answer.writeLocation(list.get(0));
+                            framesLength++;
+                            locations.add(list.get(0));
+                            frameIds.add(frameId);
                         }
                     }
-                     else {
-                        LocationImpl loc = new LocationImpl(JDWP.savedMethod, frame.getLine());
-                        answer.writeLocation(loc);
-                    }
+                }
+                answer.writeInt(framesLength);
+                for (int i = 0; i < framesLength; i++) {
+                    answer.writeFrameRef(frameIds.get(i));
+                    answer.writeLocation(locations.get(i));
                 }
             }
         }
@@ -227,17 +195,32 @@ public class JDWPThreadReference {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 int threadId = (int) command.readObjectRef();
 
-                System.out.println("Queueing MI command to get frame count");
-                MICommand cmd = gc.getCommandFactory().createMIStackInfoDepth(String.valueOf(threadId));
+
+
+                System.out.println("Queueing MI command to get frames");
+                MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
-                MIStackInfoDepthInfo reply = (MIStackInfoDepthInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                MIStackListFramesInfo reply = (MIStackListFramesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
                 if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
 
-                answer.writeInt(reply.getDepth());
+                MIFrame[] frames = reply.getMIFrames();
+                int framesLength = 0;
+
+                for (MIFrame frame: frames) {
+                    String func = Translator.normalizeFunc(frame.getFunction());
+                    MethodImpl impl = MethodImpl.methods.get(func);
+                    if (impl != null) {
+                        List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(frame.getLine());
+                        if (list != null && list.size() >= 1) {
+                            framesLength++;
+                        }
+                    }
+                }
+                answer.writeInt(framesLength);
             }
         }
 
