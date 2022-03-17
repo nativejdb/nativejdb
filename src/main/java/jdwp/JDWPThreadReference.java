@@ -163,16 +163,11 @@ public class JDWPThreadReference {
                     int frameId = frame.getLevel();
                     //JDWP.framesById.put(frameId, frame);
 
-
-                    String func = Translator.normalizeFunc(frame.getFunction());
-                    MethodImpl impl = MethodImpl.methods.get(func);
-                    if (impl != null) {
-                        List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(frame.getLine());
-                        if (list != null && list.size() >= 1) {
-                            framesLength++;
-                            locations.add(list.get(0));
-                            frameIds.add(frameId);
-                        }
+                    LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
+                    if (loc != null) {
+                        framesLength++;
+                        locations.add(loc);
+                        frameIds.add(frameId);
                     }
                 }
                 answer.writeInt(framesLength);
@@ -211,13 +206,9 @@ public class JDWPThreadReference {
                 int framesLength = 0;
 
                 for (MIFrame frame: frames) {
-                    String func = Translator.normalizeFunc(frame.getFunction());
-                    MethodImpl impl = MethodImpl.methods.get(func);
-                    if (impl != null) {
-                        List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(frame.getLine());
-                        if (list != null && list.size() >= 1) {
-                            framesLength++;
-                        }
+                    LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
+                    if (loc != null) {
+                        framesLength++;
                     }
                 }
                 answer.writeInt(framesLength);

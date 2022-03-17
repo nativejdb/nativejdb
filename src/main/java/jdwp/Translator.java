@@ -25,6 +25,7 @@ import jdwp.jdi.ConcreteMethodImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Translator {
 
@@ -84,15 +85,12 @@ public class Translator {
 		packetStream.writeInt(info.getMIInfoRequestID());
 		packetStream.writeLong(threadID); // TODO!! Might need to use PacketStream.writeObjectRef()
 
-		String func = normalizeFunc(event.getFrame().getFunction());
-		MethodImpl impl = MethodImpl.methods.get(func);
-		if (impl != null) {
-			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(event.getFrame().getLine());
-			if (list != null && list.size() >= 1) {
-				packetStream.writeLocation(list.get(0));
-				JDWP.stepByThreadID.remove(threadID);
-				return packetStream;
-			}
+		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
+		if (loc != null) {
+			packetStream.writeLocation(loc);
+			JDWP.stepByThreadID.remove(threadID);
+			return packetStream;
+
 		}
 		return packetStream;
 	}
@@ -107,6 +105,9 @@ public class Translator {
 	}
 
 	public static String normalizeFunc(String func) {
+		if (func.indexOf("(") == -1) { // Function does not contain parameter types
+			return func;
+		}
 		String start = func.substring(0, func.indexOf("("));
 		String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
 		String[] params = paramList.split(", ");
@@ -134,6 +135,31 @@ public class Translator {
 			}
 		}
 		return start + "(" + newParamList + ")";
+	}
+
+	public static LocationImpl locationLookup(String func, int line) {
+		String name = normalizeFunc(func);
+		MethodImpl impl = MethodImpl.methods.get(name);
+		if (impl != null) {
+			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(line);
+			if (list != null && list.size() >= 1) {
+				return list.get(0);
+			}
+			return null;
+		}
+		if (!name.contains("(")) {
+			Set<String> keys = MethodImpl.methods.keySet();
+			for (String key: keys) {
+				if (key.contains(name)) {
+					ConcreteMethodImpl impl1 = (ConcreteMethodImpl) MethodImpl.methods.get(key);
+					List<LocationImpl> list = ((ConcreteMethodImpl) impl1).getBaseLocations().lineMapper.get(line);
+					if (list != null && list.size() >= 1) {
+						return list.get(0);
+					}
+				}
+			}
+		}
+		return null;
 	}
 }
 
