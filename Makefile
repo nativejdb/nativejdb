@@ -1,5 +1,4 @@
 JDWPSERVICE := nativejdb
-NATIVEIMAGE := nativeimage
 CLASSNAME := Hello
 
 all: nativejdb
@@ -26,11 +25,6 @@ graalvm: ## Untar graalvm binary using downloaded tarfile in this current direct
 
 compile: ## Build the NativeJDB source code.
 	mvn clean compile package
-
-nativeimage: ## Run a container to generate a native image executable and debug sources for CLASS_NAME app.
-	docker stop $(NATIVEIMAGE) && docker rm $(NATIVEIMAGE) || exit 0;
-	docker build -t $(NATIVEIMAGE) --build-arg CLASS_NAME=$(CLASSNAME) -f Dockerfile.native .
-	docker run --privileged --name $(NATIVEIMAGE) -v $(PWD)/apps:/jdwp/apps $(NATIVEIMAGE)
 
 nativejdb: ## Run a JDWPServer to debug a native image executable for CLASS_NAME app.
 	docker stop $(JDWPSERVICE) && docker rm $(JDWPSERVICE) || exit 0;
