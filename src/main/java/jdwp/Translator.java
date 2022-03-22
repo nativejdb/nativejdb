@@ -11,10 +11,7 @@
 
 package jdwp;
 
-import gdb.mi.service.command.events.MIBreakpointHitEvent;
-import gdb.mi.service.command.events.MIEvent;
-import gdb.mi.service.command.events.MISteppingRangeEvent;
-import gdb.mi.service.command.events.MIStoppedEvent;
+import gdb.mi.service.command.events.*;
 import gdb.mi.service.command.output.MIBreakInsertInfo;
 import gdb.mi.service.command.output.MIResult;
 import gdb.mi.service.command.output.MIValue;
@@ -34,8 +31,21 @@ public class Translator {
 			return translateBreakpointHit(gc, (MIBreakpointHitEvent) event);
 		} else if (event instanceof MISteppingRangeEvent) {
 			return translateSteppingRange(gc, (MISteppingRangeEvent) event);
+		} else if (event instanceof MIInferiorExitEvent) {
+			return translateExitEvent(gc, (MIInferiorExitEvent) event);
 		}
 		return null;
+	}
+
+	private static PacketStream translateExitEvent(GDBControl gc, MIInferiorExitEvent event) {
+		PacketStream packetStream = new PacketStream(gc);
+		byte suspendPolicy = JDWP.SuspendPolicy.NONE;
+		byte eventKind = JDWP.EventKind.VM_DEATH;
+		packetStream.writeByte(suspendPolicy);
+		packetStream.writeInt(1); // Number of events in this response packet
+		packetStream.writeByte(eventKind);
+		packetStream.writeInt(0);
+		return packetStream;
 	}
 
 	private static PacketStream translateBreakpointHit(GDBControl gc, MIBreakpointHitEvent event) {
