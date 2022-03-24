@@ -161,7 +161,7 @@ public class JDWPThreadReference {
 
                 for (MIFrame frame: frames) {
                     int frameId = frame.getLevel();
-                    //JDWP.framesById.put(frameId, frame);
+                    JDWP.framesById.put(frameId, frame);
 
                     LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
                     if (loc != null) {

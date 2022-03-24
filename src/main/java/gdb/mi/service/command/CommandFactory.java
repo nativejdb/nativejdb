@@ -232,6 +232,14 @@ public class CommandFactory {
 		return new MISymbolInfoFunctions(typeRegExp, nameRegExp, maxResults, includeNonDebug);
 	}
 
+	public MICommand<MiSymbolInfoVariablesInfo> createMiSymbolInfoVariables() {
+		return new MISymbolInfoVariables();
+	}
+
+	public MICommand<MiSymbolInfoVariablesInfo> createMiSymbolInfoVariables(String typeRegExp, String nameRegExp, int maxResults, boolean includeNonDebug) {
+		return new MISymbolInfoVariables(typeRegExp, nameRegExp, maxResults, includeNonDebug);
+	}
+
 	public MICommand<MIVarAssignInfo> createMIVarAssign(String name, String expression) {
 		return new MIVarAssign(name, expression);
 	}

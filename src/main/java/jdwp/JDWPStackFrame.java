@@ -2,10 +2,7 @@ package jdwp;
 
 import com.sun.jdi.IncompatibleThreadStateException;
 import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.MIArg;
-import gdb.mi.service.command.output.MIInfo;
-import gdb.mi.service.command.output.MIResultRecord;
-import gdb.mi.service.command.output.MIStackListVariablesInfo;
+import gdb.mi.service.command.output.*;
 import jdwp.jdi.StackFrameImpl;
 import jdwp.jdi.ThreadReferenceImpl;
 import jdwp.jdi.ValueImpl;
@@ -28,6 +25,17 @@ public class JDWPStackFrame {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+                /* This will be a combination of a few different GDB commands:
+                1. -stack-list-variables [ --no-frame-filters ] [ --skip-unavailable ] print-values
+                    Display the names of local variables and function arguments for the selected frame.
+                2. -stack-list-locals [ --no-frame-filters ] [ --skip-unavailable ] print-values  (Maybe contained in 1.'s output already)
+                    Display the local variable names for the selected frame.
+                3. -symbol-info-variables [--include-nondebug] (Only gives us global field names - no values. Maybe contained in 1.'s output already)
+                        [--type type_regexp]
+                        [--name name_regexp]
+                        [--max-results limit]
+                    Return a list containing the names and types for all global variables taken from the debug information. The variables are grouped by source file, and shown with the line number on which each variable is defined.
+                */
                 long threadId = command.readObjectRef();
                 int frameId = (int) command.readFrameRef();
                 int slots = command.readInt();
@@ -36,7 +44,7 @@ public class JDWPStackFrame {
                     int slot = command.readInt();
                     byte sigbyte = command.readByte();
 
-                    System.out.println("Queueing MI command to list local variables");
+                    System.out.println("Queueing MI command to list local variables and function arguments");
                     MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadId), String.valueOf(frameId));
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
@@ -46,11 +54,34 @@ public class JDWPStackFrame {
                         answer.pkt.errorCode = JDWP.Error.INTERNAL;
                     }
 
+                    System.out.println("Queueing MI command to list global variables (only names)");
+                    cmd = gc.getCommandFactory().createMiSymbolInfoVariables();
+                    tokenID = JDWP.getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MiSymbolInfoVariablesInfo replyloc1 = (MiSymbolInfoVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (replyloc1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                    }
+
                     MIArg[] vals = replyloc.getVariables();
                     for (int j = 0; j < vals.length; j++) {
                         String name = vals[j].getName();
                         String value = vals[j].getValue();
                         answer.writeString(value);
+                    }
+
+                    MIFrame frame = JDWP.framesById.get(frameId);
+                    MiSymbolInfoVariablesInfo.SymbolVariableInfo[] files = replyloc1.getSymbolVariables();
+                    for ( MiSymbolInfoVariablesInfo.SymbolVariableInfo file: files) {
+                        if (file.getFilename() == frame.getFile()) {
+                            MiSymbolInfoVariablesInfo.Symbols[] vals1 = file.getSymbols();
+                            for (MiSymbolInfoVariablesInfo.Symbols val: vals1) {
+                                String name = val.getName();
+                                //getValue of this global file field via GDB cmd
+                                System.out.println(name);
+                            }
+                        }
                     }
                 }
 
