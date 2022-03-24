@@ -105,8 +105,8 @@ public class JDWPEventRequest {
                                 int size = command.readInt();
                                 int depth = command.readInt(); //TODO use stepdepth for GDB commands
 
-                                System.out.println("Queueing MI command to select thread:"+threadId);
-                                MICommand cmd = gc.getCommandFactory().createMISelectThread((int)threadId);
+                                System.out.println("Queueing MI command to select thread:" + threadId);
+                                MICommand cmd = gc.getCommandFactory().createMISelectThread((int) threadId);
                                 int tokenID = JDWP.getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
 
@@ -116,7 +116,7 @@ public class JDWPEventRequest {
                                     return;
                                 }
 
-                                System.out.println("Queueing MI command to step by step size:"+size);
+                                System.out.println("Queueing MI command to step by step size:" + size);
                                 cmd = gc.getCommandFactory().createMIExecNext(size);
                                 tokenID = JDWP.getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
@@ -138,6 +138,23 @@ public class JDWPEventRequest {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                } else if (eventKind == JDWP.EventKind.CLASS_PREPARE) {
+
+                    byte suspendPolicy = command.readByte();
+                    int modifiersCount = command.readInt();
+                    for (int i = 0; i < modifiersCount; i++) {
+                        byte modKind = command.readByte();
+                        if (modKind == 4) {
+                            long refId = command.readObjectRef();
+                            System.out.println("In class prepare: " + refId);
+                        } else if (modKind == 5) {
+                            String regex = command.readString();
+                            System.out.println("In class prepare: " + regex);
+                        }
+
+                    }
+                    answer.writeInt(0);
+
                 } else {
                     answer.writeInt(0); // to allow jdwp.jdi GDBControl to initialize
                 }
