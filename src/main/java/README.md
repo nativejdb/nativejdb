@@ -10,13 +10,13 @@ https://sourceware.org/gdb/current/onlinedocs/gdb/GDB_002fMI.html#GDB_002fMI
 | | Version (1) | ✔️ |✔️| |
 | | ClassesBySignature (2) | ✔️|✔️ | |
 | | AllClasses (3) |✔️ |✔️ | |
-| | AllThreads (4) |✔️ | |✔️ |
+| | AllThreads (4) |✔️ | |✔️ -thread-info |
 | | TopLevelThreadGroups (5) |✔️ | ✔️| |
 | | Dispose (6) |✔️ | ✔️| |
 | | IDSizes (7) |✔️ | ✔️| |
-| | Suspend (8) |✔️ | |✔️ |
-| | Resume (9) |✔️ | |✔️ |
-| | Exit (10) |✔️ | |✔️ |
+| | Suspend (8) |✔️ | |✔️ -exec-interrupt|
+| | Resume (9) |✔️ | |✔️ -exec-continue|
+| | Exit (10) |✔️ | |✔️ -gdb-exit|
 | | CreateString (11) | ❌ 
 | | Capabilities (12) |✔️ | ✔️| |
 | | ClassPaths (13) |✔️ | ✔️| |
@@ -83,8 +83,8 @@ https://sourceware.org/gdb/current/onlinedocs/gdb/GDB_002fMI.html#GDB_002fMI
 | | Resume (3)| ❌ 
 | | Status (4)|✔️ | | SHOULD DO |
 | | ThreadGroup (5)|✔️ | ✔️| |
-| | Frames (6)|✔️ | |✔️ |
-| | FrameCount (7)|✔️ | |✔️ |
+| | Frames (6)|✔️ | |✔️ -stack-list-frames |
+| | FrameCount (7)|✔️ | |✔️ -stack-list-frames|
 | | OwnedMonitors (8)|✔️ | ✔️| |
 | | CurrentContendedMonitor (9)|✔️ | ✔️| |
 | | Stop (10)| ❌ 
