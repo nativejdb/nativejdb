@@ -33,8 +33,26 @@ public class Translator {
 			return translateSteppingRange(gc, (MISteppingRangeEvent) event);
 		} else if (event instanceof MIInferiorExitEvent) {
 			return translateExitEvent(gc, (MIInferiorExitEvent) event);
+		} else if (event instanceof ClassPrepareEvent) {
+			return translateClassPrepare(gc, (ClassPrepareEvent) event);
 		}
 		return null;
+	}
+
+	private static PacketStream translateClassPrepare(GDBControl gc, ClassPrepareEvent event) {
+		PacketStream packetStream = new PacketStream(gc);
+		byte eventKind = JDWP.EventKind.CLASS_PREPARE;
+
+		packetStream.writeByte(event.suspendPolicy);
+		packetStream.writeInt(1);
+		packetStream.writeByte(eventKind);
+		packetStream.writeInt(event.requestID);
+		packetStream.writeObjectRef((long) 1); //Need to fix this!!! threadId
+		packetStream.writeByte(event.referenceType.tag());
+		packetStream.writeObjectRef(event.referenceType.uniqueID());
+		packetStream.writeString(event.referenceType.signature());
+		packetStream.writeInt(JDWP.ClassStatus.PREPARED);
+		return packetStream;
 	}
 
 	private static PacketStream translateExitEvent(GDBControl gc, MIInferiorExitEvent event) {

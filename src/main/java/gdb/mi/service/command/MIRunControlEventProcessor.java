@@ -49,6 +49,7 @@ import gdb.mi.service.command.events.MISharedLibEvent;
 import gdb.mi.service.command.events.MIInferiorExitEvent;
 import gdb.mi.service.command.events.MIInferiorSignalExitEvent;
 import gdb.mi.service.command.events.MIStoppedEvent;
+import jdwp.ClassPrepareEvent;
 import jdwp.GDBControl;
 import jdwp.PacketStream;
 import jdwp.Translator;
@@ -91,6 +92,15 @@ public class MIRunControlEventProcessor implements Listener {
 	}
 
 	public void onEvent(Object output) {
+		if (output instanceof ClassPrepareEvent) {
+			ClassPrepareEvent event = (ClassPrepareEvent) output;
+			System.out.println("&&&&& " + event);
+			PacketStream packetStream = Translator.translate(fCommandControl, event);
+			if (packetStream != null) {
+				packetStream.send();
+			}
+			return;
+		}
 		for (MIOOBRecord oobr : ((MIOutput) output).getMIOOBRecords()) {
 			List<MIEvent> events = new LinkedList<>();
 			if (oobr instanceof MIExecAsyncOutput) {

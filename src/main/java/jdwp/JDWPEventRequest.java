@@ -1,5 +1,8 @@
 package jdwp;
 
+import gdb.mi.service.command.events.MIEvent;
+import gdb.mi.service.command.Listener;
+import gdb.mi.service.command.MIRunControlEventProcessor;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIBreakInsertInfo;
 import gdb.mi.service.command.output.MIInfo;
@@ -7,9 +10,14 @@ import gdb.mi.service.command.output.MIResultRecord;
 import jdwp.jdi.LocationImpl;
 import jdwp.jdi.ReferenceTypeImpl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class JDWPEventRequest {
+
+    public static List<MIEvent> asyncEvents = new ArrayList<>();
+
     static class EventRequest {
         static final int COMMAND_SET = 15;
         private EventRequest() {}  // hide constructor
@@ -139,19 +147,23 @@ public class JDWPEventRequest {
                         e.printStackTrace();
                     }
                 } else if (eventKind == JDWP.EventKind.CLASS_PREPARE) {
-
                     byte suspendPolicy = command.readByte();
                     int modifiersCount = command.readInt();
                     for (int i = 0; i < modifiersCount; i++) {
                         byte modKind = command.readByte();
-                        if (modKind == 4) {
-                            long refId = command.readObjectRef();
-                            System.out.println("In class prepare: " + refId);
-                        } else if (modKind == 5) {
+                        if (modKind == 5) {
                             String regex = command.readString();
                             System.out.println("In class prepare: " + regex);
-                        }
+                            int requestId = command.pkt.id;
+                            answer.writeInt(command.pkt.id);
 
+                            // The IDE is also expecting an async answer for this Class Prepare request.
+                            ReferenceTypeImpl refType = ReferenceTypeImpl.refTypeByName.get(regex);
+                            if (refType != null) {
+                                MIEvent event = new ClassPrepareEvent(0, null, requestId, suspendPolicy, refType);
+                                asyncEvents.add(event);
+                            }
+                        }
                     }
                     answer.writeInt(0);
 

@@ -25,6 +25,8 @@
 
 package jdwp;
 
+import gdb.mi.service.command.events.MIEvent;
+
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.connect.spi.Connection;
 import gdb.mi.service.command.Listener;
@@ -119,6 +121,10 @@ public class JDWPProxy {
                     }
                 }
                 packetStream.send();
+                for (MIEvent event: JDWPEventRequest.asyncEvents) {
+                    asyncListener.onEvent(event);
+                }
+                JDWPEventRequest.asyncEvents.clear();
             }
         } catch (VMDisconnectedException ignored) {
         } finally {

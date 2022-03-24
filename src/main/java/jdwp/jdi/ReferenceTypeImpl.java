@@ -68,9 +68,12 @@ public abstract class ReferenceTypeImpl extends TypeImpl {
     /* to mark when no info available */
     static final SDE NO_SDE_INFO_MARK = new SDE();
 
+    public static Map<String, ReferenceTypeImpl> refTypeByName = new HashMap<>();
+
     protected ReferenceTypeImpl(VirtualMachineImpl aVm, Klass klass) {
         vm = aVm;
         saKlass = klass;
+        refTypeByName.put(this.name(), this);
     }
 
     public abstract byte tag();
