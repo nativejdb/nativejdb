@@ -49,6 +49,7 @@ public class JDWP {
 
     static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing
 
+    static Map<Integer, MIFrame> framesById = new HashMap<>();
     /**
      * A global counter for all command, the token will be use to identify uniquely a command.
      * Unless the value wraps around which is unlikely.
