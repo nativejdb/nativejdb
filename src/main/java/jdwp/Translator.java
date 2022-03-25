@@ -26,6 +26,19 @@ import java.util.Set;
 
 public class Translator {
 
+	public static PacketStream getVMStartedPacket(GDBControl gc) {
+		PacketStream packetStream = new PacketStream(gc);
+		byte suspendPolicy = JDWP.SuspendPolicy.ALL;
+		byte eventKind = JDWP.EventKind.VM_START;
+		packetStream.writeByte(suspendPolicy);
+		packetStream.writeInt(1);
+		packetStream.writeByte(eventKind);
+		packetStream.writeInt(0); // requestId is 0 since it's automatically generated
+		packetStream.writeInt(1); // Todo ThreadId -- change this!!!!
+		return packetStream;
+	}
+
+
 	public static PacketStream translate(GDBControl gc, MIEvent event) {
 		if (event instanceof MIBreakpointHitEvent) {
 			return translateBreakpointHit(gc, (MIBreakpointHitEvent) event);
@@ -51,7 +64,7 @@ public class Translator {
 		packetStream.writeByte(event.referenceType.tag());
 		packetStream.writeObjectRef(event.referenceType.uniqueID());
 		packetStream.writeString(event.referenceType.signature());
-		packetStream.writeInt(JDWP.ClassStatus.PREPARED);
+		packetStream.writeInt(7);
 		return packetStream;
 	}
 
@@ -189,6 +202,8 @@ public class Translator {
 		}
 		return null;
 	}
+
+
 }
 
 
