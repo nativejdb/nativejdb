@@ -74,6 +74,9 @@ public abstract class ReferenceTypeImpl extends TypeImpl {
         vm = aVm;
         saKlass = klass;
         refTypeByName.put(this.name(), this);
+        /*for (ReferenceTypeImpl nested: this.nestedTypes()) {
+            refTypeByName.put(nested.name(), nested);
+        }*/
     }
 
     public abstract byte tag();
@@ -369,6 +372,9 @@ public abstract class ReferenceTypeImpl extends TypeImpl {
             }
             nestedTypes = Collections.unmodifiableList(nestedTypes);
             nestedTypesCache = new SoftReference<List<ReferenceTypeImpl>>(nestedTypes);
+        }
+        for (ReferenceTypeImpl nested: nestedTypes) {
+            refTypeByName.put(nested.name(), nested);
         }
         return nestedTypes;
     }

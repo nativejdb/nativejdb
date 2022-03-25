@@ -77,11 +77,11 @@ https://sourceware.org/gdb/current/onlinedocs/gdb/GDB_002fMI.html#GDB_002fMI
 | | ReferringObjects (10)|✔️ | ✔️| |
 | StringReference (10)
 | | Value (1)|✔️ | ✔️| |
-| ThreadReference (11)
-| | Name (1)|✔️ | ✔️| |
-| | Suspend (2)| ❌ 
-| | Resume (3)| ❌ 
-| | Status (4)|✔️ | | SHOULD DO |
+| ThreadReference (11) *MAIN THREAD HACK
+| | Name (1)|✔️ | ✔️| *MAIN THREAD HACK |
+| | Suspend (2)| ❌ |  | *SHOULD DO? |
+| | Resume (3)| ❌ |  | *SHOULD DO? |
+| | Status (4)|✔️ | | *SHOULD DO? |
 | | ThreadGroup (5)|✔️ | ✔️| |
 | | Frames (6)|✔️ | |✔️ -stack-list-frames |
 | | FrameCount (7)|✔️ | |✔️ -stack-list-frames|
@@ -104,37 +104,36 @@ https://sourceware.org/gdb/current/onlinedocs/gdb/GDB_002fMI.html#GDB_002fMI
 | | VisibleClasses (1)|✔️ | ✔️| |
 | EventRequest (15)
 | | Set (1)
-| | SINGLE_STEP	1	 |✔️ | |✔️ |
-| | BREAKPOINT	2	  |✔️ | |✔️ |
-| | FRAME_POP	3	 
-| | EXCEPTION	4	 
-| | USER_DEFINED	5	 
-| | THREAD_START	6	 
-| | THREAD_DEATH	7	 
-| | THREAD_END	7	obsolete - was used in jvmdi  
-| | CLASS_PREPARE	8	  |✔️ | |✔️ |
-| | CLASS_UNLOAD	9	 
-| | CLASS_LOAD	10	 
-| | FIELD_ACCESS	20	 
-| | FIELD_MODIFICATION	21	 
-| | EXCEPTION_CATCH	30	 
-| | METHOD_ENTRY	40	 
-| | METHOD_EXIT	41	 
-| | METHOD_EXIT_WITH_RETURN_VALUE	42	 
-| | MONITOR_CONTENDED_ENTER	43	 
-| | MONITOR_CONTENDED_ENTERED	44	 
-| | MONITOR_WAIT	45	 
-| | MONITOR_WAITED	46	 
-| | VM_START	90	 
-| | VM_DEATH	99	 
-| | VM_DISCONNECTED
+| | SINGLE_STEP	1	 |✔️ | |✔️ -exec-next |
+| | BREAKPOINT	2	  |✔️ | |✔️ -break-insert|
+| | FRAME_POP	3	  | ❌
+| | EXCEPTION	4	 | ❌
+| | USER_DEFINED	5	 | ❌
+| | THREAD_START	6	 | ❌
+| | THREAD_DEATH	7	 | ❌
+| | CLASS_PREPARE	8	  |✔️ | |✔️ *generates async event |
+| | CLASS_UNLOAD	9	 | ❌
+| | CLASS_LOAD	10	  | ❌
+| | FIELD_ACCESS	20	 | ❌
+| | FIELD_MODIFICATION	21	 | ❌
+| | EXCEPTION_CATCH	30	 | ❌
+| | METHOD_ENTRY	40	 | ❌
+| | METHOD_EXIT	41	 | ❌
+| | METHOD_EXIT_WITH_RETURN_VALUE	42	 | ❌
+| | MONITOR_CONTENDED_ENTER	43	 | ❌
+| | MONITOR_CONTENDED_ENTERED	44	 | ❌
+| | MONITOR_WAIT	45	 | ❌
+| | MONITOR_WAITED	46	 | ❌
+| | VM_START	90	 | ❌
+| | VM_DEATH	99	 | ❌
+| | VM_DISCONNECTED| ❌
 | | Clear (2)
-| | BREAKPOINT	2	  |✔️ | |✔️ |
-| | ClearAllBreakpoints (3)
+| | BREAKPOINT	2	  |✔️ | |✔️ -break-delete|
+| | ClearAllBreakpoints (3)  |✔️ | |✔️ |
 | StackFrame (16)
-| | GetValues (1) |✔️ | | WIP |
-| | SetValues (2) |✔️ | | WIP |
-| | ThisObject (3) |✔️ | | WIP |
+| | GetValues (1) |✔️ | | *WIP -stack-list-variables |
+| | SetValues (2) |✔️ | | *WIP |
+| | ThisObject (3) |✔️ | | *WIP |
 | | PopFrames (4) | ❌ 
 | ClassObjectReference (17)
 | | ReflectedType (1)|✔️ | ✔️| |
@@ -143,21 +142,21 @@ https://sourceware.org/gdb/current/onlinedocs/gdb/GDB_002fMI.html#GDB_002fMI
 | | ClassLoader (2)| ❌ 
 | Event (64)
 | | Composite (100)
-| | VMStart |✔️ | | WIP |
+| | VMStart |✔️ | | ✔️|
 | | SingleStep |✔️ | | ✔️|
 | | Breakpoint |✔️ | | ✔️|
-| | MethodEntry
-| | MethodExit
-| | MethodExitWithReturnValue
-| | MonitorContendedEnter
-| | MonitorContendedEntered
-| | MonitorWait
-| | MonitorWaited
-| | Exception
-| | ThreadStart
-| | ThreadDeath
-| | ClassPrepare |✔️ | | WIP |
-| | ClassUnload
-| | FieldAccess
-| | FieldModification
-| | VMDeath |✔️ | | ✔️|
+| | MethodEntry | ❌
+| | MethodExit | ❌
+| | MethodExitWithReturnValue | ❌
+| | MonitorContendedEnter | ❌
+| | MonitorContendedEntered | ❌
+| | MonitorWait | ❌
+| | MonitorWaited | ❌
+| | Exception | ❌ |  | *SHOULD DO? |
+| | ThreadStart | ❌
+| | ThreadDeath | ❌
+| | ClassPrepare |✔️ | | ✔️|class
+| | ClassUnload | ❌
+| | FieldAccess | ❌
+| | FieldModification | ❌
+| | VMDeath |✔️ | | ✔️ -gdb-exit|
