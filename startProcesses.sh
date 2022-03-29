@@ -11,8 +11,8 @@ do
     esac
 done
 
-java -cp apps $CLASS_NAME &
-PROCESS_ID=$(pgrep -nf "java -cp apps $CLASS_NAME")
+java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
+PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
 
 IMAGE_NAME=debugeeImg
 NATIVE_EXEC=$PWD'/apps/'$IMAGE_NAME
