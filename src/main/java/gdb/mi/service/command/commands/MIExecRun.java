@@ -35,6 +35,6 @@ public class MIExecRun extends MICommand<MIInfo> {
 	}
 
 	public MIExecRun(String[] args) {
-		super("-exec-run", args); //$NON-NLS-1$
+		super("run", args); //$NON-NLS-1$
 	}
 }
