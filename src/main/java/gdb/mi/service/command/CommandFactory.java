@@ -159,7 +159,8 @@ public class CommandFactory {
 	}
 
 	public MICommand<MIInfo> createMIExecRun() {
-		return new MIExecRun();
+		String[] args = {">", "/jdwp/apps/output.txt"};
+		return new MIExecRun(args);
 	}
 
 	public MICommand<MIInfo> createMIExecRun(String[] args) {
