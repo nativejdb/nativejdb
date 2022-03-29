@@ -139,7 +139,7 @@ public class Translator {
 	private static  boolean isPrimitive(String type) {
 		if (type.equals("byte") || type.equals("short") || type.equals("int") ||
 			type.equals("long") || type.equals("float") || type.equals("double")
-			|| type.equals("boolean") || type.equals("char")) {
+			|| type.equals("boolean") || type.equals("char") || type.equals("void")) {
 			return true;
 		}
 		return false;
@@ -165,7 +165,9 @@ public class Translator {
 				param = param.substring(0, param.indexOf("["));
 				param = "[" + param + ";";
 			}
-			newParams.add(param);
+			if (!param.equals("void")) {
+				newParams.add(param);
+			}
 		}
 		String newParamList = "";
 		for (int i = 0; i < newParams.size(); i++) {
