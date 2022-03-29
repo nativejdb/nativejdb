@@ -149,7 +149,7 @@ public class Translator {
 		if (func.indexOf("(") == -1) { // Function does not contain parameter types
 			return func;
 		}
-		String start = func.substring(0, func.indexOf("("));
+		String start = func.substring(0, func.indexOf("(")).replace(".", "/");
 		String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
 		String[] params = paramList.split(", ");
 		ArrayList<String> newParams = new ArrayList<>();
