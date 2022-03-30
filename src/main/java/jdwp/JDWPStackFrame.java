@@ -59,10 +59,10 @@ public class JDWPStackFrame {
                     tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
 
-                    MiSymbolInfoVariablesInfo replyloc1 = (MiSymbolInfoVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    /*MiSymbolInfoVariablesInfo replyloc1 = (MiSymbolInfoVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
                     if (replyloc1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                         answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                    }
+                    }*/
 
                     MIArg[] vals = replyloc.getVariables();
                     for (int j = 0; j < vals.length; j++) {
@@ -71,7 +71,7 @@ public class JDWPStackFrame {
                         answer.writeString(value);
                     }
 
-                    MIFrame frame = JDWP.framesById.get(frameId);
+                   /* MIFrame frame = JDWP.framesById.get(frameId);
                     MiSymbolInfoVariablesInfo.SymbolVariableInfo[] files = replyloc1.getSymbolVariables();
                     for ( MiSymbolInfoVariablesInfo.SymbolVariableInfo file: files) {
                         if (file.getFilename() == frame.getFile()) {
@@ -82,7 +82,7 @@ public class JDWPStackFrame {
                                 System.out.println(name);
                             }
                         }
-                    }
+                    }*/
                 }
 
                 /*ThreadReferenceImpl thread = command.readThreadReference();
