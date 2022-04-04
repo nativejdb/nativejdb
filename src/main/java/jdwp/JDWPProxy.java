@@ -25,6 +25,8 @@
 
 package jdwp;
 
+import gdb.mi.service.command.events.MIEvent;
+
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.connect.spi.Connection;
 import gdb.mi.service.command.Listener;
@@ -33,8 +35,7 @@ import gdb.mi.service.command.MIRunControlEventProcessor;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author egor
@@ -44,7 +45,26 @@ public class JDWPProxy {
 
     static {
         try {
-            Class<?>[] declaredClasses = JDWP.class.getDeclaredClasses();
+            List<Class> declaredClasses = new ArrayList<>();
+            declaredClasses.addAll(Arrays.asList(JDWPArrayReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPArrayType.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPClassLoaderReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPClassObjectReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPClassType.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPEvent.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPEventRequest.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPField.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPInterfaceType.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPMethod.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPModuleReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPObjectReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPReferenceType.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPStackFrame.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPStringReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPThreadGroupReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPThreadReference.class.getDeclaredClasses()));
+            declaredClasses.addAll(Arrays.asList(JDWPVirtualMachine.class.getDeclaredClasses()));
+
             for (Class<?> declaredClass : declaredClasses) {
                 try {
                     int setId = (Integer) declaredClass.getDeclaredField("COMMAND_SET").get(null);
@@ -71,6 +91,9 @@ public class JDWPProxy {
         GDBControl gdbControl = new GDBControl(connection, vm);
         Listener asyncListener = new MIRunControlEventProcessor(gdbControl);
 
+        // Declare that the VM has started
+        PacketStream VMStartedPkt = Translator.getVMStartedPacket(gdbControl);
+        VMStartedPkt.send();
 
         try {
             gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, gdbControl.gdbError);
@@ -102,6 +125,10 @@ public class JDWPProxy {
                     }
                 }
                 packetStream.send();
+                for (MIEvent event: JDWPEventRequest.asyncEvents) {
+                    asyncListener.onEvent(event);
+                }
+                JDWPEventRequest.asyncEvents.clear();
             }
         } catch (VMDisconnectedException ignored) {
         } finally {

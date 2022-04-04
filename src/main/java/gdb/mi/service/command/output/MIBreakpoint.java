@@ -632,7 +632,35 @@ public class MIBreakpoint {
 				}
 			} else if (var.equals("original-location")) { //$NON-NLS-1$
 				originalLocation = str;
+			} else if (var.equals("locations")) {
+				if (value instanceof MIList) {
+					parseLocations((MIList) value);
+				}
 			}
+		}
+	}
+
+	void parseLocations(MIList list) {
+		MIValue[] values = list.values;
+		for (MIValue value: values) {
+			MITuple tuple = (MITuple) value;
+			MIResult[] results = tuple.getMIResults();
+			for (MIResult result: results) {
+				if (result.getVariable().equals("line")) {
+					MIValue lineVal = result.getMIValue();
+					if (lineVal != null && lineVal instanceof MIConst) {
+						String str = ((MIConst) lineVal).getCString();
+						try {
+							line = Integer.parseInt(str.trim());
+							break;
+						} catch (NumberFormatException e) {
+						}
+					}
+
+				}
+			}
+			if (line != -1) break;
+
 		}
 	}
 

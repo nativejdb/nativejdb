@@ -46,10 +46,7 @@
 package gdb.mi.service.command;
 
 import gdb.mi.service.command.commands.*;
-import gdb.mi.service.command.output.MIBreakInsertInfo;
-import gdb.mi.service.command.output.MIBreakListInfo;
-import gdb.mi.service.command.output.MIGDBVersionInfo;
-import gdb.mi.service.command.output.MIInfo;
+import gdb.mi.service.command.output.*;
 
 /**
  * Factory to create MI/CLI commands for NativeJDB POC. More to be added as use cases increase
@@ -162,7 +159,8 @@ public class CommandFactory {
 	}
 
 	public MICommand<MIInfo> createMIExecRun() {
-		return new MIExecRun();
+		String[] args = {">", "/jdwp/apps/output.txt"};
+		return new MIExecRun(args);
 	}
 
 	public MICommand<MIInfo> createMIExecRun(String[] args) {
@@ -193,4 +191,125 @@ public class CommandFactory {
 		return new MIGDBVersion();
 	}
 
+	public MICommand<MIThreadInfoInfo> createMIThreadInfo() { return new MIThreadInfo(); }
+
+	public MICommand<MIInfo> createMISelectThread(int threadNum) { return new MIThreadSelect(threadNum); }
+
+	public MICommand<MIStackInfoDepthInfo> createMIStackInfoDepth(String threadId) { return new MIStackInfoDepth(threadId); }
+
+	public MICommand<MIStackListArgumentsInfo> createMIStackListArguments(boolean showValues) {
+		return new MIStackListArguments(showValues);
+	}
+
+	public MICommand<MIStackListArgumentsInfo> createMIStackListArguments(boolean showValues, int low, int high) {
+		return new MIStackListArguments(showValues, low, high);
+	}
+
+	public MICommand<MIStackListFramesInfo> createMIStackListFrames(String threadId) { return new MIStackListFrames(threadId); }
+
+	public MICommand<MIStackListVariablesInfo> createMIStackListVariables(boolean printValues) {
+		return new MIStackListVariables(printValues);
+	}
+
+	public MICommand<MIStackListVariablesInfo> createMIStackListVariables(boolean printValues, String threadId, String frameId) {
+		return new MIStackListVariables(printValues, threadId, frameId);
+	}
+
+	public MICommand<MIInfo> createMIStackSelectFrame(int frameNum) {
+		return new MIStackSelectFrame(frameNum);
+	}
+
+	public MICommand<MIListThreadGroupsInfo> createMIMIListThreadGroups() { return new MIListThreadGroups(); }
+
+	public MICommand<MiSourceFilesInfo> createMiFileListExecSourceFiles() {
+		return new MIFileListExecSourceFiles();
+	}
+
+	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions() {
+		return new MISymbolInfoFunctions();
+	}
+
+	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions(String typeRegExp, String nameRegExp, int maxResults, boolean includeNonDebug) {
+		return new MISymbolInfoFunctions(typeRegExp, nameRegExp, maxResults, includeNonDebug);
+	}
+
+	public MICommand<MiSymbolInfoVariablesInfo> createMiSymbolInfoVariables() {
+		return new MISymbolInfoVariables();
+	}
+
+	public MICommand<MiSymbolInfoVariablesInfo> createMiSymbolInfoVariables(String typeRegExp, String nameRegExp, int maxResults, boolean includeNonDebug) {
+		return new MISymbolInfoVariables(typeRegExp, nameRegExp, maxResults, includeNonDebug);
+	}
+
+	public MICommand<MIVarAssignInfo> createMIVarAssign(String name, String expression) {
+		return new MIVarAssign(name, expression);
+	}
+
+	public MICommand<MIVarCreateInfo> createMIVarCreate(String expression) {
+		return new MIVarCreate(expression);
+	}
+
+	public MICommand<MIVarCreateInfo> createMIVarCreate(String name, String expression) {
+		return new MIVarCreate(name, expression);
+	}
+
+	public MICommand<MIVarCreateInfo> createMIVarCreate(String name, String frameAddr,
+													   String expression) {
+		return new MIVarCreate(name, frameAddr, expression);
+	}
+
+	public MICommand<MIVarDeleteInfo> createMIVarDelete(String name) {
+		return new MIVarDelete(name);
+	}
+
+	public MICommand<MIVarEvaluateExpressionInfo> createMIVarEvaluateExpression(String name) {
+		return new MIVarEvaluateExpression(name);
+	}
+
+	public MICommand<MIVarInfoExpressionInfo> createMIVarInfoExpression(String name) {
+		return new MIVarInfoExpression(name);
+	}
+
+	public MICommand<MIVarInfoNumChildrenInfo> createMIVarInfoNumChildren(String name) {
+		return new MIVarInfoNumChildren(name);
+	}
+
+	public MICommand<MIVarInfoPathExpressionInfo> createMIVarInfoPathExpression( String name) {
+		return new MIVarInfoPathExpression(name);
+	}
+
+	public MICommand<MIVarInfoTypeInfo> createMIVarInfoType(String name) {
+		return new MIVarInfoType(name);
+	}
+
+	public MICommand<MIVarListChildrenInfo> createMIVarListChildren(String name) {
+		return new MIVarListChildren(name);
+	}
+
+	/** @since 4.0 */
+	public MICommand<MIVarListChildrenInfo> createMIVarListChildren(String name, int from,
+																   int to) {
+		return new MIVarListChildren(name, from, to);
+	}
+
+	public MICommand<MIVarSetFormatInfo> createMIVarSetFormat(String name, String fmt) {
+		return new MIVarSetFormat(name, fmt);
+	}
+
+	/** @since 4.0 */
+	public MICommand<MIInfo> createMIVarSetUpdateRange(String name, int from, int to) {
+		return new MIVarSetUpdateRange(name, from, to);
+	}
+
+	public MICommand<MIVarShowAttributesInfo> createMIVarShowAttributes(String name) {
+		return new MIVarShowAttributes(name);
+	}
+
+	public MICommand<MIVarShowFormatInfo> createMIVarShowFormat(String name) {
+		return new MIVarShowFormat(name);
+	}
+
+	public MICommand<MIVarUpdateInfo> createMIVarUpdate(String name) {
+		return new MIVarUpdate(name);
+	}
 }

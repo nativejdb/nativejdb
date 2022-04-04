@@ -68,9 +68,15 @@ public abstract class ReferenceTypeImpl extends TypeImpl {
     /* to mark when no info available */
     static final SDE NO_SDE_INFO_MARK = new SDE();
 
+    public static Map<String, ReferenceTypeImpl> refTypeByName = new HashMap<>();
+
     protected ReferenceTypeImpl(VirtualMachineImpl aVm, Klass klass) {
         vm = aVm;
         saKlass = klass;
+        refTypeByName.put(this.name(), this);
+        /*for (ReferenceTypeImpl nested: this.nestedTypes()) {
+            refTypeByName.put(nested.name(), nested);
+        }*/
     }
 
     public abstract byte tag();
@@ -366,6 +372,9 @@ public abstract class ReferenceTypeImpl extends TypeImpl {
             }
             nestedTypes = Collections.unmodifiableList(nestedTypes);
             nestedTypesCache = new SoftReference<List<ReferenceTypeImpl>>(nestedTypes);
+        }
+        for (ReferenceTypeImpl nested: nestedTypes) {
+            refTypeByName.put(nested.name(), nested);
         }
         return nestedTypes;
     }

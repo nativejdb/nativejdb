@@ -51,9 +51,9 @@ public class ConcreteMethodImpl extends MethodImpl {
     /*
      * A subset of the line number info that is softly cached
      */
-    static private class SoftLocationXRefs {
+    static public class SoftLocationXRefs {
         final String stratumID;   // The stratum of this information
-        final Map<Integer, List<LocationImpl>> lineMapper;     // Maps line number to location(s)
+        public final Map<Integer, List<LocationImpl>> lineMapper;     // Maps line number to location(s)
         final List<LocationImpl> lineLocations; // List of locations ordered by code index
 
         /*
@@ -154,7 +154,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         return info;
     }
 
-    private SoftLocationXRefs getBaseLocations() {
+    public SoftLocationXRefs getBaseLocations() {
         SoftLocationXRefs info = (softBaseLocationXRefsRef == null) ? null : softBaseLocationXRefsRef.get();
         if (info != null) {
             return info;
