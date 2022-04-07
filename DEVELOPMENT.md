@@ -12,7 +12,20 @@ You must install these tools:
 2. [`IntelliJ`](https://www.jetbrains.com/idea/download/): For debugging native exec via an IDE
 3. [`Docker Desktop`](https://www.docker.com/products/docker-desktop): For running NativeJDB in a container
 
-### Checkout your NativeJDB fork
+In addition, you must also setup another repository that contains example applications to run via this NativeJDB server:
+
+4. [`nativejdbExamples`](https://github.com/nativejdb/nativejdbExamples): Follow instructions in its [`README`](https://github.com/nativejdb/nativejdbExamples#readme) to generate a native image executable before proceeding
+
+### (User mode) Checkout NativeJDB without a fork (IF NOT CLONED ALREADY),
+
+1. Clone it to your machine:
+
+```shell
+git clone git@github.com:nativejdb/nativejdb.git
+cd nativejdb
+```
+
+### (Dev mode) Or Checkout your NativeJDB fork (IF NOT CLONED ALREADY)
 
 To check out this repository:
 
@@ -20,9 +33,9 @@ To check out this repository:
 2. Clone it to your machine:
 
 ```shell
-git clone git@github.com:${YOUR_GITHUB_USERNAME}/NativeJDB.git
-cd NativeJDB
-git remote add upstream https://github.com/nativejdb/NativeJDB.git
+git clone git@github.com:${YOUR_GITHUB_USERNAME}/nativejdb.git
+cd nativejdb
+git remote add upstream https://github.com/nativejdb/nativejdb.git
 git remote set-url --push upstream no_push
 ```
 
@@ -51,18 +64,6 @@ To generate a native executable within the Linux environment in the Docker conta
 #### 2. Run Docker container to start NativeJDB server to debug native executable (debuggee):
 
 - Start Docker Desktop
-  
-- (Optional) Run the following command via a terminal to generate native image executable and debug sources for your application (generation takes a few mins):
-
-For existing example application (Hello), run this:
-```
-make nativeimage
-```
-
-For any other application, pass the class name as input arg to make target:
-```
-make nativeimage CLASSNAME=****
-```
 
 - Run the following command via a terminal to deploy docker container running NativeJDB server to start debugging:
 
@@ -80,6 +81,12 @@ make nativejdb CLASSNAME=****
 
 ```
 make exec
+```
+
+- Run the following command via a terminal to stop and remove existing docker container:
+
+```
+make stop
 ```
 
 ### Connect IntelliJ Debugger to running Docker container:

@@ -20,7 +20,6 @@ Follow steps in [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 Follow steps in [DEVELOPMENT.md](./DEVELOPMENT.md).
 
-Set `DEBUGEE_ARG` input argument for Dockerfile with name of directory containing the native executable and all the debug source files. Native executable file must be named `debugeeImg`.
 More instructions on this coming soon.
 
 ## Contributing
