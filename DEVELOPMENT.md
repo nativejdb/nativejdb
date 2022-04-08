@@ -45,6 +45,7 @@ _Adding the `upstream` remote sets you up nicely for regularly
 ### Compiling your NativeJDB code
 
 To build the NativeJDB, run:
+
 ```
 make compile
 ```
@@ -89,13 +90,9 @@ make exec
 make stop
 ```
 
-### Connect IntelliJ Debugger to running Docker container:
+### (Dev mode) Connect IntelliJ Debugger to running Docker container:
 
-On IntelliJ: Run ---> Remote JVM Debug --> [Hello](./.run/Hello.run.xml)
-
-To debug NativeJDB code itself: Run ---> Remote JVM Debug --> [JDWPDebug](./.run/JDWPDebug.run.xml)
-
-
+To debug NativeJDB debugger code itself: Run ---> Remote JVM Debug --> [JDWPDebug](./.run/JDWPDebug.run.xml)
 
 ## Contributing
 
