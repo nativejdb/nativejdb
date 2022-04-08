@@ -6,6 +6,9 @@ import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ReferenceTypeImpl;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,31 +35,63 @@ public class JDWPMethod {
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
+                if (!JDWPProxy.DUMP_VM_DATA) {
+                    long typeRef = command.readObjectRef();
+                    long methodRef = command.readObjectRef();
+                    ReferenceType refType = ReferenceType.refsById.get(typeRef);
+                    jdwp.LineTable table = refType.methods.get(methodRef).lineTable();
+                    answer.writeLong(table.start());
+                    answer.writeLong(table.end());
+                    answer.writeInt(table.size());
 
-                if (method.isNative()) {
-                    answer.pkt.errorCode = JDWP.Error.NATIVE_METHOD;
-                    return;
-                }
+                    for (Long codeIndex : table.lines().keySet()) {
+                        int lineNum = table.lines().get(codeIndex);
+                        answer.writeLong(codeIndex);
+                        answer.writeInt(lineNum);
+                    }
+                } else {
+                    try {
+                        BufferedWriter writer = new BufferedWriter(new FileWriter("/jdwp/apps/linetables.txt", true));
+                        ReferenceTypeImpl referenceType = command.readReferenceType();
+                        writer.write(String.format("%d\n", referenceType.uniqueID()));
+                        MethodImpl method = referenceType.methodById(command.readMethodRef());
+                        writer.write(String.format("%d\n", method.uniqueID()));
+                        if (method.isNative()) {
+                            answer.pkt.errorCode = JDWP.Error.NATIVE_METHOD;
+                            return;
+                        }
 
-                List<LocationImpl> locations = Collections.emptyList();
-                try {
-                    locations = method.allLineLocations();
-                } catch (AbsentInformationException ignored) {
-                }
-                sun.jvm.hotspot.oops.Method ref = method.ref();
-                long start = 0;
-                long end = ref.getCodeSize();
-                if (end == 0) {
-                    start = -1;
-                }
-                answer.writeLong(start);
-                answer.writeLong(end);
-                answer.writeInt(locations.size());
-                for (LocationImpl location : locations) {
-                    answer.writeLong(location.codeIndex());
-                    answer.writeInt(location.lineNumber());
+                        List<LocationImpl> locations = Collections.emptyList();
+                        try {
+                            locations = method.allLineLocations();
+                        } catch (AbsentInformationException ignored) {
+                        }
+                        sun.jvm.hotspot.oops.Method ref = method.ref();
+                        long start = 0;
+                        long end = ref.getCodeSize();
+                        if (end == 0) {
+                            start = -1;
+                        }
+                        answer.writeLong(start);
+                        answer.writeLong(end);
+                        answer.writeInt(locations.size());
+
+                        writer.write(String.format("%d\n", start));
+                        writer.write(String.format("%d\n", end));
+                        writer.write(String.format("%d\n", locations.size()));
+
+                        for (LocationImpl location : locations) {
+                            answer.writeLong(location.codeIndex());
+                            writer.write(String.format("%d - ", location.codeIndex()));
+                            answer.writeInt(location.lineNumber());
+                            writer.write(String.format("%d\n", location.lineNumber()));
+                        }
+                        writer.write("\n");
+                        writer.flush();
+                        writer.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -85,19 +120,20 @@ public class JDWPMethod {
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                try {
-                    List<LocalVariableImpl> variables = method.variables();
-                    answer.writeInt(method.argSlotCount());
-                    answer.writeInt(variables.size());
-                    for (LocalVariableImpl variable : variables) {
-                        SlotInfo.write(variable, gc, answer);
-                    }
-
-                } catch (AbsentInformationException e) {
-                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
-                }
+                JDWP.notImplemented(answer);
+//                ReferenceTypeImpl referenceType = command.readReferenceType();
+//                MethodImpl method = referenceType.methodById(command.readMethodRef());
+//                try {
+//                    List<LocalVariableImpl> variables = method.variables();
+//                    answer.writeInt(method.argSlotCount());
+//                    answer.writeInt(variables.size());
+//                    for (LocalVariableImpl variable : variables) {
+//                        SlotInfo.write(variable, gc, answer);
+//                    }
+//
+//                } catch (AbsentInformationException e) {
+//                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
+//                }
             }
         }
 
@@ -111,11 +147,12 @@ public class JDWPMethod {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                byte[] bytecodes = method.bytecodes();
-                answer.writeInt(bytecodes.length);
-                answer.writeByteArray(bytecodes);
+                JDWP.notImplemented(answer);
+//                ReferenceTypeImpl referenceType = command.readReferenceType();
+//                MethodImpl method = referenceType.methodById(command.readMethodRef());
+//                byte[] bytecodes = method.bytecodes();
+//                answer.writeInt(bytecodes.length);
+//                answer.writeByteArray(bytecodes);
             }
         }
 
@@ -131,9 +168,10 @@ public class JDWPMethod {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                answer.writeBoolean(method.isObsolete());
+                JDWP.notImplemented(answer);
+//                ReferenceTypeImpl referenceType = command.readReferenceType();
+//                MethodImpl method = referenceType.methodById(command.readMethodRef());
+//                answer.writeBoolean(method.isObsolete());
             }
         }
 
@@ -168,19 +206,20 @@ public class JDWPMethod {
 
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                try {
-                    List<LocalVariableImpl> variables = method.variables();
-                    answer.writeInt(method.argSlotCount());
-                    answer.writeInt(variables.size());
-                    for (LocalVariableImpl variable : variables) {
-                        SlotInfo.write(variable, gc, answer);
-                    }
-
-                } catch (AbsentInformationException e) {
-                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
-                }
+                JDWP.notImplemented(answer);
+//                ReferenceTypeImpl referenceType = command.readReferenceType();
+//                MethodImpl method = referenceType.methodById(command.readMethodRef());
+//                try {
+//                    List<LocalVariableImpl> variables = method.variables();
+//                    answer.writeInt(method.argSlotCount());
+//                    answer.writeInt(variables.size());
+//                    for (LocalVariableImpl variable : variables) {
+//                        SlotInfo.write(variable, gc, answer);
+//                    }
+//
+//                } catch (AbsentInformationException e) {
+//                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
+//                }
             }
         }
     }

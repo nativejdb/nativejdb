@@ -51,11 +51,11 @@ public class JDWPEventRequest {
                             byte modKind = command.readByte();
                             if (modKind == 7) {
                                 byte typeTag = command.readByte();
-                                ReferenceTypeImpl refType = command.readReferenceType();
+                                jdwp.ReferenceType refType = command.readReference();
                                 long methodId = command.readMethodRef();
                                 long index = command.readLong();
-                                LocationImpl loc = new LocationImpl(refType.methodById(methodId), index);
-                                String location = refType.baseSourceName() + ":" + loc.lineNumber();
+                                Location loc = new Location(refType.tag(), refType.uniqueId(), methodId, index);
+                                String location = refType.source() + ":" + loc.getLine(index);
 
                                 System.out.println("Queueing MI command to insert breakpoint at "+location);
                                 MICommand cmd = gc.getCommandFactory().createMIBreakInsert(false, false, "", 0, location, "0", false, false);

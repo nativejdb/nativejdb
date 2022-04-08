@@ -89,7 +89,7 @@ public class Translator {
 		byte suspendPolicy = info.getMIInfoSuspendPolicy();
 		int requestId = info.getMIInfoRequestID();
 		byte eventKind = info.getMIInfoEventKind();
-		LocationImpl loc = JDWP.bkptsLocation.get(eventNumber);
+		Location loc = JDWP.bkptsLocation.get(eventNumber);
 		long threadID = getThreadId(event);
 
 		packetStream.writeByte(suspendPolicy);
@@ -126,7 +126,7 @@ public class Translator {
 		packetStream.writeInt(info.getMIInfoRequestID());
 		packetStream.writeLong(threadID); // TODO!! Might need to use PacketStream.writeObjectRef()
 
-		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
+		Location loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
 		if (loc != null) {
 			packetStream.writeLocation(loc);
 			JDWP.stepByThreadID.remove(threadID);
@@ -180,29 +180,35 @@ public class Translator {
 		return start + "(" + newParamList + ")";
 	}
 
-	public static LocationImpl locationLookup(String func, int line) {
+	public static Location locationLookup(String func, int line) {
 		String name = normalizeFunc(func);
-		MethodImpl impl = MethodImpl.methods.get(name);
+		Method impl = jdwp.Method.methods.get(name);
 		if (impl != null) {
-			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(line);
-			if (list != null && list.size() >= 1) {
-				return list.get(0);
-			}
-			return null;
-		}
-		if (!name.contains("(")) {
-			Set<String> keys = MethodImpl.methods.keySet();
-			for (String key: keys) {
-				if (key.contains(name)) {
-					ConcreteMethodImpl impl1 = (ConcreteMethodImpl) MethodImpl.methods.get(key);
-					List<LocationImpl> list = ((ConcreteMethodImpl) impl1).getBaseLocations().lineMapper.get(line);
-					if (list != null && list.size() >= 1) {
-						return list.get(0);
-					}
-				}
-			}
+			return impl.lineTable().getLocation(line);
 		}
 		return null;
+
+
+//		if (impl != null) {
+//			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(line);
+//			if (list != null && list.size() >= 1) {
+//				return list.get(0);
+//			}
+//			return null;
+//		}
+//		if (!name.contains("(")) {
+//			Set<String> keys = MethodImpl.methods.keySet();
+//			for (String key: keys) {
+//				if (key.contains(name)) {
+//					ConcreteMethodImpl impl1 = (ConcreteMethodImpl) MethodImpl.methods.get(key);
+//					List<LocationImpl> list = ((ConcreteMethodImpl) impl1).getBaseLocations().lineMapper.get(line);
+//					if (list != null && list.size() >= 1) {
+//						return list.get(0);
+//					}
+//				}
+//			}
+//		}
+//		return null;
 	}
 
 

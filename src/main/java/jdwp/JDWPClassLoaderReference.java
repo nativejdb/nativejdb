@@ -36,13 +36,14 @@ public class JDWPClassLoaderReference {
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ClassLoaderReferenceImpl classLoaderReference = command.readClassLoaderReference();
-                List<ReferenceTypeImpl> visibleClasses = classLoaderReference.visibleClasses();
-                answer.writeInt(visibleClasses.size());
-                for (ReferenceTypeImpl visibleClass : visibleClasses) {
-                    answer.writeByte(visibleClass.tag());
-                    answer.writeClassRef(visibleClass.uniqueID());
-                }
+                JDWP.notImplemented(answer);
+//                ClassLoaderReferenceImpl classLoaderReference = command.readClassLoaderReference();
+//                List<ReferenceTypeImpl> visibleClasses = classLoaderReference.visibleClasses();
+//                answer.writeInt(visibleClasses.size());
+//                for (ReferenceTypeImpl visibleClass : visibleClasses) {
+//                    answer.writeByte(visibleClass.tag());
+//                    answer.writeClassRef(visibleClass.uniqueID());
+//                }
             }
         }
     }

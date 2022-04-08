@@ -44,7 +44,7 @@ public class JDWP {
      * Global maps to store breakpoint information for both async (by bkpt#) and sync (by requestID) processing
      */
     static Map<Integer, MIBreakInsertInfo> bkptsByBreakpointNumber = new HashMap<>(); //for async events processing
-    static Map<Integer, LocationImpl> bkptsLocation = new HashMap<>(); //for async events processing
+    static Map<Integer, Location> bkptsLocation = new HashMap<>(); //for async events processing
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
 
     static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing

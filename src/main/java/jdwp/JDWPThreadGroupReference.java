@@ -29,8 +29,9 @@ public class JDWPThreadGroupReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
-                answer.writeThreadGroupReference(group.parent());
+                JDWP.notImplemented(answer);
+//                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
+//                answer.writeThreadGroupReference(group.parent());
             }
         }
 
@@ -46,18 +47,19 @@ public class JDWPThreadGroupReference {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
-                List<ThreadReferenceImpl> threads = group.threads();
-                answer.writeInt(threads.size());
-                for (ThreadReferenceImpl thread : threads) {
-                    answer.writeThreadReference(thread);
-                }
-
-                List<ThreadGroupReferenceImpl> threadGroups = group.threadGroups();
-                answer.writeInt(threadGroups.size());
-                for (ThreadGroupReferenceImpl threadGroup : threadGroups) {
-                    answer.writeThreadGroupReference(threadGroup);
-                }
+                JDWP.notImplemented(answer);
+//                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
+//                List<ThreadReferenceImpl> threads = group.threads();
+//                answer.writeInt(threads.size());
+//                for (ThreadReferenceImpl thread : threads) {
+//                    answer.writeThreadReference(thread);
+//                }
+//
+//                List<ThreadGroupReferenceImpl> threadGroups = group.threadGroups();
+//                answer.writeInt(threadGroups.size());
+//                for (ThreadGroupReferenceImpl threadGroup : threadGroups) {
+//                    answer.writeThreadGroupReference(threadGroup);
+//                }
             }
         }
     }

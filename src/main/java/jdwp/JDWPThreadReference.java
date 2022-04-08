@@ -21,6 +21,7 @@ public class JDWPThreadReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+                //answer.writeString("main");
                 answer.writeString(command.readThreadReference().name());
             }
         }
@@ -115,6 +116,7 @@ public class JDWPThreadReference {
 //                }
 //                answer.writeObjectRef(id);
 
+
                 ThreadReferenceImpl thread = command.readThreadReference();
                 answer.writeObjectRef(thread.threadGroup().uniqueID());
             }
@@ -133,8 +135,8 @@ public class JDWPThreadReference {
             static class Frame {
 
                 public static void write(StackFrameImpl frame, GDBControl gc, PacketStream answer) {
-                    answer.writeFrameRef(frame.id());
-                    answer.writeLocation(frame.location());
+//                    answer.writeFrameRef(frame.id());
+//                    answer.writeLocation(frame.location());
                 }
             }
 
@@ -156,14 +158,14 @@ public class JDWPThreadReference {
                 MIFrame[] frames = reply.getMIFrames();
                 int framesLength = 0;
                 List<Integer> frameIds = new ArrayList<>();
-                List<LocationImpl> locations = new ArrayList<>();
+                List<Location> locations = new ArrayList<>();
 
 
                 for (MIFrame frame: frames) {
                     int frameId = frame.getLevel();
                     JDWP.framesById.put(frameId, frame);
 
-                    LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
+                    Location loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
                     if (loc != null) {
                         framesLength++;
                         locations.add(loc);
@@ -206,7 +208,7 @@ public class JDWPThreadReference {
                 int framesLength = 0;
 
                 for (MIFrame frame: frames) {
-                    LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
+                    Location loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
                     if (loc != null) {
                         framesLength++;
                     }
@@ -226,18 +228,19 @@ public class JDWPThreadReference {
             static final int COMMAND = 8;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                List<ObjectReferenceImpl> ownedMonitors;
-                try {
-                    ownedMonitors = thread.ownedMonitors();
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
-                    return;
-                }
-                answer.writeInt(ownedMonitors.size());
-                for (ObjectReferenceImpl ownedMonitor : ownedMonitors) {
-                    answer.writeTaggedObjectReference(ownedMonitor);
-                }
+                JDWP.notImplemented(answer);
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                List<ObjectReferenceImpl> ownedMonitors;
+//                try {
+//                    ownedMonitors = thread.ownedMonitors();
+//                } catch (IncompatibleThreadStateException e) {
+//                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
+//                    return;
+//                }
+//                answer.writeInt(ownedMonitors.size());
+//                for (ObjectReferenceImpl ownedMonitor : ownedMonitors) {
+//                    answer.writeTaggedObjectReference(ownedMonitor);
+//                }
 
             }
         }
@@ -256,12 +259,13 @@ public class JDWPThreadReference {
             static final int COMMAND = 9;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                try {
-                    answer.writeTaggedObjectReference(thread.currentContendedMonitor());
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
-                }
+                JDWP.notImplemented(answer);
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                try {
+//                    answer.writeTaggedObjectReference(thread.currentContendedMonitor());
+//                } catch (IncompatibleThreadStateException e) {
+//                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
+//                }
             }
         }
 
@@ -322,19 +326,20 @@ public class JDWPThreadReference {
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                List<MonitorInfoImpl> list;
-                try {
-                    list = thread.ownedMonitorsAndFrames();
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
-                    return;
-                }
-                answer.writeInt(list.size());
-                for (MonitorInfoImpl o : list) {
-                    answer.writeTaggedObjectReference(o.monitor());
-                    answer.writeInt(o.stackDepth());
-                }
+                JDWP.notImplemented(answer);
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                List<MonitorInfoImpl> list;
+//                try {
+//                    list = thread.ownedMonitorsAndFrames();
+//                } catch (IncompatibleThreadStateException e) {
+//                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
+//                    return;
+//                }
+//                answer.writeInt(list.size());
+//                for (MonitorInfoImpl o : list) {
+//                    answer.writeTaggedObjectReference(o.monitor());
+//                    answer.writeInt(o.stackDepth());
+//                }
             }
         }
 

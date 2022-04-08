@@ -15,13 +15,14 @@ public class JDWPStringReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = command.readObjectReference();
-                if (objectReference instanceof StringReferenceImpl) {
-                    answer.writeString(((StringReferenceImpl) objectReference).value());
-                }
-                else {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_STRING;
-                }
+                JDWP.notImplemented(answer);
+//                ObjectReferenceImpl objectReference = command.readObjectReference();
+//                if (objectReference instanceof StringReferenceImpl) {
+//                    answer.writeString(((StringReferenceImpl) objectReference).value());
+//                }
+//                else {
+//                    answer.pkt.errorCode = JDWP.Error.INVALID_STRING;
+//                }
             }
         }
     }

@@ -15,19 +15,26 @@ public class JDWPClassType {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                if (type instanceof ClassTypeImpl) {
-                    ClassTypeImpl superclass = ((ClassTypeImpl) type).superclass();
-                    if (superclass != null) {
-                        answer.writeClassRef(superclass.uniqueID());
-                    }
-                    else {
-                        answer.writeNullObjectRef();
-                    }
+                ReferenceType refType = command.readReference();
+                long superclass = refType.superclass();
+                if (superclass != -1) {
+                    answer.writeClassRef(superclass);
+                } else {
+                    answer.writeNullObjectRef();
                 }
-                else {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_CLASS;
-                }
+//                ReferenceTypeImpl type = command.readReferenceType();
+//                if (type instanceof ClassTypeImpl) {
+//                    ClassTypeImpl superclass = ((ClassTypeImpl) type).superclass();
+//                    if (superclass != null) {
+//                        answer.writeClassRef(superclass.uniqueID());
+//                    }
+//                    else {
+//                        answer.writeNullObjectRef();
+//                    }
+//                }
+//                else {
+//                    answer.pkt.errorCode = JDWP.Error.INVALID_CLASS;
+//                }
             }
         }
 

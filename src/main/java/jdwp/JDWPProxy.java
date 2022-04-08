@@ -32,9 +32,7 @@ import com.sun.jdi.connect.spi.Connection;
 import gdb.mi.service.command.Listener;
 import gdb.mi.service.command.MIRunControlEventProcessor;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -42,6 +40,8 @@ import java.util.*;
  */
 public class JDWPProxy {
     private static final Map<Integer, Map<Integer, Command>> COMMANDS = new HashMap<Integer, Map<Integer, Command>>();
+
+    public static final boolean DUMP_VM_DATA = false;
 
     static {
         try {
@@ -95,6 +95,13 @@ public class JDWPProxy {
         PacketStream VMStartedPkt = Translator.getVMStartedPacket(gdbControl);
         VMStartedPkt.send();
 
+        // Load all classes
+        if (!DUMP_VM_DATA) {
+            ReferenceType.loadClasses();
+            Method.loadMethods();
+            Method.loadLineTables();
+        }
+
         try {
             gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, gdbControl.gdbError);
 
@@ -136,5 +143,7 @@ public class JDWPProxy {
             gdbControl.vm.dispose();
         }
     }
+
+
 
 }

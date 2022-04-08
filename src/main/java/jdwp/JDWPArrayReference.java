@@ -18,8 +18,9 @@ public class JDWPArrayReference  {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ArrayReferenceImpl arrayReference = command.readArrayReference();
-                answer.writeInt(arrayReference.length());
+                JDWP.notImplemented(answer);
+//                ArrayReferenceImpl arrayReference = command.readArrayReference();
+//                answer.writeInt(arrayReference.length());
             }
         }
 
@@ -31,19 +32,20 @@ public class JDWPArrayReference  {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ArrayReferenceImpl arrayReference = command.readArrayReference();
-                int start = command.readInt();
-                int length = command.readInt();
-
-                byte tag;
-                try {
-                    TypeImpl type = arrayReference.arrayType().componentType();
-                    tag = type instanceof PrimitiveTypeImpl ? ((PrimitiveTypeImpl) type).tag() : JDWP.Tag.OBJECT;
-                } catch (ClassNotLoadedException e) { // fallback to the first element type
-                    tag = ValueImpl.typeValueKey(arrayReference.getValue(0));
-                }
-
-                answer.writeArrayRegion(arrayReference.getValues(start, length), tag);
+                JDWP.notImplemented(answer);
+//                ArrayReferenceImpl arrayReference = command.readArrayReference();
+//                int start = command.readInt();
+//                int length = command.readInt();
+//
+//                byte tag;
+//                try {
+//                    TypeImpl type = arrayReference.arrayType().componentType();
+//                    tag = type instanceof PrimitiveTypeImpl ? ((PrimitiveTypeImpl) type).tag() : JDWP.Tag.OBJECT;
+//                } catch (ClassNotLoadedException e) { // fallback to the first element type
+//                    tag = ValueImpl.typeValueKey(arrayReference.getValue(0));
+//                }
+//
+//                answer.writeArrayRegion(arrayReference.getValues(start, length), tag);
             }
         }
 

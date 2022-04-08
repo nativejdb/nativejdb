@@ -19,10 +19,11 @@ public class JDWPObjectReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                ReferenceTypeImpl referenceType = objectReference.referenceType();
-                answer.writeByte(referenceType.tag());
-                answer.writeClassRef(referenceType.uniqueID());
+                JDWP.notImplemented(answer);
+//                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
+//                ReferenceTypeImpl referenceType = objectReference.referenceType();
+//                answer.writeByte(referenceType.tag());
+//                answer.writeClassRef(referenceType.uniqueID());
             }
         }
 
@@ -37,14 +38,15 @@ public class JDWPObjectReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                ReferenceTypeImpl referenceType = objectReference.referenceType();
-                int count = command.readInt();
-                answer.writeInt(count);
-                for (int i = 0; i < count; i++) {
-                    long id = command.readFieldRef();
-                    answer.writeValue(objectReference.getValue(referenceType.fieldById(id)));
-                }
+                JDWP.notImplemented(answer);
+//                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
+//                ReferenceTypeImpl referenceType = objectReference.referenceType();
+//                int count = command.readInt();
+//                answer.writeInt(count);
+//                for (int i = 0; i < count; i++) {
+//                    long id = command.readFieldRef();
+//                    answer.writeValue(objectReference.getValue(referenceType.fieldById(id)));
+//                }
             }
         }
 
@@ -77,14 +79,15 @@ public class JDWPObjectReference {
             static final int COMMAND = 5;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                answer.writeThreadReference(objectReference.owningThread());
-                answer.writeInt(objectReference.entryCount());
-                List<ThreadReferenceImpl> waiting = objectReference.waitingThreads();
-                answer.writeInt(waiting.size());
-                for (ThreadReferenceImpl threadReference : waiting) {
-                    answer.writeThreadReference(threadReference);
-                }
+                JDWP.notImplemented(answer);
+//                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
+//                answer.writeThreadReference(objectReference.owningThread());
+//                answer.writeInt(objectReference.entryCount());
+//                List<ThreadReferenceImpl> waiting = objectReference.waitingThreads();
+//                answer.writeInt(waiting.size());
+//                for (ThreadReferenceImpl threadReference : waiting) {
+//                    answer.writeThreadReference(threadReference);
+//                }
             }
         }
 
@@ -223,12 +226,13 @@ public class JDWPObjectReference {
             static final int COMMAND = 10;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                List<ObjectReferenceImpl> refs = objectReference.referringObjects(command.readInt());
-                answer.writeInt(refs.size());
-                for (ObjectReferenceImpl ref : refs) {
-                    answer.writeTaggedObjectReference(ref);
-                }
+                JDWP.notImplemented(answer);
+//                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
+//                List<ObjectReferenceImpl> refs = objectReference.referringObjects(command.readInt());
+//                answer.writeInt(refs.size());
+//                for (ObjectReferenceImpl ref : refs) {
+//                    answer.writeTaggedObjectReference(ref);
+//                }
             }
         }
     }

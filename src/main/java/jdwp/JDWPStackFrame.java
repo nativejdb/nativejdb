@@ -177,13 +177,14 @@ public class JDWPStackFrame {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                try {
-                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
-                    answer.writeTaggedObjectReference(frame.thisObject()); //HERE
-                } catch (IncompatibleThreadStateException e) {
-                    e.printStackTrace();
-                }
+                JDWP.notImplemented(answer);
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                try {
+//                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
+//                    answer.writeTaggedObjectReference(frame.thisObject()); //HERE
+//                } catch (IncompatibleThreadStateException e) {
+//                    e.printStackTrace();
+//                }
             }
         }
 

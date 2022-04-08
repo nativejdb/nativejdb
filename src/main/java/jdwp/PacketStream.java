@@ -196,21 +196,11 @@ public class PacketStream {
         }
     }
 
-    void writeLocation(LocationImpl location) {
-        ReferenceTypeImpl refType = location.declaringType();
-        byte tag;
-        if (refType instanceof ClassTypeImpl) {
-            tag = JDWP.TypeTag.CLASS;
-        } else if (refType instanceof InterfaceTypeImpl) {
-            // It's possible to have executable code in an interface
-            tag = JDWP.TypeTag.INTERFACE;
-        } else {
-            throw new InternalException("Invalid Location");
-        }
-        writeByte(tag);
-        writeClassRef(refType.uniqueID());
-        writeMethodRef(location.methodRef());
-        writeLong(location.codeIndexInt());
+    void writeLocation(Location location) {
+        writeByte(location.tag());
+        writeClassRef(location.typeId());
+        writeMethodRef(location.methodId());
+        writeLong(location.codeIndex());
     }
     //
     void writeValue(ValueImpl val) {
@@ -391,46 +381,53 @@ public class PacketStream {
 //        return vm.objectMirror(readObjectRef(), typeKey);
 //    }
 
-    ObjectReferenceImpl readObjectReference() {
-        return gc.vm.objectMirror(readObjectRef());
-    }
+//    ObjectReferenceImpl readObjectReference() {
+//        return gc.vm.objectMirror(readObjectRef());
+//    }
     //
 //    StringReferenceImpl readStringReference() {
 //        long ref = readObjectRef();
 //        return vm.stringMirror(ref);
 //    }
 //
-    public ArrayReferenceImpl readArrayReference() {
-        long ref = readObjectRef();
-        return (ArrayReferenceImpl) gc.vm.objectMirror(ref);
-    }
-    //
+//    public ArrayReferenceImpl readArrayReference() {
+//        long ref = readObjectRef();
+//        return (ArrayReferenceImpl) gc.vm.objectMirror(ref);
+//    }
+
     ThreadReferenceImpl readThreadReference() {
         return gc.vm.getThreadById(readObjectRef());
     }
 
-    void writeThreadReference(ThreadReferenceImpl thread) {
-        writeUntaggedObjectReference(thread);
-    }
-    //
+//    void writeThreadReference(ThreadReferenceImpl thread) {
+//        writeUntaggedObjectReference(thread);
+//    }
+//    //
+
     ThreadGroupReferenceImpl readThreadGroupReference() {
         long ref = readObjectRef();
         return gc.vm.getThreadGroupReferenceById(ref);
     }
 
-    void writeThreadGroupReference(ThreadGroupReferenceImpl ref) {
-        writeUntaggedObjectReference(ref);
-    }
-    //
-    ClassLoaderReferenceImpl readClassLoaderReference() {
+//    void writeThreadGroupReference(ThreadGroupReferenceImpl ref) {
+//        writeUntaggedObjectReference(ref);
+//    }
+//    //
+//    ClassLoaderReferenceImpl readClassLoaderReference() {
+//        long ref = readObjectRef();
+//        return (ClassLoaderReferenceImpl) gc.vm.objectMirror(ref);
+//    }
+
+//    ClassObjectReferenceImpl readClassObjectReference() {
+//        long ref = readObjectRef();
+//        return (ClassObjectReferenceImpl) gc.vm.objectMirror(ref);
+//    }
+
+    ReferenceType readReference() {
         long ref = readObjectRef();
-        return (ClassLoaderReferenceImpl) gc.vm.objectMirror(ref);
+        return ReferenceType.refsById.get(ref);
     }
 
-    ClassObjectReferenceImpl readClassObjectReference() {
-        long ref = readObjectRef();
-        return (ClassObjectReferenceImpl) gc.vm.objectMirror(ref);
-    }
 
     ReferenceTypeImpl readReferenceType() {
 //        byte tag = readByte();
