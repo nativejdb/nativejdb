@@ -110,7 +110,16 @@ public class JDWPEventRequest {
                             byte modKind = command.readByte();
                             if (modKind == 10) {
                                 long threadId = command.readObjectRef();
+                                /*
+                                    MIN	    0	Step by the minimum possible amount (often a bytecode instruction).
+                                    LINE	1	Step to the next source line unless there is no line number information in which case a MIN step is done instead.
+                                 */
                                 int size = command.readInt();
+                                /*
+                                    INTO	0	Step into any method calls that occur before the end of the step.
+                                    OVER	1	Step over any method calls that occur before the end of the step.
+                                    OUT	    2	Step out of the current method.
+                                 */
                                 int depth = command.readInt(); //TODO use stepdepth for GDB commands
 
                                 System.out.println("Queueing MI command to select thread:" + threadId);
@@ -125,7 +134,12 @@ public class JDWPEventRequest {
                                 }
 
                                 System.out.println("Queueing MI command to step by step size:" + size);
-                                cmd = gc.getCommandFactory().createMIExecNext(size);
+                                if (depth == JDWP.StepDepth.INTO)
+                                    cmd = gc.getCommandFactory().createMIExecStep(size);
+                                else if (depth == JDWP.StepDepth.OVER)
+                                    cmd = gc.getCommandFactory().createMIExecNext(size);
+                                else //JDWP.StepDepth.OUT
+                                    cmd = gc.getCommandFactory().createMIExecReturn();
                                 tokenID = JDWP.getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
 
@@ -167,6 +181,12 @@ public class JDWPEventRequest {
                     }
                     answer.writeInt(0);
 
+                } else if (eventKind == JDWP.EventKind.FIELD_ACCESS || eventKind == JDWP.EventKind.FIELD_MODIFICATION) {
+                    byte suspendPolicy = command.readByte();
+                    int modifiersCount = command.readInt();
+                    for (int i = 0; i < modifiersCount; i++) {
+                        byte modKind = command.readByte();
+                    }
                 } else {
                     answer.writeInt(0); // to allow jdwp.jdi GDBControl to initialize
                 }
