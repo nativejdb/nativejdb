@@ -22,6 +22,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   emacs \
   valgrind \
   vim \
+  libunwind-dev \
   zlib1g-dev
 
 #Graalvm exec jar in current dir downloaded from https://github.com/graalvm/graalvm-ce-builds/releases
