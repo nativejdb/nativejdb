@@ -53,7 +53,15 @@ public class JDWPThreadReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                JDWP.notImplemented(answer);
+                System.out.println("Queueing MI command to suspend application");
+                MICommand cmd = gc.getCommandFactory().createMIExecInterrupt(true);
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
+                }
             }
         }
 
@@ -69,7 +77,19 @@ public class JDWPThreadReference {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                JDWP.notImplemented(answer);
+                try {
+                    System.out.println("Queueing MI command to resume application");
+                    MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
+                    int tokenID = JDWP.getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -144,7 +164,8 @@ public class JDWPThreadReference {
                 int threadId = (int) command.readObjectRef();
 
                 System.out.println("Queueing MI command to get frames");
-                MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
+                //MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
+                MICommand cmd = gc.getCommandFactory().createMIStackListFrames("1");
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
@@ -193,7 +214,8 @@ public class JDWPThreadReference {
 
 
                 System.out.println("Queueing MI command to get frames");
-                MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
+                //MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
+                MICommand cmd = gc.getCommandFactory().createMIStackListFrames("1");
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 

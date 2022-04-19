@@ -73,10 +73,10 @@ public class GDBControl extends AbstractMIControl {
             gdbInput.flush();
             System.out.println(getGDBOutput());
 
-//            com = "start&\n".getBytes();
-//            gdbInput.write(com, 0, com.length);
-//            gdbInput.flush();
-//            System.out.println(getGDBOutput());
+            com = "start&\n".getBytes();
+            gdbInput.write(com, 0, com.length);
+            gdbInput.flush();
+            System.out.println(getGDBOutput());
 
             //Send a JDWP packet to pause IDE?
             /*PacketStream packetStream = new PacketStream(this);

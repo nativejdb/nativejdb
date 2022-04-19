@@ -5,6 +5,7 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.ReferenceTypeImpl;
 import jdwp.jdi.ThreadGroupReferenceImpl;
+import jdwp.jdi.ThreadReferenceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -116,22 +117,32 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                System.out.println("Queueing MI command to get all threads application");
-                MICommand cmd = gc.getCommandFactory().createMIThreadInfo();
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
-                    return;
+                List<ThreadReferenceImpl> list = gc.vm.allThreads();
+                answer.writeInt(list.size());
+                for (ThreadReferenceImpl thread : list) {
+                    answer.writeObjectRef(thread.uniqueID());
                 }
 
-                MIThread[] allThreads = reply.getThreadList();
-                answer.writeInt(allThreads.length);
-                for(MIThread thread: allThreads){
-                    answer.writeObjectRef(Integer.parseInt(thread.getThreadId()));
-                }
+//                System.out.println("Queueing MI command to get all threads application");
+//                MICommand cmd = gc.getCommandFactory().createMIThreadInfo();
+//                int tokenID = JDWP.getNewTokenId();
+//                gc.queueCommand(tokenID, cmd);
+//
+//                MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+//                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+//                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
+//                    return;
+//                }
+//
+//                MIThread[] allThreads = reply.getThreadList();
+//                answer.writeInt(allThreads.length);
+//                for(MIThread thread: allThreads){
+//                    answer.writeObjectRef(Integer.parseInt(thread.getThreadId()));
+//                }
+
+//                answer.writeInt(1);
+//                answer.writeObjectRef(1);
+
             }
         }
 

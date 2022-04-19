@@ -1,0 +1,5 @@
+codecov:
+  branch: main
+
+ignore:
+  - "test"
