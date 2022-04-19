@@ -1,4 +1,4 @@
-package gdb.mi.service.command;
+package gdb.mi.service.command.commands;
 
 import static org.junit.Assert.assertEquals;
 

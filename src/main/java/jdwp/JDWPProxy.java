@@ -41,7 +41,7 @@ import java.util.*;
  * @author egor
  */
 public class JDWPProxy {
-    private static final Map<Integer, Map<Integer, Command>> COMMANDS = new HashMap<Integer, Map<Integer, Command>>();
+    protected static final Map<Integer, Map<Integer, Command>> COMMANDS = new HashMap<Integer, Map<Integer, Command>>();
 
     static {
         try {

@@ -1,4 +1,4 @@
-package gdb.mi.service.command;
+package gdb.mi.service.command.commands;
 
 import gdb.mi.service.command.commands.MIBreakDelete;
 import org.junit.Test;

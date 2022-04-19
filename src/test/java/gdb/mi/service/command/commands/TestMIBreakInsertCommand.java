@@ -1,14 +1,13 @@
-package gdb.mi.service.command;
-
-import gdb.mi.service.command.commands.MIBreakInsert;
-import org.junit.Test;
+package gdb.mi.service.command.commands;
 
 import static org.junit.Assert.assertEquals;
+import gdb.mi.service.command.commands.MIBreakInsert;
+import org.junit.Test;
 
 /**
  * Verifies that the break insert MI command have the correct path substitution.
  */
-public class TestMIExecContinueCommand {
+public class TestMIBreakInsertCommand {
 
 	@Test
 	public void pathWithSlashesShouldNotBeSubstituted() {
