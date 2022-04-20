@@ -1,0 +1,7 @@
+[EXECUTABLE]
+getting-started-1.0.0-SNAPSHOT-runner
+
+[DEBUG_INFO]
+sources
+getting-started-1.0.0-SNAPSHOT-runner
+

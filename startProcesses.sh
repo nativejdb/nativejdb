@@ -13,8 +13,11 @@ do
     esac
 done
 
-java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
-PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
+#java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
+#PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
+
+java -jar apps/$CLASS_NAME.jar &
+PROCESS_ID=$(pgrep -nf "java -jar apps/$CLASS_NAME.jar")
 
 IMAGE_NAME=$CLASS_NAME
 
