@@ -127,7 +127,8 @@ public class Translator {
 
 	private static PacketStream  translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
 		PacketStream packetStream = new PacketStream(gc);
-		Long threadID = getThreadId(event);
+		//Long threadID = getThreadId(event);
+		long threadID = getMainThreadId(gc); // Hack!!!
 		MIInfo info = JDWP.stepByThreadID.get(threadID);
 		if (info == null) {
 			return null;
@@ -137,8 +138,7 @@ public class Translator {
 		packetStream.writeInt(1); // Number of events in this response packet
 		packetStream.writeByte(info.getMIInfoEventKind());
 		packetStream.writeInt(info.getMIInfoRequestID());
-		packetStream.writeLong(threadID); // TODO!! Might need to use PacketStream.writeObjectRef()
-
+		packetStream.writeObjectRef(threadID); 
 		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
 		if (loc != null) {
 			packetStream.writeLocation(loc);

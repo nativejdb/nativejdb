@@ -122,8 +122,25 @@ public class JDWPEventRequest {
                                  */
                                 int depth = command.readInt(); //TODO use stepdepth for GDB commands
 
-                                System.out.println("Queueing MI command to select thread:" + threadId);
-                                MICommand cmd = gc.getCommandFactory().createMISelectThread((int) threadId);
+//                                System.out.println("Queueing MI command to select thread:" + threadId);
+//                                MICommand cmd = gc.getCommandFactory().createMISelectThread(1);
+//                                int tokenID = JDWP.getNewTokenId();
+//                                gc.queueCommand(tokenID, cmd);
+//
+//                                MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+//                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+//                                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
+//                                    return;
+//                                }
+
+                                System.out.println("Queueing MI command to step by step size:" + size);
+                                MICommand cmd;
+                                if (depth == JDWP.StepDepth.INTO)
+                                    cmd = gc.getCommandFactory().createMIExecStep(size);
+                                else if (depth == JDWP.StepDepth.OVER)
+                                    cmd = gc.getCommandFactory().createMIExecNext(size);
+                                else //JDWP.StepDepth.OUT
+                                    cmd = gc.getCommandFactory().createMIExecReturn();
                                 int tokenID = JDWP.getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
 
@@ -133,27 +150,11 @@ public class JDWPEventRequest {
                                     return;
                                 }
 
-                                System.out.println("Queueing MI command to step by step size:" + size);
-                                if (depth == JDWP.StepDepth.INTO)
-                                    cmd = gc.getCommandFactory().createMIExecStep(size);
-                                else if (depth == JDWP.StepDepth.OVER)
-                                    cmd = gc.getCommandFactory().createMIExecNext(size);
-                                else //JDWP.StepDepth.OUT
-                                    cmd = gc.getCommandFactory().createMIExecReturn();
-                                tokenID = JDWP.getNewTokenId();
-                                gc.queueCommand(tokenID, cmd);
-
-                                reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                                    return;
-                                }
-
                                 reply.setMIInfoRequestID(command.pkt.id);
                                 reply.setMIInfoEventKind(eventKind);
                                 reply.setMIInfoSuspendPolicy(suspendPolicy);
 
-                                JDWP.stepByThreadID.put(threadId, reply);
+                                JDWP.stepByThreadID.put((long) 1, reply);
                                 answer.writeInt(reply.getMIInfoRequestID());
                             }
                         }
