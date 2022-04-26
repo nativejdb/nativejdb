@@ -154,6 +154,7 @@ public class VirtualMachineImpl {
 
     static public VirtualMachineImpl dummyVirtualMachine() {
         VirtualMachineImpl myvm = new VirtualMachineImpl(Bootstrap.virtualMachineManager(), 0);
+        myvm.saAgent.startServer(1);
         myvm.init();
         return myvm;
     }

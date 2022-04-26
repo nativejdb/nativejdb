@@ -15,9 +15,6 @@
 
 package jdwp;
 
-/**
- * @author egor
- */
 public interface Command {
     void reply(GDBControl gc, PacketStream answer, PacketStream command);
 }

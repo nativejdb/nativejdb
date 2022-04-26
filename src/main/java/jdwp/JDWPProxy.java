@@ -37,9 +37,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
-/**
- * @author egor
- */
 public class JDWPProxy {
     protected static final Map<Integer, Map<Integer, Command>> COMMANDS = new HashMap<Integer, Map<Integer, Command>>();
 

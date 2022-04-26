@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 2018 JetBrains s.r.o.
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ *
+ * You may contact JetBrains s.r.o. at Na Hřebenech II 1718/10, 140 00 Prague,
+ * Czech Republic or at legal@jetbrains.com.
+ *
+ * Copyright (C) 2022 IBM Corporation
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ */
+
 package jdwp;
 
 import com.sun.jdi.VirtualMachine;
@@ -105,62 +130,6 @@ public class JDWPEvent {
                 EventsCommon aEventsCommon;
 
                 public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                    //eventKind = answer.readByte();
-                    //switch (eventKind()) {
-                    //case JDWP.EventKind.VM_START:
-                    // aEventsCommon = new VMStart(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.SINGLE_STEP:
-                    // aEventsCommon = new SingleStep(vm, ps);
-                    //break;
-//                        case JDWP.EventKind.BREAKPOINT:
-//                            break;
-                    //case JDWP.EventKind.METHOD_ENTRY:
-                    // aEventsCommon = new MethodEntry(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.METHOD_EXIT:
-                    // aEventsCommon = new MethodExit(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.METHOD_EXIT_WITH_RETURN_VALUE:
-                    // aEventsCommon = new MethodExitWithReturnValue(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.MONITOR_CONTENDED_ENTER:
-                    // aEventsCommon = new MonitorContendedEnter(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.MONITOR_CONTENDED_ENTERED:
-                    // aEventsCommon = new MonitorContendedEntered(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.MONITOR_WAIT:
-                    // aEventsCommon = new MonitorWait(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.MONITOR_WAITED:
-                    // aEventsCommon = new MonitorWaited(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.EXCEPTION:
-                    // aEventsCommon = new Exception(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.THREAD_START:
-                    // aEventsCommon = new ThreadStart(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.THREAD_DEATH:
-                    // aEventsCommon = new ThreadDeath(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.CLASS_PREPARE:
-                    // aEventsCommon = new ClassPrepare(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.CLASS_UNLOAD:
-                    // aEventsCommon = new ClassUnload(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.FIELD_ACCESS:
-                    // aEventsCommon = new FieldAccess(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.FIELD_MODIFICATION:
-                    // aEventsCommon = new FieldModification(vm, ps);
-                    //break;
-                    //case JDWP.EventKind.VM_DEATH:
-                    // aEventsCommon = new VMDeath(vm, ps);
-                    //break;
-                    //}
                 }
 
                 /**
