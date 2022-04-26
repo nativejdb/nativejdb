@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 2018 JetBrains s.r.o.
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ *
+ * You may contact JetBrains s.r.o. at Na Hřebenech II 1718/10, 140 00 Prague,
+ * Czech Republic or at legal@jetbrains.com.
+ *
+ * Copyright (C) 2022 IBM Corporation
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ */
+
 package jdwp;
 
 import com.sun.jdi.IncompatibleThreadStateException;
@@ -21,7 +46,7 @@ public class JDWPStackFrame {
          * index can be determined for method arguments from the method
          * signature without access to the local variable table information.)
          */
-        static class GetValues implements Command  {
+        static class GetValues implements Command {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
@@ -37,23 +62,23 @@ public class JDWPStackFrame {
                     Return a list containing the names and types for all global variables taken from the debug information. The variables are grouped by source file, and shown with the line number on which each variable is defined.
                 */
                 //long threadId = command.readObjectRef();
-//                long threadId = 1;
-//                int frameId = (int) command.readFrameRef();
-//                int slots = command.readInt();
-//                answer.writeInt(slots);
-//                for (int i = 0; i < slots; i++) {
-//                    int slot = command.readInt();
-//                    byte sigbyte = command.readByte();
-//
-//                    System.out.println("Queueing MI command to list local variables and function arguments");
-//                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadId), String.valueOf(frameId));
-//                    int tokenID = JDWP.getNewTokenId();
-//                    gc.queueCommand(tokenID, cmd);
-//
-//                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-//                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-//                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-//                    }
+                long threadId = 1;
+                int frameId = (int) command.readFrameRef();
+                int slots = command.readInt();
+                answer.writeInt(slots);
+                for (int i = 0; i < slots; i++) {
+                    int slot = command.readInt();
+                    byte sigbyte = command.readByte();
+
+                    System.out.println("Queueing MI command to list local variables and function arguments");
+                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadId), String.valueOf(frameId));
+                    int tokenID = JDWP.getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                    }
 
                     /*System.out.println("Queueing MI command to list global variables (only names)");
                     cmd = gc.getCommandFactory().createMiSymbolInfoVariables();
@@ -65,12 +90,12 @@ public class JDWPStackFrame {
                         answer.pkt.errorCode = JDWP.Error.INTERNAL;
                     }*/
 
-//                    MIArg[] vals = replyloc.getVariables();
-//                    for (int j = 0; j < vals.length; j++) {
-//                        String name = vals[j].getName();
-//                        String value = vals[j].getValue();
-//                        answer.writeString(value);
-//                    }
+                    MIArg[] vals = replyloc.getVariables();
+                    for (int j = 0; j < vals.length; j++) {
+                        String name = vals[j].getName();
+                        String value = vals[j].getValue();
+                        answer.writeString(value);
+                    }
 
                    /* MIFrame frame = JDWP.framesById.get(frameId);
                     MiSymbolInfoVariablesInfo.SymbolVariableInfo[] files = replyloc1.getSymbolVariables();
@@ -84,9 +109,9 @@ public class JDWPStackFrame {
                             }
                         }
                     }*/
-               // }
+                    // }
 
-                ThreadReferenceImpl thread = command.readThreadReference();
+                /*ThreadReferenceImpl thread = command.readThreadReference();
                 try {
                     StackFrameImpl frame = thread.frame((int) command.readFrameRef());
                     int slots = command.readInt();
@@ -108,6 +133,7 @@ public class JDWPStackFrame {
                     // hack
                 } catch (IncompatibleThreadStateException e) {
                     e.printStackTrace();
+                }*/
                 }
             }
         }
