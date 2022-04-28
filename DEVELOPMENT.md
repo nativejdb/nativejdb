@@ -1,6 +1,6 @@
 # Development
 
-This document explains how to setup a development environment so you can get started [contributing](./CONTRIBUTING.md) to `NativeJDB`.
+This document explains how to set up a development environment, so you can get started [contributing](./CONTRIBUTING.md) to `NativeJDB`.
 
 ## Getting started
 
@@ -25,7 +25,7 @@ git clone git@github.com:nativejdb/nativejdb.git
 cd nativejdb
 ```
 
-### (Dev mode) Or Checkout your NativeJDB fork (IF NOT CLONED ALREADY)
+### (Dev mode) Checkout your NativeJDB fork (IF NOT CLONED ALREADY)
 
 To check out this repository:
 
@@ -68,14 +68,16 @@ To generate a native executable within the Linux environment in the Docker conta
 
 - Run the following command via a terminal to deploy docker container running NativeJDB server to start debugging:
 
-For existing example application (Hello), run this:
+For an already pre-built native image using [`nativejdbExamples`](https://github.com/nativejdb/nativejdbExamples) (like Hello), run this:
 ```
-make nativejdb 
+make nativejdb CLASSNAME=Hello 
 ```
 
-For any other application, pass the class name as input arg to make target:
+For any other application that has your own pre-built native executable and debug sources, 
+add the executable and debug sources to [/apps](./apps) directory and then pass the following input args to make target:
+
 ```
-make nativejdb CLASSNAME=****
+make nativejdb CLASSNAME={nameofjarfile} NATIVEEXEC=apps/{nameofnativeexec} NATIVESRC=apps/{directorynameofdebugsources}
 ```
 
 - Run the following command via a terminal to ssh into docker container:
