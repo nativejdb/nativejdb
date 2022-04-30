@@ -83,10 +83,10 @@ public class JDWPThreadReference {
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
-                MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
-                }
+//                MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+//                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+//                    answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
+//                }
             }
         }
 
@@ -102,19 +102,19 @@ public class JDWPThreadReference {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                try {
+                //try {
                     System.out.println("Queueing MI command to resume application");
                     MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
 
-                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+//                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+//                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+//                        answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
             }
         }
 
