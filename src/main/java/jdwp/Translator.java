@@ -104,7 +104,7 @@ public class Translator {
 		return packetStream;
 	}
 
-	private static long getMainThreadId(GDBControl gc) {
+	public static long getMainThreadId(GDBControl gc) {
 		List<ThreadReferenceImpl> list = gc.vm.allThreads();
 		for(ThreadReferenceImpl thread: list){
 			if ("main".equals(thread.name())) {

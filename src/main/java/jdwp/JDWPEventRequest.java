@@ -179,7 +179,7 @@ public class JDWPEventRequest {
                                 reply.setMIInfoEventKind(eventKind);
                                 reply.setMIInfoSuspendPolicy(suspendPolicy);
 
-                                JDWP.stepByThreadID.put((long) 1, reply);
+                                JDWP.stepByThreadID.put(Translator.getMainThreadId(gc), reply);
                                 answer.writeInt(reply.getMIInfoRequestID());
                             }
                         }
