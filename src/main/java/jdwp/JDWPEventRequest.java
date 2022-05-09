@@ -94,21 +94,21 @@ public class JDWPEventRequest {
                                 }
 
                                 if (differentBreakLine(reply)) { // This is an invalid location in the source to set a breakpoint
-                                    answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
+                                    //answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
 
                                     // remove the breakpoint in GDB
                                     System.out.println("Queueing MI command to disable breakpoint at "+location);
                                     cmd = gc.getCommandFactory().createMIBreakDisable(reply.getMIBreakpoint().getNumber());
                                     tokenID = JDWP.getNewTokenId();
                                     gc.queueCommand(tokenID, cmd);
+//
+//                                    MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+//                                    if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+//                                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+//                                        return;
+//                                    }
 
-                                    MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                                    if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                                        return;
-                                    }
-
-
+                                    answer.writeInt(command.pkt.id);
                                     return;
                                 }
 
@@ -148,7 +148,7 @@ public class JDWPEventRequest {
                                 int depth = command.readInt(); //TODO use stepdepth for GDB commands
 
 //                                System.out.println("Queueing MI command to select thread:" + threadId);
-//                                MICommand cmd = gc.getCommandFactory().createMISelectThread(1);
+//                                MICommand cmd = gc.getCommandFactory().createMISelectThread((int) threadId);
 //                                int tokenID = JDWP.getNewTokenId();
 //                                gc.queueCommand(tokenID, cmd);
 //
@@ -160,12 +160,14 @@ public class JDWPEventRequest {
 
                                 System.out.println("Queueing MI command to step by step size:" + size);
                                 MICommand cmd;
-                                if (depth == JDWP.StepDepth.INTO)
+                                if (depth == JDWP.StepDepth.INTO) {
                                     cmd = gc.getCommandFactory().createMIExecStep(size);
-                                else if (depth == JDWP.StepDepth.OVER)
-                                    cmd = gc.getCommandFactory().createMIExecNext(size);
-                                else //JDWP.StepDepth.OUT
+                                } else if (depth == JDWP.StepDepth.OUT) {
                                     cmd = gc.getCommandFactory().createMIExecReturn();
+                                } else { //JDWP.StepDepth.OVER
+                                    cmd = gc.getCommandFactory().createMIExecNext(size);
+                                }
+
                                 int tokenID = JDWP.getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
 
@@ -179,7 +181,7 @@ public class JDWPEventRequest {
                                 reply.setMIInfoEventKind(eventKind);
                                 reply.setMIInfoSuspendPolicy(suspendPolicy);
 
-                                JDWP.stepByThreadID.put(Translator.getMainThreadId(gc), reply);
+                                JDWP.stepByThreadID.put(threadId, reply);
                                 answer.writeInt(reply.getMIInfoRequestID());
                             }
                         }

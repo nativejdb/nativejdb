@@ -78,7 +78,7 @@ public class JDWPThreadReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                System.out.println("Queueing MI command to suspend application");
+                System.out.println("Thread - Queueing MI command to suspend application");
                 MICommand cmd = gc.getCommandFactory().createMIExecInterrupt(true);
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
@@ -102,8 +102,8 @@ public class JDWPThreadReference {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                //try {
-                    System.out.println("Queueing MI command to resume application");
+               // try {
+                    System.out.println("Thread - Queueing MI command to resume application");
                     MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
@@ -131,6 +131,7 @@ public class JDWPThreadReference {
                 ThreadReferenceImpl thread = command.readThreadReference();
                 answer.writeInt(thread.status());
                 answer.writeInt(thread.suspendCount());
+                System.out.println("In Thread STATUS: " + thread.status() + " - suspendCount: " + thread.suspendCount());
             }
         }
 

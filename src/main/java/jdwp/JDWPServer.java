@@ -60,13 +60,14 @@ public class JDWPServer {
 
         System.err.println(WAITING_FOR_DEBUGGER + listenKey.address());
 
+        Connection connection = socketTransportService.accept(listenKey, 0, 0);
         // shutdown hook to clean-up the server in case of forced exit.
         Runtime.getRuntime().addShutdownHook(new Thread(
                 new Runnable() {
                     public void run() {
                         try {
                             vm.dispose();
-                            //connection.close();
+                            connection.close();
                             socketTransportService.stopListening(listenKey);
                         } catch (IllegalArgumentException ignored) {
                         } catch (IOException e) {
@@ -76,7 +77,7 @@ public class JDWPServer {
                 }));
 
         // Listening server
-        Connection connection = socketTransportService.accept(listenKey, 0, 0);
+
         socketTransportService.stopListening(listenKey);
 
         JDWPProxy.reply(connection, vm);

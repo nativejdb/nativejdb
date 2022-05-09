@@ -62,23 +62,23 @@ public class JDWPStackFrame {
                     Return a list containing the names and types for all global variables taken from the debug information. The variables are grouped by source file, and shown with the line number on which each variable is defined.
                 */
                 //long threadId = command.readObjectRef();
-//                long threadId = 1;
-//                int frameId = (int) command.readFrameRef();
-//                int slots = command.readInt();
-//                answer.writeInt(slots);
-//                for (int i = 0; i < slots; i++) {
-//                    int slot = command.readInt();
-//                    byte sigbyte = command.readByte();
-//
-//                    System.out.println("Queueing MI command to list local variables and function arguments");
-//                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadId), String.valueOf(frameId));
-//                    int tokenID = JDWP.getNewTokenId();
-//                    gc.queueCommand(tokenID, cmd);
-//
-//                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-//                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-//                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-//                    }
+                long threadId = 1;
+                int frameId = (int) command.readFrameRef();
+                int slots = command.readInt();
+                answer.writeInt(slots);
+                for (int i = 0; i < slots; i++) {
+                    int slot = command.readInt();
+                    byte sigbyte = command.readByte();
+
+                    System.out.println("Queueing MI command to list local variables and function arguments");
+                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadId), String.valueOf(frameId));
+                    int tokenID = JDWP.getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                    }
 
                     /*System.out.println("Queueing MI command to list global variables (only names)");
                     cmd = gc.getCommandFactory().createMiSymbolInfoVariables();
@@ -90,12 +90,12 @@ public class JDWPStackFrame {
                         answer.pkt.errorCode = JDWP.Error.INTERNAL;
                     }*/
 
-//                    MIArg[] vals = replyloc.getVariables();
-//                    for (int j = 0; j < vals.length; j++) {
-//                        String name = vals[j].getName();
-//                        String value = vals[j].getValue();
-//                        answer.writeString(value);
-//                    }
+                    MIArg[] vals = replyloc.getVariables();
+                    for (int j = 0; j < vals.length; j++) {
+                        String name = vals[j].getName();
+                        String value = vals[j].getValue();
+                        answer.writeString(value);
+                    }
 
                    /* MIFrame frame = JDWP.framesById.get(frameId);
                     MiSymbolInfoVariablesInfo.SymbolVariableInfo[] files = replyloc1.getSymbolVariables();
@@ -109,7 +109,7 @@ public class JDWPStackFrame {
                             }
                         }
                     }*/
-                    // }
+                }
 
 //                ThreadReferenceImpl thread = command.readThreadReference();
 //                try {
@@ -134,7 +134,7 @@ public class JDWPStackFrame {
 //                } catch (IncompatibleThreadStateException e) {
 //                    e.printStackTrace();
 //                }
-            }
+           }
         }
 
         /**
