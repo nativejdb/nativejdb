@@ -165,7 +165,7 @@ public class JDWPEventRequest {
                                 } else if (depth == JDWP.StepDepth.OUT) {
                                     cmd = gc.getCommandFactory().createMIExecReturn();
                                 } else { //JDWP.StepDepth.OVER
-                                    cmd = gc.getCommandFactory().createMIExecNext(size);
+                                    cmd = gc.getCommandFactory().createMIExecNext();
                                 }
 
                                 int tokenID = JDWP.getNewTokenId();

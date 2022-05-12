@@ -103,7 +103,7 @@ public class JDWPThreadReference {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                // try {
-                    System.out.println("Thread - Queueing MI command to resume application");
+                    System.out.println("Thread - Queueing MI command to resume application " +  command.readThreadReference().uniqueID());
                     MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);

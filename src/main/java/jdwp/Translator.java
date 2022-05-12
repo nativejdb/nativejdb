@@ -84,6 +84,12 @@ public class Translator {
 	private static PacketStream translateBreakpointHit(GDBControl gc, MIBreakpointHitEvent event) {
 		PacketStream packetStream = new PacketStream(gc);
 		Integer eventNumber = Integer.parseInt(event.getNumber());
+
+		if (eventNumber == 1) { // This is the very first breakpoint due the use of start
+			gc.initialized();
+			return null;
+		}
+
 		MIBreakInsertInfo info = JDWP.bkptsByBreakpointNumber.get(eventNumber);
 		if (info == null) { // This happens for a synthetic breakpoint (not set by the user)
 			return null;
@@ -93,7 +99,7 @@ public class Translator {
 		byte eventKind = info.getMIInfoEventKind();
 		LocationImpl loc = JDWP.bkptsLocation.get(eventNumber);
 		//long threadID = getThreadId(event);
-		long threadID = getMainThreadId(gc); // Hack!!!
+		long threadID = getMainThreadId(gc);
 
 		packetStream.writeByte(suspendPolicy);
 		packetStream.writeInt(1); // Number of events in this response packet
@@ -126,10 +132,13 @@ public class Translator {
 	}
 
 	private static PacketStream  translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
+		System.out.println("Translating end-stepping-range");
 		PacketStream packetStream = new PacketStream(gc);
-		Long threadID = getThreadId(event);
+		//Long threadID = getThreadId(event);
+		long threadID = getMainThreadId(gc);
 		MIInfo info = JDWP.stepByThreadID.get(threadID);
 		if (info == null) {
+			System.out.println("Returning null");
 			return null;
 		}
 
@@ -137,7 +146,7 @@ public class Translator {
 		packetStream.writeInt(1); // Number of events in this response packet
 		packetStream.writeByte(info.getMIInfoEventKind());
 		packetStream.writeInt(info.getMIInfoRequestID());
-		packetStream.writeObjectRef(threadID);
+		packetStream.writeObjectRef(getMainThreadId(gc));
 		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
 		if (loc != null) {
 			packetStream.writeLocation(loc);

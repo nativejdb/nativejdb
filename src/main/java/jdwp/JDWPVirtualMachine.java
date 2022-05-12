@@ -276,10 +276,10 @@ public class JDWPVirtualMachine {
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
 
-//                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-//                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-//                        answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
-//                    }
+                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL; // The virtual machine is not running.
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -302,6 +302,11 @@ public class JDWPVirtualMachine {
                     MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
+
+                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL; // The virtual machine is not running.
+                    }
 
 //                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
 //                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {

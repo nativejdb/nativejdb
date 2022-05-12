@@ -32,8 +32,10 @@ import jdwp.jdi.VirtualMachineImpl;
 import java.io.*;
 
 public class GDBControl extends AbstractMIControl {
+    private boolean initialized = false;
     private final Connection myConnection;
     public VirtualMachineImpl vm;
+
 
     int sizeofFieldRef = 8;
     int sizeofMethodRef = 8;
@@ -83,6 +85,20 @@ public class GDBControl extends AbstractMIControl {
         }
     }
 
+    public void initialized() {
+        initialized = true;
+    }
+
+    public void waitForInitialization() {
+        while (!initialized) {
+            try {
+                Thread.sleep(100);
+
+            } catch (InterruptedException e) {
+
+            }
+        }
+    }
 
     void flush() {
         try {
