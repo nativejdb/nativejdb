@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 2018 JetBrains s.r.o.
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ *
+ * You may contact JetBrains s.r.o. at Na Hřebenech II 1718/10, 140 00 Prague,
+ * Czech Republic or at legal@jetbrains.com.
+ *
+ * Copyright (C) 2022 IBM Corporation
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ */
+
 package jdwp;
 
 import com.sun.jdi.IncompatibleThreadStateException;
@@ -21,7 +46,7 @@ public class JDWPStackFrame {
          * index can be determined for method arguments from the method
          * signature without access to the local variable table information.)
          */
-        static class GetValues implements Command  {
+        static class GetValues implements Command {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
@@ -36,7 +61,8 @@ public class JDWPStackFrame {
                         [--max-results limit]
                     Return a list containing the names and types for all global variables taken from the debug information. The variables are grouped by source file, and shown with the line number on which each variable is defined.
                 */
-                long threadId = command.readObjectRef();
+                //long threadId = command.readObjectRef();
+                long threadId = 1;
                 int frameId = (int) command.readFrameRef();
                 int slots = command.readInt();
                 answer.writeInt(slots);
@@ -85,28 +111,30 @@ public class JDWPStackFrame {
                     }*/
                 }
 
-                /*ThreadReferenceImpl thread = command.readThreadReference();
-                try {
-                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
-                    slots = command.readInt();
-                    int available = frame.getAvailableSlots(); //HERE
-                    answer.writeInt(slots);
-                    for (int i = 0; i < slots; i++) {
-                        int slot = command.readInt();
-                        if (slot >= available) {
-                            answer.pkt.errorCode = JDWP.Error.INVALID_SLOT;
-                            return;
-                        }
-                        ValueImpl slotValue = frame.getSlotValue(slot, command.readByte());
-                        answer.writeValue(slotValue);
-                    }
-
-                } catch (IndexOutOfBoundsException e) {
-                    // hack
-                } catch (IncompatibleThreadStateException e) {
-                    e.printStackTrace();
-                }*/
-            }
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                try {
+//                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
+//                    int slots = command.readInt();
+//                    int available = frame.getAvailableSlots(); //HERE
+//                    //answer.writeInt(slots);
+//                    answer.writeInt(available);
+//                    //for (int i = 0; i < slots; i++) {
+//                    for (int i = 0; i < available; i++) {
+//                        int slot = command.readInt();
+//                        if (slot >= available) {
+//                            answer.pkt.errorCode = JDWP.Error.INVALID_SLOT;
+//                            return;
+//                        }
+//                        ValueImpl slotValue = frame.getSlotValue(slot, command.readByte());
+//                        answer.writeValue(slotValue);
+//                    }
+//
+//                } catch (IndexOutOfBoundsException e) {
+//                    // hack
+//                } catch (IncompatibleThreadStateException e) {
+//                    e.printStackTrace();
+//                }
+           }
         }
 
         /**

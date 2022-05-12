@@ -24,7 +24,6 @@
  *
  */
 
-
 package jdwp;
 
 import com.sun.jdi.connect.spi.Connection;
@@ -40,11 +39,9 @@ public class JDWPServer {
     public static void main(String[] args) throws Exception {
         /*String program = System.getProperty("program.class");
         ProcessBuilder builder = new ProcessBuilder("java", "-cp", "apps", program);
-        //ProcessBuilder builder = new ProcessBuilder("./jdwp/apps/HelloAdd");
         Process p = builder.start();
-
-        System.out.println("PID: " + p.pid());
         final VirtualMachineImpl vm = VirtualMachineImpl.createVirtualMachineForPID((int)p.pid(), 0);*/
+
         final VirtualMachineImpl vm = VirtualMachineImpl.createVirtualMachineForPID(Integer.parseInt(args[0]), 0); //process ID
 
         // Attaching server
@@ -63,14 +60,14 @@ public class JDWPServer {
 
         System.err.println(WAITING_FOR_DEBUGGER + listenKey.address());
 
-
+        Connection connection = socketTransportService.accept(listenKey, 0, 0);
         // shutdown hook to clean-up the server in case of forced exit.
         Runtime.getRuntime().addShutdownHook(new Thread(
                 new Runnable() {
                     public void run() {
                         try {
                             vm.dispose();
-                            //connection.close();
+                            connection.close();
                             socketTransportService.stopListening(listenKey);
                         } catch (IllegalArgumentException ignored) {
                         } catch (IOException e) {
@@ -80,7 +77,7 @@ public class JDWPServer {
                 }));
 
         // Listening server
-        Connection connection = socketTransportService.accept(listenKey, 0, 0);
+
         socketTransportService.stopListening(listenKey);
 
         JDWPProxy.reply(connection, vm);

@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 2018 JetBrains s.r.o.
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ *
+ * You may contact JetBrains s.r.o. at Na Hřebenech II 1718/10, 140 00 Prague,
+ * Czech Republic or at legal@jetbrains.com.
+ *
+ * Copyright (C) 2022 IBM Corporation
+ *
+ * This program is free software; you can redistribute and/or modify it under
+ * the terms of the GNU General Public License v2 with Classpath Exception.
+ * The text of the license is available in the file LICENSE.TXT.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.TXT for more details.
+ */
+
 package jdwp;
 
 import gdb.mi.service.command.events.MIEvent;
@@ -69,21 +94,21 @@ public class JDWPEventRequest {
                                 }
 
                                 if (differentBreakLine(reply)) { // This is an invalid location in the source to set a breakpoint
-                                    answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
+                                    //answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
 
                                     // remove the breakpoint in GDB
                                     System.out.println("Queueing MI command to disable breakpoint at "+location);
                                     cmd = gc.getCommandFactory().createMIBreakDisable(reply.getMIBreakpoint().getNumber());
                                     tokenID = JDWP.getNewTokenId();
                                     gc.queueCommand(tokenID, cmd);
+//
+//                                    MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+//                                    if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+//                                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+//                                        return;
+//                                    }
 
-                                    MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                                    if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                                        return;
-                                    }
-
-
+                                    answer.writeInt(command.pkt.id);
                                     return;
                                 }
 
@@ -110,26 +135,43 @@ public class JDWPEventRequest {
                             byte modKind = command.readByte();
                             if (modKind == 10) {
                                 long threadId = command.readObjectRef();
+                                /*
+                                    MIN	    0	Step by the minimum possible amount (often a bytecode instruction).
+                                    LINE	1	Step to the next source line unless there is no line number information in which case a MIN step is done instead.
+                                 */
                                 int size = command.readInt();
+                                /*
+                                    INTO	0	Step into any method calls that occur before the end of the step.
+                                    OVER	1	Step over any method calls that occur before the end of the step.
+                                    OUT	    2	Step out of the current method.
+                                 */
                                 int depth = command.readInt(); //TODO use stepdepth for GDB commands
 
-                                System.out.println("Queueing MI command to select thread:" + threadId);
-                                MICommand cmd = gc.getCommandFactory().createMISelectThread((int) threadId);
+//                                System.out.println("Queueing MI command to select thread:" + threadId);
+//                                MICommand cmd = gc.getCommandFactory().createMISelectThread((int) threadId);
+//                                int tokenID = JDWP.getNewTokenId();
+//                                gc.queueCommand(tokenID, cmd);
+//
+//                                MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+//                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+//                                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
+//                                    return;
+//                                }
+
+                                System.out.println("Queueing MI command to step by step size:" + size);
+                                MICommand cmd;
+                                if (depth == JDWP.StepDepth.INTO) {
+                                    cmd = gc.getCommandFactory().createMIExecStep(size);
+                                } else if (depth == JDWP.StepDepth.OUT) {
+                                    cmd = gc.getCommandFactory().createMIExecReturn();
+                                } else { //JDWP.StepDepth.OVER
+                                    cmd = gc.getCommandFactory().createMIExecNext();
+                                }
+
                                 int tokenID = JDWP.getNewTokenId();
                                 gc.queueCommand(tokenID, cmd);
 
                                 MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                                    return;
-                                }
-
-                                System.out.println("Queueing MI command to step by step size:" + size);
-                                cmd = gc.getCommandFactory().createMIExecNext(size);
-                                tokenID = JDWP.getNewTokenId();
-                                gc.queueCommand(tokenID, cmd);
-
-                                reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
                                 if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                                     return;
@@ -152,7 +194,7 @@ public class JDWPEventRequest {
                     for (int i = 0; i < modifiersCount; i++) {
                         byte modKind = command.readByte();
                         if (modKind == 5) {
-                            String regex = command.readString();
+                            String regex = command.readString().replace(".", "/");
                             System.out.println("In class prepare: " + regex);
                             int requestId = command.pkt.id;
                             answer.writeInt(command.pkt.id);
@@ -167,6 +209,12 @@ public class JDWPEventRequest {
                     }
                     answer.writeInt(0);
 
+                } else if (eventKind == JDWP.EventKind.FIELD_ACCESS || eventKind == JDWP.EventKind.FIELD_MODIFICATION) {
+                    byte suspendPolicy = command.readByte();
+                    int modifiersCount = command.readInt();
+                    for (int i = 0; i < modifiersCount; i++) {
+                        byte modKind = command.readByte();
+                    }
                 } else {
                     answer.writeInt(0); // to allow jdwp.jdi GDBControl to initialize
                 }

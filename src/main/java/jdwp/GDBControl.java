@@ -32,8 +32,10 @@ import jdwp.jdi.VirtualMachineImpl;
 import java.io.*;
 
 public class GDBControl extends AbstractMIControl {
+    private boolean initialized = false;
     private final Connection myConnection;
     public VirtualMachineImpl vm;
+
 
     int sizeofFieldRef = 8;
     int sizeofMethodRef = 8;
@@ -73,22 +75,30 @@ public class GDBControl extends AbstractMIControl {
             gdbInput.flush();
             System.out.println(getGDBOutput());
 
-//            com = "start&\n".getBytes();
-//            gdbInput.write(com, 0, com.length);
-//            gdbInput.flush();
-//            System.out.println(getGDBOutput());
-
-            //Send a JDWP packet to pause IDE?
-            /*PacketStream packetStream = new PacketStream(this);
-            if (packetStream != null) {
-                packetStream.send();
-            }*/
+            com = "start&\n".getBytes();
+            gdbInput.write(com, 0, com.length);
+            gdbInput.flush();
+            System.out.println(getGDBOutput());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    public void initialized() {
+        initialized = true;
+    }
+
+    public void waitForInitialization() {
+        while (!initialized) {
+            try {
+                Thread.sleep(100);
+
+            } catch (InterruptedException e) {
+
+            }
+        }
+    }
 
     void flush() {
         try {

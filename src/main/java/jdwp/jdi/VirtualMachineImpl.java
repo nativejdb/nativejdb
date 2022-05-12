@@ -152,8 +152,15 @@ public class VirtualMachineImpl {
         return myvm;
     }
 
+    static public VirtualMachineImpl dummyVirtualMachine() {
+        VirtualMachineImpl myvm = new VirtualMachineImpl(Bootstrap.virtualMachineManager(), 0);
+        myvm.saAgent.startServer(1);
+        myvm.init();
+        return myvm;
+    }
 
-    VirtualMachineImpl(VirtualMachineManager mgr, int sequenceNumber) {
+
+    public VirtualMachineImpl(VirtualMachineManager mgr, int sequenceNumber) {
         this.sequenceNumber = sequenceNumber;
         this.vmmgr = mgr;
 

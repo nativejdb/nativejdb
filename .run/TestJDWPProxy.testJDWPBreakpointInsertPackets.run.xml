@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="TestJDWPProxy.testJDWPBreakpointInsertPackets" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
+    <module name="NativeJDB" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="jdwp.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="jdwp" />
+    <option name="MAIN_CLASS_NAME" value="jdwp.TestJDWPProxy" />
+    <option name="METHOD_NAME" value="testJDWPBreakpointInsertPackets" />
+    <option name="TEST_OBJECT" value="method" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

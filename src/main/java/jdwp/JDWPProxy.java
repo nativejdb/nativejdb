@@ -37,11 +37,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
-/**
- * @author egor
- */
 public class JDWPProxy {
-    private static final Map<Integer, Map<Integer, Command>> COMMANDS = new HashMap<Integer, Map<Integer, Command>>();
+    protected static final Map<Integer, Map<Integer, Command>> COMMANDS = new HashMap<Integer, Map<Integer, Command>>();
 
     static {
         try {
@@ -91,12 +88,13 @@ public class JDWPProxy {
         GDBControl gdbControl = new GDBControl(connection, vm);
         Listener asyncListener = new MIRunControlEventProcessor(gdbControl);
 
-        // Declare that the VM has started
-        PacketStream VMStartedPkt = Translator.getVMStartedPacket(gdbControl);
-        VMStartedPkt.send();
-
         try {
             gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, gdbControl.gdbError);
+            gdbControl.waitForInitialization();
+
+            // Declare that the VM has started
+            PacketStream VMStartedPkt = Translator.getVMStartedPacket(gdbControl);
+            VMStartedPkt.send();
 
             while (true) {
                 byte[] b = connection.readPacket();

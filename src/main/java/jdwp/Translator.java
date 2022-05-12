@@ -19,6 +19,7 @@ import gdb.mi.service.command.output.MIInfo;
 import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ConcreteMethodImpl;
+import jdwp.jdi.ThreadReferenceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class Translator {
 		packetStream.writeInt(1);
 		packetStream.writeByte(eventKind);
 		packetStream.writeInt(0); // requestId is 0 since it's automatically generated
-		packetStream.writeInt(1); // Todo ThreadId -- change this!!!!
+		packetStream.writeObjectRef(getMainThreadId(gc)); // Todo ThreadId -- change this!!!!
 		return packetStream;
 	}
 
@@ -60,7 +61,8 @@ public class Translator {
 		packetStream.writeInt(1);
 		packetStream.writeByte(eventKind);
 		packetStream.writeInt(event.requestID);
-		packetStream.writeObjectRef((long) 1); //Need to fix this!!! threadId
+		//packetStream.writeObjectRef((long) 1); //Need to fix this!!! threadId
+		packetStream.writeObjectRef(getMainThreadId(gc));
 		packetStream.writeByte(event.referenceType.tag());
 		packetStream.writeObjectRef(event.referenceType.uniqueID());
 		packetStream.writeString(event.referenceType.signature());
@@ -82,6 +84,12 @@ public class Translator {
 	private static PacketStream translateBreakpointHit(GDBControl gc, MIBreakpointHitEvent event) {
 		PacketStream packetStream = new PacketStream(gc);
 		Integer eventNumber = Integer.parseInt(event.getNumber());
+
+		if (eventNumber == 1) { // This is the very first breakpoint due the use of start
+			gc.initialized();
+			return null;
+		}
+
 		MIBreakInsertInfo info = JDWP.bkptsByBreakpointNumber.get(eventNumber);
 		if (info == null) { // This happens for a synthetic breakpoint (not set by the user)
 			return null;
@@ -90,15 +98,26 @@ public class Translator {
 		int requestId = info.getMIInfoRequestID();
 		byte eventKind = info.getMIInfoEventKind();
 		LocationImpl loc = JDWP.bkptsLocation.get(eventNumber);
-		long threadID = getThreadId(event);
+		//long threadID = getThreadId(event);
+		long threadID = getMainThreadId(gc);
 
 		packetStream.writeByte(suspendPolicy);
 		packetStream.writeInt(1); // Number of events in this response packet
 		packetStream.writeByte(eventKind);
 		packetStream.writeInt(requestId);
-		packetStream.writeLong(threadID); // TODO!! Might need to use PacketStream.writeObjectRef()
+		packetStream.writeObjectRef(threadID);
 		packetStream.writeLocation(loc);
 		return packetStream;
+	}
+
+	public static long getMainThreadId(GDBControl gc) {
+		List<ThreadReferenceImpl> list = gc.vm.allThreads();
+		for(ThreadReferenceImpl thread: list){
+			if ("main".equals(thread.name())) {
+				return thread.uniqueID();
+			}
+		}
+		return 0;
 	}
 
 	private static long getThreadId(MIStoppedEvent event) {
@@ -113,10 +132,13 @@ public class Translator {
 	}
 
 	private static PacketStream  translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
+		System.out.println("Translating end-stepping-range");
 		PacketStream packetStream = new PacketStream(gc);
-		Long threadID = getThreadId(event);
+		//Long threadID = getThreadId(event);
+		long threadID = getMainThreadId(gc);
 		MIInfo info = JDWP.stepByThreadID.get(threadID);
 		if (info == null) {
+			System.out.println("Returning null");
 			return null;
 		}
 
@@ -124,8 +146,7 @@ public class Translator {
 		packetStream.writeInt(1); // Number of events in this response packet
 		packetStream.writeByte(info.getMIInfoEventKind());
 		packetStream.writeInt(info.getMIInfoRequestID());
-		packetStream.writeLong(threadID); // TODO!! Might need to use PacketStream.writeObjectRef()
-
+		packetStream.writeObjectRef(getMainThreadId(gc));
 		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
 		if (loc != null) {
 			packetStream.writeLocation(loc);

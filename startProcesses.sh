@@ -2,21 +2,24 @@
 
 #Wrapper running gdb on native image executable &
 #starting JDWP server listening for JDWP request packets
-while getopts a:c: flag
+while getopts a:c:e:s: flag
 do
     case "${flag}" in
         a) ADDRESS_ARG=${OPTARG};;
         c) CLASS_NAME=${OPTARG};;
+        e) NATIVE_EXEC=${OPTARG};;
+        s) NATIVE_SRC=${OPTARG};;
         *) ;;
     esac
 done
 
-java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
-PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
+#java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
+#PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
 
-IMAGE_NAME=debugeeImg
-NATIVE_EXEC=$PWD'/apps/'$IMAGE_NAME
-NATIVE_SRC=$PWD'/apps/sources'
+java -jar apps/$CLASS_NAME.jar &
+PROCESS_ID=$(pgrep -nf "java -jar apps/$CLASS_NAME.jar")
+
+IMAGE_NAME=$CLASS_NAME
 
 echo "PROCESS_ID: $PROCESS_ID";
 echo "ADDRESS_ARG: $ADDRESS_ARG";

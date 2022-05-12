@@ -5,6 +5,8 @@ LABEL maintainer="Ansu Varghese <avarghese@us.ibm.com>"
 ARG ADDRESS_ARG="0.0.0.0:8080"
 #Dockerfile input is the relative path of the debuggee directory
 ARG CLASS_NAME="Hello"
+ARG NATIVE_EXEC="apps/${CLASS_NAME}"
+ARG NATIVE_SRC="apps/${CLASS_NAME}sources"
 #TODO: add input args to support jarfile option for native image exec
 
 EXPOSE 8080
@@ -33,5 +35,7 @@ RUN $GRAALVM_HOME/bin/gu install native-image
 
 ENV ADDRESS_ARG=$ADDRESS_ARG
 ENV CLASS_NAME=$CLASS_NAME
+ENV NATIVE_EXEC=$NATIVE_EXEC
+ENV NATIVE_SRC=$NATIVE_SRC
 
-ENTRYPOINT ./startProcesses.sh -a $ADDRESS_ARG -c $CLASS_NAME
+ENTRYPOINT ./startProcesses.sh -a $ADDRESS_ARG -c $CLASS_NAME -e $NATIVE_EXEC -s $NATIVE_SRC

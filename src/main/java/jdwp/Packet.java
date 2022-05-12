@@ -132,6 +132,7 @@ public class Packet {
     {
         id = uniqID();
         flags = Reply;
+        errorCode = 0;
         data = nullData;
     }
 
@@ -139,6 +140,7 @@ public class Packet {
     {
         id = uniqID();
         flags = fgs;
+        errorCode = 0;
         data = nullData;
     }
 

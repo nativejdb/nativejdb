@@ -1,0 +1,7 @@
+[EXECUTABLE]
+Hello
+
+[DEBUG_INFO]
+Hellosources
+Hello
+
