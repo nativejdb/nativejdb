@@ -28,12 +28,6 @@ NativeJDB uses the [JDWP protocol](https://docs.oracle.com/en/java/javase/11/doc
     - Stack Frames
     - Variables (Local + Static) values (Work-in-progress)
     - Thread info
-    
-## Current limitations:
-
- - Single threaded programs only
- - Short running programs need a thread sleep (so program does not end before NativeJDB has the time to start a scaffolding VM and attach to it)
- - Hot Code Replace not possible
 
 ## Requirements
 
@@ -44,7 +38,6 @@ NativeJDB uses the [JDWP protocol](https://docs.oracle.com/en/java/javase/11/doc
 ## Demo
 
 :movie_camera: https://ibm.box.com/v/nativejdb-demo :movie_camera:
-
 
 ## Getting Started 
 
@@ -107,6 +100,17 @@ To connect an IDE debugger to NativeJDB, the user needs to create a Debug config
 Set breakpoints in the source code file for your example application in the `nativejdbExamples` project (for example: [nativejdbExamples/src/Hello/Hello.java](https://github.com/nativejdb/nativejdbExamples/blob/main/src/Hello/Hello.java)
 
 On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Edit Configurations --> Remove JVM Debug --> [nativejdbExamples/.run/Hello](https://github.com/nativejdb/nativejdbExamples/blob/main/.run/Hello.run.xml)
+
+
+## Current limitations:
+
+ - Single threaded programs only
+ - Short running programs need a thread sleep (so program does not end before NativeJDB has time to start a scaffolding VM and attach to it)
+ - Hot Code Replace not possible
+ - Known issue: breakpoints in loops work only once (related to [this](https://github.com/oracle/graal/issues/4379) graalvm issue)
+ - Known issue: step operation sometimes continues instead
+
+
 
 ## Contributing
 
