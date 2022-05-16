@@ -104,9 +104,9 @@ This will start `nativejdb` in a running Docker container.
 
 #### 3. Connect IntelliJ Debugger to running `nativejdb` Docker container:
 
-Set breakpoints in the source code file for your example application in the `nativejdbExamples` project (for example: [nativejdbExamples/src/Hello/Hello.java](./../nativejdbExamples/src/Hello/Hello.java)
+Set breakpoints in the source code file for your example application in the `nativejdbExamples` project (for example: [nativejdbExamples/src/Hello/Hello.java](https://github.com/nativejdb/nativejdbExamples/blob/main/src/Hello/Hello.java)
 
-On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Remote JVM Debug --> [nativejdbExamples/.run/Hello](./../nativejdbExamples/.run/Hello.run.xml)
+On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Remote JVM Debug --> [nativejdbExamples/.run/Hello](https://github.com/nativejdb/nativejdbExamples/blob/main/.run/Hello.run.xml)
 
 ## Contributing
 
