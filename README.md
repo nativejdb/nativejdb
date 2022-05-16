@@ -100,6 +100,14 @@ add the executable and debug sources to [/apps](./apps) directory and then pass 
 make nativejdb CLASSNAME={nameofjarfile} NATIVEEXEC=apps/{nameofnativeexec} NATIVESRC=apps/{directorynameofdebugsources}
 ```
 
+This will start `nativejdb` in a running Docker container.
+
+#### 3. Connect IntelliJ Debugger to running `nativejdb` Docker container:
+
+Set breakpoints in the source code file for your example application in the `nativejdbExamples` project (for example: [nativejdbExamples/src/Hello/Hello.java](./../nativejdbExamples/src/Hello/Hello.java)
+
+On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Remote JVM Debug --> [nativejdbExamples/.run/Hello](./../nativejdbExamples/.run/Hello.run.xml)
+
 ## Contributing
 
 If you are interested in contributing, see [CONTRIBUTING.md](./CONTRIBUTING.md) for contributing information
