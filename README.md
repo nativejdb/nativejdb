@@ -9,8 +9,9 @@ Native compilation is useful for serverless computing, it avoids the overhead of
 Today, natively compiled Java code can be debugged using GDB, which is a C/C++ debugger and is unfamiliar to Java developers. 
 
 NativeJDB bridges the gap between the Java Debugger Framework available in modern IDEs and native debugging via GDB. It is part of our exploration to
-improve developer experience and provide familiar tooling for Java cloud-native developers. NativeJDB is useful when the application behaves differently when
-natively compiled.
+improve developer experience and provide familiar tooling for Java cloud-native developers. NativeJDB is useful when the application behaves differently when natively compiled.
+
+NativeJDB uses the [JDWP protocol](https://docs.oracle.com/en/java/javase/11/docs/specs/jdwp/jdwp-protocol.html) to communicate with an IDE, and acts as a server for it. It wraps a native executable controlled by GDB and makes it possible to control the native executable via JDWP commands. Because of this architecture, NativeJDB can in principle be used with any IDE, but has mostly been tested with IntelliJ. The current implementation of NativeJDB makes use of a "scaffolding VM", which is the same program being executed as a Java process. This allows NativeJDB to obtain certain static informations about the code that are harder to obtain from the GDB. In the future, this scaffolding can be removed.
 
 ## Features:
 
@@ -31,22 +32,19 @@ natively compiled.
 ## Current limitations:
 
  - Single threaded programs only
- - Short running programs need a thread sleep (so program does not end before NativeJDB attaches)
+ - Short running programs need a thread sleep (so program does not end before NativeJDB has the time to start a scaffolding VM and attach to it)
  - Hot Code Replace not possible
 
 ## Requirements
 
  - GraalVM Community Edition for Java 11
  - Docker Desktop
- - IDE
+ - IntelliJ IDE
 
 ## Demo
 
 :movie_camera: https://ibm.box.com/v/nativejdb-demo :movie_camera:
 
-## Blog Post
-
-:construction: Coming soon :construction:
 
 ## Getting Started 
 
@@ -104,9 +102,11 @@ This will start `nativejdb` in a running Docker container.
 
 #### 3. Connect IntelliJ Debugger to running `nativejdb` Docker container:
 
+To connect an IDE debugger to NativeJDB, the user needs to create a Debug configuration and attach to NativeJDB on the appropriate port.
+
 Set breakpoints in the source code file for your example application in the `nativejdbExamples` project (for example: [nativejdbExamples/src/Hello/Hello.java](https://github.com/nativejdb/nativejdbExamples/blob/main/src/Hello/Hello.java)
 
-On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Remote JVM Debug --> [nativejdbExamples/.run/Hello](https://github.com/nativejdb/nativejdbExamples/blob/main/.run/Hello.run.xml)
+On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Edit Configurations --> Remove JVM Debug --> [nativejdbExamples/.run/Hello](https://github.com/nativejdb/nativejdbExamples/blob/main/.run/Hello.run.xml)
 
 ## Contributing
 
