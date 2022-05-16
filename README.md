@@ -99,7 +99,7 @@ To connect an IDE debugger to NativeJDB, the user needs to create a Debug config
 
 Set breakpoints in the source code file for your example application in the `nativejdbExamples` project (for example: [nativejdbExamples/src/Hello/Hello.java](https://github.com/nativejdb/nativejdbExamples/blob/main/src/Hello/Hello.java)
 
-On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Edit Configurations --> Remove JVM Debug --> [nativejdbExamples/.run/Hello](https://github.com/nativejdb/nativejdbExamples/blob/main/.run/Hello.run.xml)
+On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Edit Configurations --> Remote JVM Debug --> [nativejdbExamples/.run/Hello](https://github.com/nativejdb/nativejdbExamples/blob/main/.run/Hello.run.xml)
 
 
 ## Current limitations:
