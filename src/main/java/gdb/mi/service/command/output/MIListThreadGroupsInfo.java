@@ -220,7 +220,7 @@ public class MIListThreadGroupsInfo extends MIInfo {
 	}
 
 	/** @since 4.4 */
-	protected static class ThreadGroupInfo implements IThreadGroupInfo2 {
+	public static class ThreadGroupInfo implements IThreadGroupInfo2 {
 		final String fGroupId;
 		final String fDescription;
 		final String fName;

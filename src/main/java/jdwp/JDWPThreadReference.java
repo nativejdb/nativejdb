@@ -35,6 +35,8 @@ import java.util.ArrayList;
 
 public class JDWPThreadReference {
 
+
+
     static class ThreadReference {
         static final int COMMAND_SET = 11;
         private ThreadReference() {}  // hide constructor
@@ -46,7 +48,30 @@ public class JDWPThreadReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeString(command.readThreadReference().name());
+                //answer.writeString(command.readThreadReference().name());
+
+                System.out.println("Queueing MI command to get thread name");
+                MICommand cmd = gc.getCommandFactory().createMIThreadInfo();
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
+                    return;
+                }
+
+                long threadId = command.readObjectRef();
+                System.out.println("Thread id is:" + threadId);
+                MIThread[] allThreads = reply.getThreadList();
+                for(MIThread thread: allThreads){
+                    long id = Long.parseLong(thread.getThreadId());
+                    System.out.println("id is:" + id);
+                    if (id == threadId) {
+                        System.out.println("Writing thead name:" + thread.getName());
+                        answer.writeString(thread.getName());
+                    }
+                }
             }
         }
 
@@ -128,10 +153,12 @@ public class JDWPThreadReference {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                answer.writeInt(thread.status());
-                answer.writeInt(thread.suspendCount());
-                System.out.println("In Thread STATUS: " + thread.status() + " - suspendCount: " + thread.suspendCount());
+                answer.writeInt(2);
+                answer.writeInt(1);
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                answer.writeInt(thread.status());
+//                answer.writeInt(thread.suspendCount());
+//                System.out.println("In Thread STATUS: " + thread.status() + " - suspendCount: " + thread.suspendCount());
             }
         }
 
@@ -142,27 +169,40 @@ public class JDWPThreadReference {
             static final int COMMAND = 5;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-//                int threadId = (int) command.readObjectRef();
-//
+//                String threadId = command.readObjectRef() + "";
 //                System.out.println("Queueing MI command to get thread groups");
 //                MICommand cmd = gc.getCommandFactory().createMIMIListThreadGroups();
-//                int tokenID = getNewTokenId();
+//                int tokenID = JDWP.getNewTokenId();
 //                gc.queueCommand(tokenID, cmd);
 //
-//                MIListThreadGroupsInfo reply = (MIListThreadGroupsInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
+//                MIListThreadGroupsInfo reply = (MIListThreadGroupsInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
 //                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
-//                    answer.pkt.errorCode = Error.INTERNAL;
+//                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
 //                }
 //                MIListThreadGroupsInfo.IThreadGroupInfo[] groupList = reply.getGroupList();
-//                int id = 0;
+//                long id = 0;
 //                for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
-//                    // !!! Assuming that ids start with an i !!!
-//                    id = Integer.parseInt(group.getGroupId().substring(1));
+//                   MIListThreadGroupsInfo.ThreadGroupInfo groupInfo = (MIListThreadGroupsInfo.ThreadGroupInfo) group;
+//                   if (groupInfo != null) {
+//                       MIThread[] threads = groupInfo.getThreads();
+//                       if (threads != null) {
+//                           for (MIThread thread : threads) {
+//                               if (thread.getThreadId().equals(threadId)) {
+//                                   id = JDWPThreadGroupReference.threadGroupByName.get(group.getName());
+//                               }
+//                           }
+//                       }
+//                   }
+//
 //                }
+//                System.out.println("Writing group id: " + id);
 //                answer.writeObjectRef(id);
 
-                ThreadReferenceImpl thread = command.readThreadReference();
-                answer.writeObjectRef(thread.threadGroup().uniqueID());
+                answer.writeObjectRef(JDWPThreadGroupReference.threadGroupId);
+
+//                ThreadReferenceImpl thread = command.readThreadReference();
+//                answer.writeObjectRef(thread.threadGroup().uniqueID());
+
             }
         }
 
@@ -187,11 +227,11 @@ public class JDWPThreadReference {
 
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                int threadId = (int) command.readObjectRef();
+                String threadId = command.readObjectRef() + "";
 
                 System.out.println("Queueing MI command to get frames");
                 //MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
-                MICommand cmd = gc.getCommandFactory().createMIStackListFrames("1");
+                MICommand cmd = gc.getCommandFactory().createMIStackListFrames(threadId);
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 
@@ -235,11 +275,11 @@ public class JDWPThreadReference {
             static final int COMMAND = 7;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                int threadId = (int) command.readObjectRef();
+                String threadId = command.readObjectRef() + "";
 
                 System.out.println("Queueing MI command to get frames");
                 //MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
-                MICommand cmd = gc.getCommandFactory().createMIStackListFrames("1");
+                MICommand cmd = gc.getCommandFactory().createMIStackListFrames(threadId);
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
 

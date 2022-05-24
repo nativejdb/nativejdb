@@ -25,12 +25,26 @@
 
 package jdwp;
 
+import gdb.mi.service.command.output.MIListThreadGroupsInfo;
 import jdwp.jdi.ThreadGroupReferenceImpl;
 import jdwp.jdi.ThreadReferenceImpl;
 
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 
 public class JDWPThreadGroupReference {
+
+    public static long threadGroupId = 100000;
+
+    public static long getNewThreadGroupId() {
+        return threadGroupId++;
+    }
+
+    public static Map<Long, MIListThreadGroupsInfo.IThreadGroupInfo> threadGroupById = new HashMap<>();
+    public static Map<String, Long> threadGroupByName = new HashMap<>();
+
+
     static class ThreadGroupReference {
         static final int COMMAND_SET = 12;
         private ThreadGroupReference() {}  // hide constructor
@@ -42,8 +56,12 @@ public class JDWPThreadGroupReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
-                answer.writeString(group.name());
+//                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
+//                answer.writeString(group.name());
+//                long threadGroupId = command.readObjectRef();
+//                String name = JDWPThreadGroupReference.threadGroupById.get(threadGroupId).getName();
+//                answer.writeString(name);
+                answer.writeString("Main Thread Group");
             }
         }
 

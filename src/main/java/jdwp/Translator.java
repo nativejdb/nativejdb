@@ -61,7 +61,6 @@ public class Translator {
 		packetStream.writeInt(1);
 		packetStream.writeByte(eventKind);
 		packetStream.writeInt(event.requestID);
-		//packetStream.writeObjectRef((long) 1); //Need to fix this!!! threadId
 		packetStream.writeObjectRef(getMainThreadId(gc));
 		packetStream.writeByte(event.referenceType.tag());
 		packetStream.writeObjectRef(event.referenceType.uniqueID());
@@ -98,8 +97,8 @@ public class Translator {
 		int requestId = info.getMIInfoRequestID();
 		byte eventKind = info.getMIInfoEventKind();
 		LocationImpl loc = JDWP.bkptsLocation.get(eventNumber);
-		//long threadID = getThreadId(event);
-		long threadID = getMainThreadId(gc);
+		long threadID = getThreadId(event);
+		//long threadID = getMainThreadId(gc);
 
 		packetStream.writeByte(suspendPolicy);
 		packetStream.writeInt(1); // Number of events in this response packet
@@ -111,13 +110,14 @@ public class Translator {
 	}
 
 	public static long getMainThreadId(GDBControl gc) {
-		List<ThreadReferenceImpl> list = gc.vm.allThreads();
-		for(ThreadReferenceImpl thread: list){
-			if ("main".equals(thread.name())) {
-				return thread.uniqueID();
-			}
-		}
-		return 0;
+		return (long) 1;
+//		List<ThreadReferenceImpl> list = gc.vm.allThreads();
+//		for(ThreadReferenceImpl thread: list){
+//			if ("main".equals(thread.name())) {
+//				return thread.uniqueID();
+//			}
+//		}
+//		return 0;
 	}
 
 	private static long getThreadId(MIStoppedEvent event) {
@@ -134,8 +134,8 @@ public class Translator {
 	private static PacketStream  translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
 		System.out.println("Translating end-stepping-range");
 		PacketStream packetStream = new PacketStream(gc);
-		//Long threadID = getThreadId(event);
-		long threadID = getMainThreadId(gc);
+		Long threadID = getThreadId(event);
+		//long threadID = getMainThreadId(gc);
 		MIInfo info = JDWP.stepByThreadID.get(threadID);
 		if (info == null) {
 			System.out.println("Returning null");

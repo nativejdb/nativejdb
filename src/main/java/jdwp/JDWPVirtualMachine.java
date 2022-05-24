@@ -142,31 +142,28 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                List<ThreadReferenceImpl> list = gc.vm.allThreads();
-                answer.writeInt(list.size());
-                for (ThreadReferenceImpl thread : list) {
-                    answer.writeObjectRef(thread.uniqueID());
+//                List<ThreadReferenceImpl> list = gc.vm.allThreads();
+//                answer.writeInt(list.size());
+//                for (ThreadReferenceImpl thread : list) {
+//                    answer.writeObjectRef(thread.uniqueID());
+//                }
+
+                System.out.println("Queueing MI command to get all threads application");
+                MICommand cmd = gc.getCommandFactory().createMIThreadInfo();
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
+                    return;
                 }
 
-//                System.out.println("Queueing MI command to get all threads application");
-//                MICommand cmd = gc.getCommandFactory().createMIThreadInfo();
-//                int tokenID = JDWP.getNewTokenId();
-//                gc.queueCommand(tokenID, cmd);
-//
-//                MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-//                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-//                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
-//                    return;
-//                }
-//
-//                MIThread[] allThreads = reply.getThreadList();
-//                answer.writeInt(allThreads.length);
-//                for(MIThread thread: allThreads){
-//                    answer.writeObjectRef(Integer.parseInt(thread.getThreadId()));
-//                }
-
-//                answer.writeInt(1);
-//                answer.writeObjectRef(1);
+                MIThread[] allThreads = reply.getThreadList();
+                answer.writeInt(allThreads.length);
+                for(MIThread thread: allThreads){
+                    answer.writeObjectRef(Long.parseLong(thread.getThreadId()));
+                }
 
             }
         }
@@ -179,30 +176,47 @@ public class JDWPVirtualMachine {
         static class TopLevelThreadGroups implements Command  {
             static final int COMMAND = 5;
 
-            public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-//                System.out.println("Queueing MI command to get top level thread groups");
-//                MICommand cmd = gc.getCommandFactory().createMIMIListThreadGroups();
-//                int tokenID = getNewTokenId();
-//                gc.queueCommand(tokenID, cmd);
-//
-//                MIListThreadGroupsInfo reply = (MIListThreadGroupsInfo) gc.getResponse(tokenID, DEF_REQUEST_TIMEOUT);
-//                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
-//                    answer.pkt.errorCode = Error.INTERNAL;
-//                }
-//                MIListThreadGroupsInfo.IThreadGroupInfo[] groupList = reply.getGroupList();
-//                answer.writeInt(groupList.length);
-//                for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
-//                    // !!! Assuming that ids start with an i !!!
-//                    int id = Integer.parseInt(group.getGroupId().substring(1));
-//                    answer.writeObjectRef(id);
-//                }
 
-                List<ThreadGroupReferenceImpl> list = gc.vm.topLevelThreadGroups();
-                answer.writeInt(list.size());
-                for (ThreadGroupReferenceImpl group : list) {
-                    answer.writeObjectRef(group.uniqueID());
+            public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+                // Assuming a single thread group
+//                answer.writeInt(1);
+//                answer.writeObjectRef(JDWPThreadReference.threadGroupId);
+
+
+
+                System.out.println("Queueing MI command to get top level thread groups");
+                MICommand cmd = gc.getCommandFactory().createMIMIListThreadGroups();
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIListThreadGroupsInfo reply = (MIListThreadGroupsInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
+                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
-            }
+                MIListThreadGroupsInfo.IThreadGroupInfo[] groupList = reply.getGroupList();
+                answer.writeInt(groupList.length);
+
+                for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
+                    String groupName = group.getName();
+                    long groupId = JDWPThreadGroupReference.getNewThreadGroupId();
+                    System.out.println("Writing thread group id: " + groupId);
+                    answer.writeObjectRef(groupId);
+                    JDWPThreadGroupReference.threadGroupById.put(groupId, group);
+                    JDWPThreadGroupReference.threadGroupByName.put(group.getName(), groupId);
+
+                }
+
+
+
+
+//                System.out.println("Top Level thread groups");
+//                List<ThreadGroupReferenceImpl> list = gc.vm.topLevelThreadGroups();
+//                answer.writeInt(list.size());
+//                for (ThreadGroupReferenceImpl group : list) {
+//                    System.out.println("writing thread group id: " + group.uniqueID());
+//                    answer.writeObjectRef(group.uniqueID());
+//                }
+           }
         }
 
         /**
