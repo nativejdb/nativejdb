@@ -205,13 +205,14 @@ public class JDWPStackFrame {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                try {
-                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
-                    answer.writeTaggedObjectReference(frame.thisObject()); //HERE
-                } catch (IncompatibleThreadStateException e) {
-                    e.printStackTrace();
-                }
+                String threadId = command.readObjectRef() + "";
+                //can implement once we implement get value for `this` local var
+//                try {
+//                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
+//                    answer.writeTaggedObjectReference(frame.thisObject()); //HERE
+//                } catch (IncompatibleThreadStateException e) {
+//                    e.printStackTrace();
+//                }
             }
         }
 

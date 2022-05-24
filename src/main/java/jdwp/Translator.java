@@ -98,6 +98,7 @@ public class Translator {
 		byte eventKind = info.getMIInfoEventKind();
 		LocationImpl loc = JDWP.bkptsLocation.get(eventNumber);
 		long threadID = getThreadId(event);
+		System.out.println("THREAD ID FOR HIT: "+ threadID);
 		//long threadID = getMainThreadId(gc);
 
 		packetStream.writeByte(suspendPolicy);

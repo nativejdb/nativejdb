@@ -16,7 +16,7 @@ done
 #java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
 #PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
 
-className = GettingStarted
+className="GettingStarted"
 if [ "$CLASS_NAME" == "$className" ];
 then
   echo "Starting Quarkus' GettingStarted process..."
@@ -25,9 +25,9 @@ then
   PROCESS_ID=$(pgrep -nf "java -Dquarkus.http.port=8888 -cp apps/$CLASS_NAME.jar:apps/lib io.quarkus.runner.GeneratedMain")
 
   sleep 30
-  curl -w "\n" http://localhost:8080/hello
+  curl -w "\n" http://localhost:8888/hello
   sleep 5
-  curl -w "\n" http://localhost:8080/hello/greeting/quarkus
+  curl -w "\n" http://localhost:8888/hello/greeting/quarkus
 else
   echo "Starting $CLASS_NAME process..."
 

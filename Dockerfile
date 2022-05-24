@@ -21,6 +21,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 && apt-get -qqy update \
 && apt-get -qqy install \
   build-essential \
+  curl \
   emacs \
   valgrind \
   vim \
