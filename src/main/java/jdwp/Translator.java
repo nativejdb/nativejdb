@@ -176,6 +176,9 @@ public class Translator {
 		String[] params = paramList.split(", ");
 		ArrayList<String> newParams = new ArrayList<>();
 		for (String param: params) {
+			if (param.endsWith(" *")) { // zero or more param
+				param = param.substring(0, param.indexOf(" ")) + ";";
+			}
 			if (param.indexOf(" ") > 0) {
 				param = param.substring(0, param.indexOf(" "));
 			}
