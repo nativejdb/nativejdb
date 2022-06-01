@@ -2,14 +2,14 @@ FROM ubuntu:22.04
 LABEL maintainer="Ansu Varghese <avarghese@us.ibm.com>"
 
 #Dockerfile input is the address to start the JDWP server on
-ARG ADDRESS_ARG="0.0.0.0:8080"
+ARG ADDRESS_ARG="0.0.0.0:8082"
 #Dockerfile input is the relative path of the debuggee directory
 ARG CLASS_NAME="Hello"
 ARG NATIVE_EXEC="apps/${CLASS_NAME}"
 ARG NATIVE_SRC="apps/${CLASS_NAME}sources"
 #TODO: add input args to support jarfile option for native image exec
 
-EXPOSE 8080
+EXPOSE 8082
 HEALTHCHECK CMD wget -q -O /dev/null http://localhost:8080/healthy || exit 1
 
 WORKDIR /jdwp
@@ -21,6 +21,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 && apt-get -qqy update \
 && apt-get -qqy install \
   build-essential \
+  curl \
   emacs \
   valgrind \
   vim \
