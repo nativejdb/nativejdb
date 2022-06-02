@@ -25,8 +25,9 @@ NativeJDB uses the [JDWP protocol](https://docs.oracle.com/en/java/javase/11/doc
     - Set Breakpoints (Insert/Enable)
     - Clear Breakpoints (Delete/Disable)
     - Step Over / Step Into / Step Return
-    - Stack Frames
+    - Stack Frames information in IDE debugger pane
     - Variables (Local + Static) values (Work-in-progress)
+    - View of assembly code within a stack frame (work in progress)
     - Thread info
 
 ## Requirements
@@ -79,16 +80,20 @@ To generate a native executable within the Linux environment in the Docker conta
 
 - Run the following command via a terminal to deploy docker container running NativeJDB server to start debugging:
 
-For an already pre-built native image using [`nativejdbExamples`](https://github.com/nativejdb/nativejdbExamples) (like Hello), run this:
+For an already pre-built native image using [`nativejdbExamples`](https://github.com/nativejdb/nativejdbExamples) (like `Hello`), run this (`ISQUARKUS` arg is defaulted to `false`):
 ```
 make nativejdb CLASSNAME=Hello 
 ```
 
 For any other application that has your own pre-built native executable and debug sources,
-add the executable and debug sources to [/apps](./apps) directory and then pass the following input args to make target:
-
+add the executable and debug sources to [/apps](./apps) directory and then pass the following input args to make target (`ISQUARKUS` arg is defaulted to `false`):
 ```
 make nativejdb CLASSNAME={nameofjarfile} NATIVEEXEC=apps/{nameofnativeexec} NATIVESRC=apps/{directorynameofdebugsources}
+```
+
+For a Quarkus application that has its executable and debug sources in [/apps](./apps) directory (like `getting-started-1.0.0-SNAPSHOT-runner`), pass the following input args to make target, along with setting `ISQUARKUS` arg to `true`:
+```
+make nativejdb CLASSNAME=getting-started-1.0.0-SNAPSHOT-runner ISQUARKUS=true
 ```
 
 This will start `nativejdb` in a running Docker container.
@@ -104,7 +109,6 @@ On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Edit Configurat
 
 ## Current limitations:
 
- - Single threaded programs only
  - Short running programs need a thread sleep (so program does not end before NativeJDB has time to start a scaffolding VM and attach to it)
  - Hot Code Replace not possible
  - Known issue: breakpoints in loops work only once (related to [this](https://github.com/oracle/graal/issues/4379) graalvm issue)
