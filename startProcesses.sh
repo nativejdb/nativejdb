@@ -2,24 +2,23 @@
 
 #Wrapper running gdb on native image executable &
 #starting JDWP server listening for JDWP request packets
-while getopts a:c:e:s: flag
+while getopts a:c:e:s:k: flag
 do
     case "${flag}" in
         a) ADDRESS_ARG=${OPTARG};;
         c) CLASS_NAME=${OPTARG};;
         e) NATIVE_EXEC=${OPTARG};;
         s) NATIVE_SRC=${OPTARG};;
+        k) IS_QUARKUS=${OPTARG};;
         *) ;;
     esac
 done
 
 #java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
 #PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
-
-className="GettingStarted"
-if [ "$CLASS_NAME" == "$className" ];
+if [ "$IS_QUARKUS" == "true" ];
 then
-  echo "Starting Quarkus' GettingStarted process..."
+  echo "Starting Quarkus' $CLASS_NAME process..."
 
   java -Dquarkus.http.port=8888 -cp apps/$CLASS_NAME.jar:apps/lib io.quarkus.runner.GeneratedMain &
   PROCESS_ID=$(pgrep -nf "java -Dquarkus.http.port=8888 -cp apps/$CLASS_NAME.jar:apps/lib io.quarkus.runner.GeneratedMain")
