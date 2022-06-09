@@ -176,19 +176,17 @@ public class Translator {
 		String[] params = paramList.split(", ");
 		ArrayList<String> newParams = new ArrayList<>();
 		for (String param: params) {
-			if (param.endsWith(" *")) { // zero or more param
-				param = param.substring(0, param.indexOf(" ")) + ";";
+			if (param.endsWith("*")) { // zero or more param
+				param = param.substring(0, param.indexOf("*")) + ";";
 			}
-			if (param.indexOf(" ") > 0) {
-				param = param.substring(0, param.indexOf(" "));
-			}
+			param = param.replace(" ", "");
+			param = param.replace(".", "/");
 			if (!isPrimitive(param)) {
 				param = "L" + param;
 			}
-			param = param.replace(".", "/");
-			if (param.endsWith("[]")) { // array
-				param = param.substring(0, param.indexOf("["));
-				param = "[" + param + ";";
+			if (param.contains("[]")) { // array
+				param = param.replace("[]", "");
+				param = "[" + param;
 			}
 			if (!param.equals("void")) {
 				newParams.add(param);
