@@ -28,9 +28,7 @@ package jdwp;
 import com.sun.jdi.IncompatibleThreadStateException;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
-import jdwp.jdi.StackFrameImpl;
-import jdwp.jdi.ThreadReferenceImpl;
-import jdwp.jdi.ValueImpl;
+import jdwp.jdi.*;
 
 public class JDWPStackFrame {
     static class StackFrame {
@@ -50,91 +48,98 @@ public class JDWPStackFrame {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                /* This will be a combination of a few different GDB commands:
-                1. -stack-list-variables [ --no-frame-filters ] [ --skip-unavailable ] print-values
+                /*
+                    -stack-list-variables [ --no-frame-filters ] [ --skip-unavailable ] print-values
                     Display the names of local variables and function arguments for the selected frame.
-                2. -stack-list-locals [ --no-frame-filters ] [ --skip-unavailable ] print-values  (Maybe contained in 1.'s output already)
-                    Display the local variable names for the selected frame.
-                3. -symbol-info-variables [--include-nondebug] (Only gives us global field names - no values. Maybe contained in 1.'s output already)
-                        [--type type_regexp]
-                        [--name name_regexp]
-                        [--max-results limit]
-                    Return a list containing the names and types for all global variables taken from the debug information. The variables are grouped by source file, and shown with the line number on which each variable is defined.
                 */
-                //long threadId = command.readObjectRef();
-                long threadId = 1;
-                int frameId = (int) command.readFrameRef();
+                long threadID = command.readObjectRef();
+                int frameID = (int) command.readFrameRef();
                 int slots = command.readInt();
-                answer.writeInt(slots);
+
+                System.out.println("Queueing MI command to list local variables and function arguments");
+                MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadID), String.valueOf(frameID));
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                }
+                MIArg[] vals = replyloc.getVariables();
+
+                int gdbSize = getGDBVariablesSize(vals);
+                //answer.writeInt(slots);
+                answer.writeInt(gdbSize);
+                if (gdbSize != slots) {
+                    System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
+                }
                 for (int i = 0; i < slots; i++) {
                     int slot = command.readInt();
-                    byte sigbyte = command.readByte();
+                    byte tag = command.readByte();
 
-                    System.out.println("Queueing MI command to list local variables and function arguments");
-                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadId), String.valueOf(frameId));
-                    int tokenID = JDWP.getNewTokenId();
-                    gc.queueCommand(tokenID, cmd);
-
-                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                    }
-
-                    /*System.out.println("Queueing MI command to list global variables (only names)");
-                    cmd = gc.getCommandFactory().createMiSymbolInfoVariables();
-                    tokenID = JDWP.getNewTokenId();
-                    gc.queueCommand(tokenID, cmd);
-
-                    MiSymbolInfoVariablesInfo replyloc1 = (MiSymbolInfoVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (replyloc1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                    }*/
-
-                    MIArg[] vals = replyloc.getVariables();
-                    for (int j = 0; j < vals.length; j++) {
-                        String name = vals[j].getName();
-                        String value = vals[j].getValue();
-                        answer.writeString(value);
-                    }
-
-                   /* MIFrame frame = JDWP.framesById.get(frameId);
-                    MiSymbolInfoVariablesInfo.SymbolVariableInfo[] files = replyloc1.getSymbolVariables();
-                    for ( MiSymbolInfoVariablesInfo.SymbolVariableInfo file: files) {
-                        if (file.getFilename() == frame.getFile()) {
-                            MiSymbolInfoVariablesInfo.Symbols[] vals1 = file.getSymbols();
-                            for (MiSymbolInfoVariablesInfo.Symbols val: vals1) {
-                                String name = val.getName();
-                                //getValue of this global file field via GDB cmd
-                                System.out.println(name);
+                    LocalVariableImpl vmVar = JDWP.localsByID.get(slot);
+                    MIArg gdbVar = containsInGDBVariables(vals, vmVar.name());
+                    if (gdbVar != null) {
+                        String value = gdbVar.getValue();
+                        if (!gdbVar.getName().equals("this") && !value.equals("<optimized out>")) {
+                            answer.writeByte(tag); // get value via GDB print cmd: print *print->value
+                            switch (tag) {
+                                case JDWP.Tag.ARRAY:
+                                    answer.writeUntaggedValue(null); //TODO Implement
+                                    break;
+                                case JDWP.Tag.CHAR:
+                                    answer.writeChar(value.charAt(0));
+                                    break;
+                                case JDWP.Tag.FLOAT:
+                                    answer.writeFloat(Float.parseFloat(value));
+                                    break;
+                                case JDWP.Tag.DOUBLE:
+                                    answer.writeDouble(Double.parseDouble(value));
+                                    break;
+                                case JDWP.Tag.INT:
+                                    answer.writeInt(Integer.parseInt(value));
+                                    break;
+                                case JDWP.Tag.LONG:
+                                    answer.writeLong(Long.parseLong(value));
+                                    break;
+                                case JDWP.Tag.SHORT:
+                                    answer.writeShort(Short.parseShort(value));
+                                    break;
+                                case JDWP.Tag.BOOLEAN:
+                                    answer.writeBoolean(Boolean.parseBoolean(value));
+                                    break;
+                                case JDWP.Tag.STRING:
+                                    answer.writeString(value);
+                                    break;
+                                case JDWP.Tag.OBJECT:
+                                    answer.writeNullObjectRef(); //TODO Implement
                             }
                         }
-                    }*/
+                    }
                 }
-
-//                ThreadReferenceImpl thread = command.readThreadReference();
-//                try {
-//                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
-//                    int slots = command.readInt();
-//                    int available = frame.getAvailableSlots(); //HERE
-//                    //answer.writeInt(slots);
-//                    answer.writeInt(available);
-//                    //for (int i = 0; i < slots; i++) {
-//                    for (int i = 0; i < available; i++) {
-//                        int slot = command.readInt();
-//                        if (slot >= available) {
-//                            answer.pkt.errorCode = JDWP.Error.INVALID_SLOT;
-//                            return;
-//                        }
-//                        ValueImpl slotValue = frame.getSlotValue(slot, command.readByte());
-//                        answer.writeValue(slotValue);
-//                    }
-//
-//                } catch (IndexOutOfBoundsException e) {
-//                    // hack
-//                } catch (IncompatibleThreadStateException e) {
-//                    e.printStackTrace();
-//                }
+                // TODO write GDB variables that are not in the VM slots
            }
+
+            private MIArg containsInGDBVariables(MIArg[] vals, String name) {
+                for (MIArg val : vals) {
+                    if (val.getName().equals(name)) {
+                        return val;
+                    }
+                }
+                return null;
+            }
+
+            private int getGDBVariablesSize(MIArg[] vals) {
+                int gdbSize = vals.length;
+                for (MIArg val : vals) {
+                    if (val.getName().equals("this")) {
+                        gdbSize--;
+                    } else if (val.getValue().equals("<optimized out>")) {
+                        gdbSize--;
+                    }
+                }
+                return gdbSize;
+            }
         }
 
         /**
@@ -155,44 +160,7 @@ public class JDWPStackFrame {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                long threadId = command.readObjectRef();
-                long frameId = command.readFrameRef();
-                int slots = command.readInt();
-                for (int i = 0; i < slots; i++) {
-                    int slotId = command.readInt();
-                    String value = command.readString();
-
-                    System.out.println("Queueing MI command to select thread:" + threadId);
-                    MICommand cmd = gc.getCommandFactory().createMISelectThread((int) threadId);
-                    int tokenID = JDWP.getNewTokenId();
-                    gc.queueCommand(tokenID, cmd);
-
-                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                        return;
-                    }
-
-                    System.out.println("Queueing MI command to select frame");
-                    cmd = gc.getCommandFactory().createMIStackSelectFrame((int) frameId);
-                    tokenID = JDWP.getNewTokenId();
-                    gc.queueCommand(tokenID, cmd);
-
-                    reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                    }
-
-                    System.out.println("Queueing MI command to set local variable value");
-                    cmd = gc.getCommandFactory().createMIVarAssign("", value);
-                    tokenID = JDWP.getNewTokenId();
-                    gc.queueCommand(tokenID, cmd);
-
-                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                    }
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -205,14 +173,40 @@ public class JDWPStackFrame {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                String threadId = command.readObjectRef() + "";
-                //can implement once we implement get value for `this` local var
-//                try {
-//                    StackFrameImpl frame = thread.frame((int) command.readFrameRef());
-//                    answer.writeTaggedObjectReference(frame.thisObject()); //HERE
-//                } catch (IncompatibleThreadStateException e) {
-//                    e.printStackTrace();
-//                }
+                long threadID = command.readObjectRef();
+                int frameID = (int) command.readFrameRef();
+                //ObjectReferenceImpl objectReference = frame.thisObject();
+                //answer.writeTaggedObjectReference(objectReference);
+
+                System.out.println("Queueing MI command to get \"this\" object");
+                MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadID), String.valueOf(frameID)); //Todo: fix frame ID
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                }
+
+                MIArg[] vals = replyloc.getVariables();
+                for (int j = 0; j < vals.length; j++) {
+                    String name = vals[j].getName();
+                    if (name.equals("this")) {
+                        System.out.println("Queueing MI command to print \"this\" object");
+                        cmd = gc.getCommandFactory().createMIPrint("*this");
+                        tokenID = JDWP.getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIInfo replyprint = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                        if (replyprint.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                            answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                        }
+
+                        String val = replyprint.getMIOutput().getMIOOBRecords()[1].toString();
+                        answer.writeByte(JDWP.Tag.OBJECT);
+                        answer.writeNullObjectRef(); // TODO Need to retrieve object at address
+                    }
+                }
             }
         }
 
