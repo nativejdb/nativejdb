@@ -33,7 +33,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 COPY graalvm ./graalvm
 ENV GRAALVM_HOME /jdwp/graalvm
 ENV PATH $PATH:$GRAALVM_HOME/bin
-RUN $GRAALVM_HOME/bin/gu install native-image
+#RUN $GRAALVM_HOME/bin/gu install native-image
 
 ENV ADDRESS_ARG=$ADDRESS_ARG
 ENV CLASS_NAME=$CLASS_NAME

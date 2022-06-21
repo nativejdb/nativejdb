@@ -68,7 +68,7 @@ public class ObjectReferenceImpl extends ValueImpl {
     private List<ThreadReferenceImpl> waitingThreads = null;
     private int entryCount = 0;
 
-    ObjectReferenceImpl(ReferenceTypeImpl type, Oop oRef) {
+    public ObjectReferenceImpl(ReferenceTypeImpl type, Oop oRef) {
         referenceType = type;
         saObject = oRef;
     }

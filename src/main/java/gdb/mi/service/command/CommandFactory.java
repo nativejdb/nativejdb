@@ -225,6 +225,8 @@ public class CommandFactory {
 		return new MIFileListExecSourceFiles();
 	}
 
+	public MICommand<MIInfo> createMIPrint(String expression) { return new MIPrint(expression); }
+
 	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions() {
 		return new MISymbolInfoFunctions();
 	}
