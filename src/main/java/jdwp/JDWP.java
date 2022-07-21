@@ -28,6 +28,7 @@ package jdwp;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -52,6 +53,8 @@ public class JDWP {
     static Map<Integer, MIFrame> framesById = new HashMap<>();
 
     static Map<Integer, LocalVariableImpl> localsByID = new HashMap<>();
+    static ArrayList<LocalVariableImpl> locals = new ArrayList<>();
+    static ReferenceTypeImpl strRef;
 
     static long currentThreadID = 0;
     /**
@@ -59,6 +62,14 @@ public class JDWP {
      * Unless the value wraps around which is unlikely.
      */
     static int fTokenIdCounter = 0;
+
+    public static Map<Integer, LocalVariableImpl> getLocals() {
+        return localsByID;
+    }
+
+    public static ArrayList<LocalVariableImpl> getLocalList() {
+        return locals;
+    }
 
     static int getNewTokenId() {
         int count = ++fTokenIdCounter;

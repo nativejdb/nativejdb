@@ -46,6 +46,10 @@ public class StringReferenceImpl extends ObjectReferenceImpl {
     StringReferenceImpl(ReferenceTypeImpl type, Instance oRef) {
         super(type,oRef);
     }
+    public StringReferenceImpl(ReferenceTypeImpl type, Instance oRef, String value) {
+        super(type, oRef);
+        this.value = value;
+    }
 
     public String value() {
         if (value == null) {

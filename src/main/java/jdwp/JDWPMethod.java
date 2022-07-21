@@ -177,12 +177,44 @@ public class JDWPMethod {
          */
         static class VariableTableWithGeneric implements Command  {
             static final int COMMAND = 5;
+            private static final String ASM_VAR_NAME = "$asm";
+            private static final String ASM_VAR_SIGNATURE = "Ljava/lang/String;";
+            private static final String ASM_VAR_GEN_SIGNATURE = "Ljava/lang/Object;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/String;>;Ljava/lang/CharSequence;";
 
             /**
              * Information about the variable.
              */
             static class SlotInfo {
 
+//                public static void write(LocalVariableImpl var, GDBControl gc, PacketStream answer) {
+//                    answer.writeLong(var.getStart());
+//                    answer.writeString(var.name());
+//                    answer.writeString(var.signature());
+//                    answer.writeStringOrEmpty(var.genericSignature());
+//                    answer.writeInt(var.getLength());
+//                    answer.writeInt(var.slot());
+//                    JDWP.getLocals().put(var.slot(), var);
+//                    JDWP.getLocalList().add(var);
+//                }
+//            }
+//
+//
+//            public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+//                ReferenceTypeImpl referenceType = command.readReferenceType();
+//                MethodImpl method = referenceType.methodById(command.readMethodRef());
+//                JDWP.getLocalList().clear();
+//                try {
+//                    List<LocalVariableImpl> variables = method.variables();
+//                    answer.writeInt(method.argSlotCount());
+//                    answer.writeInt(variables.size());
+//                    for (LocalVariableImpl variable : variables) {
+//                        SlotInfo.write(variable, gc, answer);
+//                    }
+//
+//                } catch (AbsentInformationException e) {
+//                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
+//                }
+//            }
                 public static void write(LocalVariableImpl var, GDBControl gc, PacketStream answer) {
                     answer.writeLong(var.getStart());
                     answer.writeString(var.name());
@@ -218,7 +250,7 @@ public class JDWPMethod {
                     int gdbSize = getGDBVariablesSize(vals);
                     int vmSize = variables.size();
                     //answer.writeInt(variables.size());
-                    answer.writeInt(gdbSize); //Number of slots from GDB
+                    answer.writeInt(gdbSize + 1); //Number of slots from GDB, +1 for assembly variable
                     if (gdbSize != vmSize) {
                         System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + vmSize);
                     }
@@ -246,6 +278,17 @@ public class JDWPMethod {
                             SlotInfo.write(gdbVar, gc, answer);
                         }
                     }
+
+                    // Add assmebly variable
+                    LocalVariableImpl asmVar = new LocalVariableImpl(
+                            method,
+                            maxSlot + 1,
+                            new LocationImpl(method, 0),
+                            new LocationImpl(method, method.ref().getCodeSize() - 1),
+                            ASM_VAR_NAME,
+                            ASM_VAR_SIGNATURE,
+                            ASM_VAR_GEN_SIGNATURE);
+                    SlotInfo.write(asmVar, gc, answer);
 
                 } catch (AbsentInformationException e) {
                     answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;

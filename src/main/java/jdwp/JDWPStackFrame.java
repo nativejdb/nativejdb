@@ -30,6 +30,8 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
+import java.util.ArrayList;
+
 public class JDWPStackFrame {
     static class StackFrame {
         static final int COMMAND_SET = 16;
@@ -79,6 +81,7 @@ public class JDWPStackFrame {
 
                     LocalVariableImpl vmVar = JDWP.localsByID.get(slot);
                     MIArg gdbVar = containsInGDBVariables(vals, vmVar.name());
+                    boolean isAsm = vmVar.name().equals("$asm");
                     if (gdbVar != null) {
                         String value = gdbVar.getValue();
                         if (!gdbVar.getName().equals("this") && !value.equals("<optimized out>")) {
@@ -115,6 +118,32 @@ public class JDWPStackFrame {
                                     answer.writeNullObjectRef();
                             }
                         }
+                    } else if (vmVar.name().equals("$asm")) { // To do: create a new StringReferenceImpl
+                        ObjectReferenceImpl strObject = JDWP.strRef.instances(10000).get(0);
+                        StringReferenceImpl newStrRef = new StringReferenceImpl(strObject.referenceType(), null, "myStr");
+                        JDWP.strRef.instances(1).add(newStrRef);
+                        answer.writeByte(tag);
+//                        answer.writeObjectRef(newStrRef.uniqueID());
+
+                        // Queue GDB to get instructions
+                        cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", "$pc + 4", false);
+                        tokenID = JDWP.getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIDataDisassembleInfo reply = (MIDataDisassembleInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                        if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                            answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                        }
+
+                        MIInstruction[] asmCodes = reply.getMIAssemblyCode();
+                        ArrayList<String> instructions = new ArrayList<>();
+
+                        for (MIInstruction code : asmCodes) {
+                            String ins = code.getInstruction();
+                            instructions.add(ins);
+                        }
+
+                        answer.writeNullObjectRef();
                     }
                 }
                 // TODO write GDB variables that are not in the VM slots
