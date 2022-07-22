@@ -30,6 +30,8 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
+import java.util.ArrayList;
+
 public class JDWPStackFrame {
     static class StackFrame {
         static final int COMMAND_SET = 16;
@@ -69,7 +71,7 @@ public class JDWPStackFrame {
 
                 int gdbSize = getGDBVariablesSize(vals);
                 //answer.writeInt(slots);
-                answer.writeInt(gdbSize);
+                answer.writeInt(gdbSize + 1); // +1 for assembly variable
                 if (gdbSize != slots) {
                     System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
                 }
@@ -115,6 +117,27 @@ public class JDWPStackFrame {
                                     answer.writeNullObjectRef();
                             }
                         }
+                    } else if (vmVar.name().equals("$asm")) { // To do: create a new StringReferenceImpl
+
+                        // Queue GDB to get instructions
+                        cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", "$pc + 4", false);
+                        tokenID = JDWP.getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
+
+                        MIDataDisassembleInfo reply = (MIDataDisassembleInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                        if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                            answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                        }
+
+                        MIInstruction[] asmCodes = reply.getMIAssemblyCode();
+                        ArrayList<String> instructions = new ArrayList<>();
+
+                        for (MIInstruction code : asmCodes) {
+                            String ins = code.getInstruction();
+                            instructions.add(ins);
+                        }
+                        answer.writeByte(tag);
+                        answer.writeNullObjectRef();
                     }
                 }
                 // TODO write GDB variables that are not in the VM slots

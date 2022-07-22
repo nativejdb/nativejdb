@@ -28,6 +28,7 @@ package jdwp;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -59,6 +60,7 @@ public class JDWP {
      * Unless the value wraps around which is unlikely.
      */
     static int fTokenIdCounter = 0;
+
 
     static int getNewTokenId() {
         int count = ++fTokenIdCounter;

@@ -116,8 +116,21 @@ public class ObjectReferenceImpl extends ValueImpl {
         return vm.getAddressValue(handle);
     }
 
+    public static long uniqueID(String addr) {
+        return addr.hashCode();
+    }
+
+//    public static long uniqueID(OopHandle handle) {
+//        return uniqueID(handle.getAddressAt(0).toString());
+//    }
+
     public long uniqueID() {
+//        if (saObject == null) {
+//            return 100;
+//        }
         return uniqueID(saObject.getHandle(), vm());
+//        System.out.println(saObject.getHandle().getAddressAt(0).toString());
+//        return uniqueID(saObject.getHandle().getAddressAt(0).toString());
     }
 
     public List<ThreadReferenceImpl> waitingThreads() {

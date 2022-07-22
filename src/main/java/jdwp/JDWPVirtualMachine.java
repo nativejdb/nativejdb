@@ -613,6 +613,7 @@ public class JDWPVirtualMachine {
                     ClassInfo.write(cls, gc, answer);
                 }
 
+
                 /*System.out.println("Queueing MI command to get all classes info");
                 MICommand cmd = gc.getCommandFactory().createMiSymbolInfoFunctions();
                 int tokenID = JDWP.getNewTokenId();

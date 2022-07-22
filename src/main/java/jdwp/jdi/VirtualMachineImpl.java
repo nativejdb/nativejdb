@@ -648,6 +648,7 @@ public class VirtualMachineImpl {
             return null;
         }
         long id = ObjectReferenceImpl.uniqueID(handle, this);
+//        long id = ObjectReferenceImpl.uniqueID(handle);
         ObjectReferenceImpl object = getCachedObjectMirror(id);
         if (object == null) {
             object = createObjectMirror(id, saObjectHeap.newOop(handle));
@@ -660,6 +661,7 @@ public class VirtualMachineImpl {
             return null;
         }
         long id = ObjectReferenceImpl.uniqueID(key.getHandle(), this);
+//        long id = ObjectReferenceImpl.uniqueID(key.getHandle());
         ObjectReferenceImpl object = getCachedObjectMirror(id);
         if (object == null) {
             object = createObjectMirror(id, key);
