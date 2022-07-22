@@ -609,18 +609,10 @@ public class JDWPVirtualMachine {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 List<ReferenceTypeImpl> allClasses = gc.vm.allClasses();
                 answer.writeInt(allClasses.size());
-                ReferenceTypeImpl strRef = null;
                 for (ReferenceTypeImpl cls : allClasses) {
                     ClassInfo.write(cls, gc, answer);
-                    if (cls.signature().equals("Ljava/lang/String;")) {
-                        strRef = cls;
-                        JDWP.strRef = cls;
-                    }
                 }
 
-                System.out.println(strRef);
-
-                // Find the string class
 
                 /*System.out.println("Queueing MI command to get all classes info");
                 MICommand cmd = gc.getCommandFactory().createMiSymbolInfoFunctions();

@@ -71,7 +71,7 @@ public class JDWPStackFrame {
 
                 int gdbSize = getGDBVariablesSize(vals);
                 //answer.writeInt(slots);
-                answer.writeInt(gdbSize);
+                answer.writeInt(gdbSize + 1); // +1 for assembly variable
                 if (gdbSize != slots) {
                     System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
                 }
@@ -81,7 +81,6 @@ public class JDWPStackFrame {
 
                     LocalVariableImpl vmVar = JDWP.localsByID.get(slot);
                     MIArg gdbVar = containsInGDBVariables(vals, vmVar.name());
-                    boolean isAsm = vmVar.name().equals("$asm");
                     if (gdbVar != null) {
                         String value = gdbVar.getValue();
                         if (!gdbVar.getName().equals("this") && !value.equals("<optimized out>")) {
@@ -119,11 +118,6 @@ public class JDWPStackFrame {
                             }
                         }
                     } else if (vmVar.name().equals("$asm")) { // To do: create a new StringReferenceImpl
-                        ObjectReferenceImpl strObject = JDWP.strRef.instances(10000).get(0);
-                        StringReferenceImpl newStrRef = new StringReferenceImpl(strObject.referenceType(), null, "myStr");
-                        JDWP.strRef.instances(1).add(newStrRef);
-                        answer.writeByte(tag);
-//                        answer.writeObjectRef(newStrRef.uniqueID());
 
                         // Queue GDB to get instructions
                         cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", "$pc + 4", false);
@@ -142,7 +136,7 @@ public class JDWPStackFrame {
                             String ins = code.getInstruction();
                             instructions.add(ins);
                         }
-
+                        answer.writeByte(tag);
                         answer.writeNullObjectRef();
                     }
                 }

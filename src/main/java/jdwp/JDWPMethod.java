@@ -186,35 +186,6 @@ public class JDWPMethod {
              */
             static class SlotInfo {
 
-//                public static void write(LocalVariableImpl var, GDBControl gc, PacketStream answer) {
-//                    answer.writeLong(var.getStart());
-//                    answer.writeString(var.name());
-//                    answer.writeString(var.signature());
-//                    answer.writeStringOrEmpty(var.genericSignature());
-//                    answer.writeInt(var.getLength());
-//                    answer.writeInt(var.slot());
-//                    JDWP.getLocals().put(var.slot(), var);
-//                    JDWP.getLocalList().add(var);
-//                }
-//            }
-//
-//
-//            public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-//                ReferenceTypeImpl referenceType = command.readReferenceType();
-//                MethodImpl method = referenceType.methodById(command.readMethodRef());
-//                JDWP.getLocalList().clear();
-//                try {
-//                    List<LocalVariableImpl> variables = method.variables();
-//                    answer.writeInt(method.argSlotCount());
-//                    answer.writeInt(variables.size());
-//                    for (LocalVariableImpl variable : variables) {
-//                        SlotInfo.write(variable, gc, answer);
-//                    }
-//
-//                } catch (AbsentInformationException e) {
-//                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
-//                }
-//            }
                 public static void write(LocalVariableImpl var, GDBControl gc, PacketStream answer) {
                     answer.writeLong(var.getStart());
                     answer.writeString(var.name());
@@ -279,7 +250,7 @@ public class JDWPMethod {
                         }
                     }
 
-                    // Add assmebly variable
+                    // Add assembly variable
                     LocalVariableImpl asmVar = new LocalVariableImpl(
                             method,
                             maxSlot + 1,
