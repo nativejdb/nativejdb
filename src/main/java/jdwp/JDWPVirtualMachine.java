@@ -610,6 +610,9 @@ public class JDWPVirtualMachine {
                 List<ReferenceTypeImpl> allClasses = gc.vm.allClasses();
                 answer.writeInt(allClasses.size());
                 for (ReferenceTypeImpl cls : allClasses) {
+                    if (cls.signature().contains("Ljava/lang/String;")) {
+                        JDWP.stringClasses.add(cls);
+                    }
                     ClassInfo.write(cls, gc, answer);
                 }
 

@@ -70,7 +70,6 @@ public class JDWPStackFrame {
                 MIArg[] vals = replyloc.getVariables();
 
                 int gdbSize = getGDBVariablesSize(vals);
-                //answer.writeInt(slots);
                 answer.writeInt(gdbSize + 1); // +1 for assembly variable
                 if (gdbSize != slots) {
                     System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
@@ -87,7 +86,11 @@ public class JDWPStackFrame {
                             answer.writeByte(tag); // get value via GDB print cmd: print *print->value
                             switch (tag) {
                                 case JDWP.Tag.ARRAY:
-                                    answer.writeUntaggedValue(null);
+<<<<<<< HEAD
+                                    answer.writeUntaggedValue(null); //TODO Implement
+=======
+                                    answer.writeUntaggedValue(null); //TODO
+>>>>>>> d560820 (Todos)
                                     break;
                                 case JDWP.Tag.CHAR:
                                     answer.writeChar(value.charAt(0));
@@ -114,30 +117,23 @@ public class JDWPStackFrame {
                                     answer.writeString(value);
                                     break;
                                 case JDWP.Tag.OBJECT:
+<<<<<<< HEAD
+<<<<<<< HEAD
                                     answer.writeNullObjectRef();
+=======
+                                    answer.writeNullObjectRef(); // TODO
+>>>>>>> d560820 (Todos)
+                                    break;
+=======
+                                    answer.writeNullObjectRef(); //TODO Implement
+>>>>>>> 1b7fece (Dockerfile fix)
                             }
                         }
-                    } else if (vmVar.name().equals("$asm")) { // To do: create a new StringReferenceImpl
+                    } else if (vmVar.name().equals("$asm")) {
 
-                        // Queue GDB to get instructions
-                        cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", "$pc + 4", false);
-                        tokenID = JDWP.getNewTokenId();
-                        gc.queueCommand(tokenID, cmd);
-
-                        MIDataDisassembleInfo reply = (MIDataDisassembleInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                        if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                            answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                        }
-
-                        MIInstruction[] asmCodes = reply.getMIAssemblyCode();
-                        ArrayList<String> instructions = new ArrayList<>();
-
-                        for (MIInstruction code : asmCodes) {
-                            String ins = code.getInstruction();
-                            instructions.add(ins);
-                        }
-                        answer.writeByte(tag);
-                        answer.writeNullObjectRef();
+                        answer.writeByte(JDWP.Tag.STRING);
+                        long newAsmId = JDWP.getNewAsmId();
+                        answer.writeObjectRef(newAsmId);
                     }
                 }
                 // TODO write GDB variables that are not in the VM slots

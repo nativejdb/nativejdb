@@ -179,7 +179,7 @@ public class JDWPMethod {
             static final int COMMAND = 5;
             private static final String ASM_VAR_NAME = "$asm";
             private static final String ASM_VAR_SIGNATURE = "Ljava/lang/String;";
-            private static final String ASM_VAR_GEN_SIGNATURE = "Ljava/lang/Object;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/String;>;Ljava/lang/CharSequence;";
+            private static final String ASM_VAR_GEN_SIGNATURE = null;
 
             /**
              * Information about the variable.
@@ -220,7 +220,6 @@ public class JDWPMethod {
 
                     int gdbSize = getGDBVariablesSize(vals);
                     int vmSize = variables.size();
-                    //answer.writeInt(variables.size());
                     answer.writeInt(gdbSize + 1); //Number of slots from GDB, +1 for assembly variable
                     if (gdbSize != vmSize) {
                         System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + vmSize);

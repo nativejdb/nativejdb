@@ -218,7 +218,8 @@ public class JDWPReferenceType {
             static final int COMMAND = 7;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
+                long id = command.readObjectRef();
+                ReferenceTypeImpl type = gc.vm.getReferenceTypeById(id);
                 try {
                     answer.writeString(type.baseSourceName());
                 } catch (AbsentInformationException e) {
@@ -282,7 +283,8 @@ public class JDWPReferenceType {
             static final int COMMAND = 10;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
+                long id = command.readObjectRef();
+                ReferenceTypeImpl type = gc.vm.getReferenceTypeById(id);
                 List<InterfaceTypeImpl> interfaces;
                 if (type instanceof ClassTypeImpl) {
                     interfaces = ((ClassTypeImpl) type).interfaces();
@@ -344,7 +346,8 @@ public class JDWPReferenceType {
             static final int COMMAND = 13;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
+                long uniqueID = command.readObjectRef();
+                ReferenceTypeImpl type = gc.vm.getReferenceTypeById(uniqueID);
                 answer.writeString(type.signature());
                 answer.writeStringOrEmpty(type.genericSignature());
             }
@@ -377,7 +380,8 @@ public class JDWPReferenceType {
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
+                long id = command.readObjectRef();
+                ReferenceTypeImpl type = gc.vm.getReferenceTypeById(id);
                 List<FieldImpl> fields = type.fields();
                 answer.writeInt(fields.size());
                 for (FieldImpl field : fields) {
