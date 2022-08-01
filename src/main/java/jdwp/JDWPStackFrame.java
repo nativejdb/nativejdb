@@ -30,8 +30,6 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
-import java.util.ArrayList;
-
 public class JDWPStackFrame {
     static class StackFrame {
         static final int COMMAND_SET = 16;
@@ -86,11 +84,7 @@ public class JDWPStackFrame {
                             answer.writeByte(tag); // get value via GDB print cmd: print *print->value
                             switch (tag) {
                                 case JDWP.Tag.ARRAY:
-<<<<<<< HEAD
                                     answer.writeUntaggedValue(null); //TODO Implement
-=======
-                                    answer.writeUntaggedValue(null); //TODO
->>>>>>> d560820 (Todos)
                                     break;
                                 case JDWP.Tag.CHAR:
                                     answer.writeChar(value.charAt(0));
@@ -117,16 +111,7 @@ public class JDWPStackFrame {
                                     answer.writeString(value);
                                     break;
                                 case JDWP.Tag.OBJECT:
-<<<<<<< HEAD
-<<<<<<< HEAD
-                                    answer.writeNullObjectRef();
-=======
-                                    answer.writeNullObjectRef(); // TODO
->>>>>>> d560820 (Todos)
-                                    break;
-=======
                                     answer.writeNullObjectRef(); //TODO Implement
->>>>>>> 1b7fece (Dockerfile fix)
                             }
                         }
                     } else if (vmVar.name().equals("$asm")) {
