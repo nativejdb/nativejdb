@@ -7,7 +7,7 @@ This is a project that bridges the gap between the [Java Debugger](https://docs.
 
 ## Background
 
-https://github.com/quarkusio/quarkus[Quarkus] is a cloud-native Java development framework. It allows Java code to be mapped to Kubernetes containers and compiled natively. 
+[Quarkus](https://github.com/quarkusio/quarkus) is a cloud-native Java development framework. It allows Java code to be mapped to Kubernetes containers and compiled natively. 
 Native compilation is useful for serverless computing, it avoids the overhead of running a JVM in containers and to execute serverless code directly. 
 Today, natively compiled Java code can be debugged using GDB, which is a C/C++ debugger and is unfamiliar to Java developers. 
 
