@@ -2,7 +2,7 @@
 
 #Wrapper running gdb on native image executable &
 #starting JDWP server listening for JDWP request packets
-while getopts a:c:e:s:k: flag
+while getopts a:c:e:s:k:m: flag
 do
     case "${flag}" in
         a) ADDRESS_ARG=${OPTARG};;
@@ -10,6 +10,7 @@ do
         e) NATIVE_EXEC=${OPTARG};;
         s) NATIVE_SRC=${OPTARG};;
         k) IS_QUARKUS=${OPTARG};;
+        m) ASM_LINE=${OPTARG};;
         *) ;;
     esac
 done

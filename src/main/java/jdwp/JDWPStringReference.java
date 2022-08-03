@@ -52,7 +52,9 @@ public class JDWPStringReference {
                     // Queue GDB to get instructions
                     System.out.println("Queueing MI to get assembly instructions");
                     StringBuilder instructions = new StringBuilder();
-                    MICommand cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", "$pc + 40", false);
+                    int lines = Integer.parseInt(System.getenv("ASM_LINE"));
+                    String endLine = "$pc + " + lines * 4;
+                    MICommand cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", endLine, false);
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
 
