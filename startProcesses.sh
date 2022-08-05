@@ -15,6 +15,14 @@ do
     esac
 done
 
+#check ASMLINE input is valid
+if [[ $ASM_LINE =~ [^[:digit:]] ]]
+then
+  ASM_LINE=10
+else
+  ASM_LINE=$ASM_LINE
+fi
+
 #java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME &
 #PROCESS_ID=$(pgrep -nf "java -cp apps/$CLASS_NAME.jar $CLASS_NAME.$CLASS_NAME")
 if [ "$IS_QUARKUS" == "true" ];
