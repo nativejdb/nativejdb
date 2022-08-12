@@ -12,7 +12,6 @@
 
 package gdb.mi.service.command.commands;
 
-//import org.eclipse.cdt.dsf.debug.service.IDisassembly.IDisassemblyDMContext;
 import gdb.mi.service.command.output.MIDataDisassembleInfo;
 import gdb.mi.service.command.output.MIOutput;
 
@@ -53,22 +52,22 @@ import gdb.mi.service.command.output.MIOutput;
 public class MIDataDisassemble extends MICommand<MIDataDisassembleInfo> {
 
     public MIDataDisassemble(String start, String end, boolean mode) {
-        super("-data-disassemble"); //$NON-NLS-1$
-        setOptions(new String[]{"-s", start, "-e", end}); //$NON-NLS-1$ //$NON-NLS-2$
-        String mixed = "0"; //$NON-NLS-1$
+        super("-data-disassemble");
+        setOptions(new String[]{"-s", start, "-e", end});
+        String mixed = "0";
         if (mode) {
-            mixed = "1"; //$NON-NLS-1$
+            mixed = "1";
         }
         setParameters(new String[]{mixed});
     }
 
     public MIDataDisassemble(String file, int linenum, int lines, boolean mode) {
-        super("-data-disassemble"); //$NON-NLS-1$
-        setOptions(new String[]{"-f", file, "-l", //$NON-NLS-1$ //$NON-NLS-2$
-                Integer.toString(linenum), "-n", Integer.toString(lines)}); //$NON-NLS-1$
-        String mixed = "0"; //$NON-NLS-1$
+        super("-data-disassemble");
+        setOptions(new String[]{"-f", file, "-l",
+                Integer.toString(linenum), "-n", Integer.toString(lines)});
+        String mixed = "0";
         if (mode) {
-            mixed = "1"; //$NON-NLS-1$
+            mixed = "1";
         }
         setParameters(new String[]{mixed});
     }
@@ -81,7 +80,7 @@ public class MIDataDisassemble extends MICommand<MIDataDisassembleInfo> {
     protected String parametersToString() {
         String[] parameters = getParameters();
         if (parameters != null && parameters.length > 0) {
-            return "-- " + parameters[0]; //$NON-NLS-1$
+            return "-- " + parameters[0];
         }
         return new String();
     }

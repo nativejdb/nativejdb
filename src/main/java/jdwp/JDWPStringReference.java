@@ -48,12 +48,12 @@ public class JDWPStringReference {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 long uniqueID = command.readObjectRef();
                 if (uniqueID == JDWP.asmIdCounter) {
-
-                    // Queue GDB to get instructions
-                    System.out.println("Queueing MI to get assembly instructions");
                     StringBuilder instructions = new StringBuilder();
                     int lines = Integer.parseInt(System.getenv("ASM_LINE"));
                     String endLine = "$pc + " + lines * 4;
+
+                    // Queue GDB to get instructions
+                    System.out.printf("Queueing MI to get %d lines of assembly instructions\n", lines);
                     MICommand cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", endLine, false);
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
