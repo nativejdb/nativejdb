@@ -68,8 +68,7 @@ public class JDWPStackFrame {
                 MIArg[] vals = replyloc.getVariables();
 
                 int gdbSize = getGDBVariablesSize(vals);
-                //answer.writeInt(slots);
-                answer.writeInt(gdbSize);
+                answer.writeInt(slots);
                 if (gdbSize != slots) {
                     System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
                 }
@@ -115,6 +114,11 @@ public class JDWPStackFrame {
                                     answer.writeNullObjectRef(); //TODO Implement
                             }
                         }
+                    } else if (vmVar.name().equals("$asm")) {
+
+                        answer.writeByte(JDWP.Tag.STRING);
+                        long newAsmId = JDWP.getNewAsmId();
+                        answer.writeObjectRef(newAsmId);
                     }
                 }
                 // TODO write GDB variables that are not in the VM slots

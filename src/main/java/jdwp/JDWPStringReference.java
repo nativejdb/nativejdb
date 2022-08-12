@@ -25,8 +25,14 @@
 
 package jdwp;
 
+import gdb.mi.service.command.commands.MICommand;
+import gdb.mi.service.command.output.MIDataDisassembleInfo;
+import gdb.mi.service.command.output.MIInstruction;
+import gdb.mi.service.command.output.MIResultRecord;
 import jdwp.jdi.ObjectReferenceImpl;
 import jdwp.jdi.StringReferenceImpl;
+
+import java.util.ArrayList;
 
 public class JDWPStringReference {
     static class StringReference {
@@ -40,12 +46,39 @@ public class JDWPStringReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = command.readObjectReference();
-                if (objectReference instanceof StringReferenceImpl) {
-                    answer.writeString(((StringReferenceImpl) objectReference).value());
-                }
-                else {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_STRING;
+                long uniqueID = command.readObjectRef();
+                if (uniqueID == JDWP.asmIdCounter) {
+                    StringBuilder instructions = new StringBuilder();
+                    int lines = Integer.parseInt(System.getenv("ASM_LINE"));
+                    String endLine = "$pc + " + lines * 4;
+
+                    // Queue GDB to get instructions
+                    System.out.printf("Queueing MI to get %d lines of assembly instructions\n", lines);
+                    MICommand cmd = gc.getCommandFactory().createMIDataDisassemble("$pc", endLine, false);
+                    int tokenID = JDWP.getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MIDataDisassembleInfo reply = (MIDataDisassembleInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                    }
+
+                    MIInstruction[] asmCodes = reply.getMIAssemblyCode();
+
+                    for (MIInstruction code : asmCodes) {
+                        String ins = code.getInstruction();
+                        instructions.append(ins);
+                        instructions.append("\n");
+                    }
+                    answer.writeString(instructions.toString());
+                } else {
+                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(uniqueID);
+                    if (objectReference instanceof StringReferenceImpl) {
+                        answer.writeString(((StringReferenceImpl) objectReference).value());
+                    }
+                    else {
+                        answer.pkt.errorCode = JDWP.Error.INVALID_STRING;
+                    }
                 }
             }
         }

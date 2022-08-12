@@ -28,6 +28,7 @@ package jdwp;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -53,18 +54,30 @@ public class JDWP {
 
     static Map<Integer, LocalVariableImpl> localsByID = new HashMap<>();
 
+    static ArrayList<ReferenceTypeImpl> stringClasses = new ArrayList<>();  // get java/lang/String class for asm variable
+
     static long currentThreadID = 0;
     /**
      * A global counter for all command, the token will be use to identify uniquely a command.
      * Unless the value wraps around which is unlikely.
      */
     static int fTokenIdCounter = 0;
+    static long asmIdCounter = 0;
 
     static int getNewTokenId() {
         int count = ++fTokenIdCounter;
         // If we ever wrap around.
         if (count <= 0) {
             count = fTokenIdCounter = 1;
+        }
+        return count;
+    }
+
+    static long getNewAsmId() {
+        long count = --asmIdCounter;
+        // If we ever wrap around.
+        if (count >= 0) {
+            count = asmIdCounter = -1;
         }
         return count;
     }

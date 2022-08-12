@@ -44,10 +44,19 @@ public class JDWPObjectReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                ReferenceTypeImpl referenceType = objectReference.referenceType();
-                answer.writeByte(referenceType.tag());
-                answer.writeClassRef(referenceType.uniqueID());
+
+                long objectID = command.readObjectRef();
+                if (objectID == JDWP.asmIdCounter) {
+                    answer.writeByte(JDWP.Tag.STRING);
+
+                    // Class 1 is the ClassTypeImpl of the java/lang/String class
+                    answer.writeObjectRef(JDWP.stringClasses.get(1).uniqueID());
+                } else {
+                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);
+                    ReferenceTypeImpl referenceType = objectReference.referenceType();
+                    answer.writeByte(referenceType.tag());
+                    answer.writeClassRef(referenceType.uniqueID());
+                }
             }
         }
 
@@ -62,13 +71,18 @@ public class JDWPObjectReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                ReferenceTypeImpl referenceType = objectReference.referenceType();
-                int count = command.readInt();
-                answer.writeInt(count);
-                for (int i = 0; i < count; i++) {
-                    long id = command.readFieldRef();
-                    answer.writeValue(objectReference.getValue(referenceType.fieldById(id)));
+                long objectID = command.readObjectRef();
+                if (objectID == JDWP.asmIdCounter) {
+                    answer.writeInt(0);
+                } else {
+                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);
+                    ReferenceTypeImpl referenceType = objectReference.referenceType();
+                    int count = command.readInt();
+                    answer.writeInt(count);
+                    for (int i = 0; i < count; i++) {
+                        long id = command.readFieldRef();
+                        answer.writeValue(objectReference.getValue(referenceType.fieldById(id)));
+                    }
                 }
             }
         }
