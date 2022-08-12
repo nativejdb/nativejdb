@@ -40,7 +40,7 @@ public class JDWPClassType {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = gc.vm.getReferenceTypeById(command.readObjectRef());
+                ReferenceTypeImpl type = command.readReferenceType();
                 if (type instanceof ClassTypeImpl) {
                     ClassTypeImpl superclass = ((ClassTypeImpl) type).superclass();
                     if (superclass != null) {

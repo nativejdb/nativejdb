@@ -218,7 +218,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 7;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = gc.vm.getReferenceTypeById(command.readObjectRef());
+                ReferenceTypeImpl type = command.readReferenceType();
                 try {
                     answer.writeString(type.baseSourceName());
                 } catch (AbsentInformationException e) {
