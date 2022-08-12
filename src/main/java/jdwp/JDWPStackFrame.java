@@ -69,7 +69,6 @@ public class JDWPStackFrame {
 
                 int gdbSize = getGDBVariablesSize(vals);
                 answer.writeInt(slots);
-//                answer.writeInt(gdbSize + 1); // +1 for assembly variable
                 if (gdbSize != slots) {
                     System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
                 }

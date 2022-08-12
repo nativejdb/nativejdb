@@ -55,6 +55,7 @@ public class JDWP {
     static Map<Integer, LocalVariableImpl> localsByID = new HashMap<>();
 
     static ArrayList<ReferenceTypeImpl> stringClasses = new ArrayList<>();  // get java/lang/String class for asm variable
+
     static long currentThreadID = 0;
     /**
      * A global counter for all command, the token will be use to identify uniquely a command.
