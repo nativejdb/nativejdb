@@ -71,6 +71,8 @@ public class JDWPStringReference {
                         instructions.append("\n");
                     }
                     answer.writeString(instructions.toString());
+                } else if (uniqueID == JDWP.optmizedVarID) {
+                    answer.writeString("<optimized out>");
                 } else {
                     ObjectReferenceImpl objectReference = gc.vm.objectMirror(uniqueID);
                     if (objectReference instanceof StringReferenceImpl) {
