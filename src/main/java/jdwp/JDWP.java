@@ -64,6 +64,9 @@ public class JDWP {
     static int fTokenIdCounter = 0;
     static long asmIdCounter = 0;
 
+    // A variable to be used for local variables that are optimized out by gdb
+    final static long optmizedVarID = -Long.MAX_VALUE;
+
     static int getNewTokenId() {
         int count = ++fTokenIdCounter;
         // If we ever wrap around.

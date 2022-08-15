@@ -113,6 +113,9 @@ public class JDWPStackFrame {
                                 case JDWP.Tag.OBJECT:
                                     answer.writeNullObjectRef(); //TODO Implement
                             }
+                        } else if (value.equals("<optimized out>")) {
+                            answer.writeByte(JDWP.Tag.STRING);
+                            answer.writeObjectRef(JDWP.optmizedVarID); // unique ID for optimized string
                         }
                     } else if (vmVar.name().equals("$asm")) {
 
@@ -137,8 +140,6 @@ public class JDWPStackFrame {
                 int gdbSize = vals.length;
                 for (MIArg val : vals) {
                     if (val.getName().equals("this")) {
-                        gdbSize--;
-                    } else if (val.getValue().equals("<optimized out>")) {
                         gdbSize--;
                     }
                 }

@@ -227,8 +227,6 @@ public class JDWPMethod {
                     for (MIArg val: vals) {
                         if (val.getName().equals("this")) {
                             continue;
-                        } else if (val.getValue().equals("<optimized out>")) {
-                            continue;
                         }
                         LocalVariableImpl variable = containsInVMSlots(variables, val.getName());
                         if (variable != null) {
@@ -278,8 +276,6 @@ public class JDWPMethod {
                 int gdbSize = vals.length;
                 for (MIArg val : vals) {
                     if (val.getName().equals("this")) {
-                        gdbSize--;
-                    } else if (val.getValue().equals("<optimized out>")) {
                         gdbSize--;
                     }
                 }
