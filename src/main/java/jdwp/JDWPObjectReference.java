@@ -46,7 +46,7 @@ public class JDWPObjectReference {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
 
                 long objectID = command.readObjectRef();
-                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optmizedVarID) {
+                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
                     answer.writeByte(JDWP.Tag.STRING);
 
                     // Class 1 is the ClassTypeImpl of the java/lang/String class
@@ -72,7 +72,7 @@ public class JDWPObjectReference {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 long objectID = command.readObjectRef();
-                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optmizedVarID) {
+                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
                     answer.writeInt(0);
                 } else {
                     ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);

@@ -32,8 +32,6 @@ import gdb.mi.service.command.output.MIResultRecord;
 import jdwp.jdi.ObjectReferenceImpl;
 import jdwp.jdi.StringReferenceImpl;
 
-import java.util.ArrayList;
-
 public class JDWPStringReference {
     static class StringReference {
         static final int COMMAND_SET = 10;
@@ -71,7 +69,7 @@ public class JDWPStringReference {
                         instructions.append("\n");
                     }
                     answer.writeString(instructions.toString());
-                } else if (uniqueID == JDWP.optmizedVarID) {
+                } else if (uniqueID == JDWP.optimizedVarID) {
                     answer.writeString("<optimized out>");
                 } else {
                     ObjectReferenceImpl objectReference = gc.vm.objectMirror(uniqueID);

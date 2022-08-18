@@ -28,7 +28,6 @@ package jdwp;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -65,7 +64,7 @@ public class JDWP {
     static long asmIdCounter = 0;
 
     // A variable to be used for local variables that are optimized out by gdb
-    final static long optmizedVarID = -Long.MAX_VALUE;
+    final static long optimizedVarID = -Long.MAX_VALUE;
 
     static int getNewTokenId() {
         int count = ++fTokenIdCounter;
@@ -79,7 +78,7 @@ public class JDWP {
     static long getNewAsmId() {
         long count = --asmIdCounter;
         // If we ever wrap around.
-        if (count >= 0) {
+        if (count == optimizedVarID) {
             count = asmIdCounter = -1;
         }
         return count;

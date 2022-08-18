@@ -25,7 +25,6 @@
 
 package jdwp;
 
-import com.sun.jdi.IncompatibleThreadStateException;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
@@ -86,6 +85,10 @@ public class JDWPStackFrame {
                                 case JDWP.Tag.ARRAY:
                                     answer.writeUntaggedValue(null); //TODO Implement
                                     break;
+                                case JDWP.Tag.BYTE:
+                                    String[] splited = value.split("\\s+");
+                                    answer.writeByte(Byte.parseByte(splited[0]));
+                                    break;
                                 case JDWP.Tag.CHAR:
                                     answer.writeChar(value.charAt(0));
                                     break;
@@ -115,7 +118,7 @@ public class JDWPStackFrame {
                             }
                         } else if (value.equals("<optimized out>")) {
                             answer.writeByte(JDWP.Tag.STRING);
-                            answer.writeObjectRef(JDWP.optmizedVarID); // unique ID for optimized string
+                            answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
                         }
                     } else if (vmVar.name().equals("$asm")) {
 
