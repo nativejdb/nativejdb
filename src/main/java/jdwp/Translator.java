@@ -183,6 +183,9 @@ public class Translator {
 			param = param.replace(".", "/");
 			if (!isPrimitive(param)) {
 				param = "L" + param;
+			} else {
+				// If is primitive, provide JNI signature
+				param = getPrimitiveJNI(param);
 			}
 			if (param.contains("[]")) { // array
 				param = param.replace("[]", "");
@@ -201,6 +204,41 @@ public class Translator {
 			}
 		}
 		return start + "(" + newParamList + ")";
+	}
+
+	public static String getPrimitiveJNI(String param) {
+		String jniParam = "";
+
+		switch (param) {
+			case "bool":
+				jniParam = "Z";
+				break;
+			case "byte":
+				jniParam =  "B";
+				break;
+			case "char":
+				jniParam =  "C";
+				break;
+			case "short":
+				jniParam =  "S";
+				break;
+			case "int":
+				jniParam =  "I";
+				break;
+			case "long":
+				jniParam =  "J";
+				break;
+			case "float":
+				jniParam =  "F";
+				break;
+			case "double":
+				jniParam =  "D";
+				break;
+			case "void":
+				jniParam = "V";
+				break;
+		}
+		return jniParam;
 	}
 
 	public static LocationImpl locationLookup(String func, int line) {
