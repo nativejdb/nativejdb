@@ -21,11 +21,34 @@ import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ConcreteMethodImpl;
 import jdwp.jdi.ThreadReferenceImpl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Translator {
+
+	static final String JAVA_BOOLEAN = "boolean";
+	static final String JAVA_BYTE = "byte";
+	static final String JAVA_CHAR = "char";
+	static final String JAVA_SHORT = "short";
+	static final String JAVA_INT = "int";
+	static final String JAVA_LONG = "long";
+	static final String JAVA_FLOAT = "float";
+	static final String JAVA_DOUBLE = "double";
+	static final String JAVA_VOID = "void";
+
+	static final Map<String, String> typeSignature;	// primitive type signature mapping from C/C++ to JNI
+	static {
+		typeSignature = new HashMap<>();
+
+		typeSignature.put(JAVA_BOOLEAN, "Z");
+		typeSignature.put(JAVA_BYTE, "B");
+		typeSignature.put(JAVA_CHAR, "C");
+		typeSignature.put(JAVA_SHORT, "S");
+		typeSignature.put(JAVA_INT, "I");
+		typeSignature.put(JAVA_LONG, "J");
+		typeSignature.put(JAVA_FLOAT, "F");
+		typeSignature.put(JAVA_DOUBLE, "D");
+		typeSignature.put(JAVA_VOID, "V");
+	}
 
 	public static PacketStream getVMStartedPacket(GDBControl gc) {
 		PacketStream packetStream = new PacketStream(gc);
@@ -159,16 +182,13 @@ public class Translator {
 	}
 
 	private static  boolean isPrimitive(String type) {
-		if (type.equals("byte") || type.equals("short") || type.equals("int") ||
-			type.equals("long") || type.equals("float") || type.equals("double")
-			|| type.equals("boolean") || type.equals("char") || type.equals("void")) {
-			return true;
-		}
-		return false;
+		return typeSignature.containsKey(type);
 	}
 
 	public static String normalizeFunc(String func) {
-		if (func.indexOf("(") == -1) { // Function does not contain parameter types
+		StringBuilder finalSignature = new StringBuilder();
+
+		if (!func.contains("(")) { // Function does not contain parameter types
 			return func;
 		}
 		String start = func.substring(0, func.indexOf("(")).replace(".", "/");
@@ -195,47 +215,51 @@ public class Translator {
 				newParams.add(param);
 			}
 		}
-		String newParamList = "";
-		for (int i = 0; i < newParams.size(); i++) {
-			if (i == 0) {
-				newParamList += newParams.get(i);
-			} else {
-				newParamList += ", " + newParams.get(i);
-			}
+
+		StringBuilder newParamList = new StringBuilder();
+		for (String newParam : newParams) {
+			newParamList.append(newParam);
 		}
-		return start + "(" + newParamList + ")";
+
+		finalSignature.append(start);
+		finalSignature.append("(");
+		finalSignature.append(newParamList);
+		finalSignature.append(")");
+		return finalSignature.toString();
 	}
 
 	public static String getPrimitiveJNI(String param) {
 		String jniParam = "";
 
 		switch (param) {
-			case "bool":
-				jniParam = "Z";
+			case "":
 				break;
-			case "byte":
-				jniParam =  "B";
+			case JAVA_BOOLEAN:
+				jniParam = typeSignature.get(JAVA_BOOLEAN);
 				break;
-			case "char":
-				jniParam =  "C";
+			case JAVA_BYTE:
+				jniParam = typeSignature.get(JAVA_BYTE);
 				break;
-			case "short":
-				jniParam =  "S";
+			case JAVA_CHAR:
+				jniParam = typeSignature.get(JAVA_CHAR);
 				break;
-			case "int":
-				jniParam =  "I";
+			case JAVA_SHORT:
+				jniParam = typeSignature.get(JAVA_SHORT);
 				break;
-			case "long":
-				jniParam =  "J";
+			case JAVA_INT:
+				jniParam = typeSignature.get(JAVA_INT);
 				break;
-			case "float":
-				jniParam =  "F";
+			case JAVA_LONG:
+				jniParam = typeSignature.get(JAVA_LONG);
 				break;
-			case "double":
-				jniParam =  "D";
+			case JAVA_FLOAT:
+				jniParam = typeSignature.get(JAVA_FLOAT);
 				break;
-			case "void":
-				jniParam = "V";
+			case JAVA_DOUBLE:
+				jniParam = typeSignature.get(JAVA_DOUBLE);
+				break;
+			case JAVA_VOID:
+				jniParam = typeSignature.get(JAVA_VOID);
 				break;
 		}
 		return jniParam;
