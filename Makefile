@@ -3,6 +3,7 @@ CLASSNAME := Hello
 NATIVEEXEC := apps/${CLASSNAME}
 NATIVESRC := apps/${CLASSNAME}sources
 ISQUARKUS := false
+ASMLINE := 10
 
 all: nativejdb
 
@@ -31,7 +32,7 @@ compile: ## Build the NativeJDB source code.
 
 nativejdb: ## Run a JDWPServer to debug a native image executable for CLASS_NAME app.
 	docker stop $(JDWPSERVICE) && docker rm $(JDWPSERVICE) || exit 0;
-	docker build -t $(JDWPSERVICE) --build-arg CLASS_NAME=$(CLASSNAME) --build-arg NATIVE_EXEC=${NATIVEEXEC} --build-arg NATIVE_SRC=${NATIVESRC} --build-arg IS_QUARKUS=$(ISQUARKUS) -f Dockerfile .
+	docker build -t $(JDWPSERVICE) --build-arg CLASS_NAME=$(CLASSNAME) --build-arg NATIVE_EXEC=${NATIVEEXEC} --build-arg NATIVE_SRC=${NATIVESRC} --build-arg IS_QUARKUS=$(ISQUARKUS) --build-arg ASM_LINE=$(ASMLINE) -f Dockerfile .
 	docker run --privileged --name $(JDWPSERVICE) -v $(PWD)/apps:/jdwp/apps -p 8082:8082 -p 8081:8081 $(JDWPSERVICE)
 
 exec: ## Exec into NativeJDB container.

@@ -62,13 +62,14 @@ public class JDWPThreadReference {
                 }
 
                 long threadId = command.readObjectRef();
+                JDWP.currentThreadID = threadId; //TODO AAV hack!
                 System.out.println("Thread id is:" + threadId);
                 MIThread[] allThreads = reply.getThreadList();
                 for(MIThread thread: allThreads){
                     long id = Long.parseLong(thread.getThreadId());
                     System.out.println("id is:" + id);
                     if (id == threadId) {
-                        System.out.println("Writing thead name:" + thread.getName());
+                        System.out.println("Writing thread name:" + thread.getName());
                         answer.writeString(thread.getName());
                     }
                 }

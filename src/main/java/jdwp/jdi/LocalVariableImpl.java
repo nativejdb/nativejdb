@@ -45,7 +45,7 @@ public class LocalVariableImpl implements Comparable<LocalVariableImpl> {
     private final String signature;
     private final String genericSignature;
 
-    LocalVariableImpl(MethodImpl method,
+    public LocalVariableImpl(MethodImpl method,
                       int slot, LocationImpl scopeStart, LocationImpl scopeEnd,
                       String name, String signature, String genericSignature) {
         this.method = method;
