@@ -50,17 +50,36 @@ public class JDWP {
     static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing
 
     static Map<Integer, MIFrame> framesById = new HashMap<>();
+
+    static Map<Integer, LocalVariableImpl> localsByID = new HashMap<>();
+
+    static ArrayList<ReferenceTypeImpl> stringClasses = new ArrayList<>();  // get java/lang/String class for asm variable
+
+    static long currentThreadID = 0;
     /**
      * A global counter for all command, the token will be use to identify uniquely a command.
      * Unless the value wraps around which is unlikely.
      */
     static int fTokenIdCounter = 0;
+    static long asmIdCounter = 0;
+
+    // A variable to be used for local variables that are optimized out by gdb
+    final static long optimizedVarID = -Long.MAX_VALUE;
 
     static int getNewTokenId() {
         int count = ++fTokenIdCounter;
         // If we ever wrap around.
         if (count <= 0) {
             count = fTokenIdCounter = 1;
+        }
+        return count;
+    }
+
+    static long getNewAsmId() {
+        long count = --asmIdCounter;
+        // If we ever wrap around.
+        if (count == optimizedVarID) {
+            count = asmIdCounter = -1;
         }
         return count;
     }

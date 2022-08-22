@@ -106,6 +106,14 @@ public class CommandFactory {
 		return new MIBreakWatch(isRead, isWrite, expression);
 	}
 
+	public MICommand<MIDataDisassembleInfo> createMIDataDisassemble(String start, String end, boolean mode) {
+		return new MIDataDisassemble(start, end, mode);
+	}
+
+	public MICommand<MIDataDisassembleInfo> createMIDataDisassemble(String file, int linenum, int lines, boolean mode) {
+		return new MIDataDisassemble(file, linenum, lines, mode);
+	}
+
 	public MICommand<MIInfo> createMIExecContinue() {
 		return new MIExecContinue();
 	}
@@ -224,6 +232,8 @@ public class CommandFactory {
 	public MICommand<MiSourceFilesInfo> createMiFileListExecSourceFiles() {
 		return new MIFileListExecSourceFiles();
 	}
+
+	public MICommand<MIInfo> createMIPrint(String expression) { return new MIPrint(expression); }
 
 	public MICommand<MiSymbolInfoFunctionsInfo> createMiSymbolInfoFunctions() {
 		return new MISymbolInfoFunctions();

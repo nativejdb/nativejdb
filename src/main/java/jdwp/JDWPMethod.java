@@ -30,6 +30,8 @@ import jdwp.jdi.LocalVariableImpl;
 import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ReferenceTypeImpl;
+import gdb.mi.service.command.commands.MICommand;
+import gdb.mi.service.command.output.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -175,6 +177,9 @@ public class JDWPMethod {
          */
         static class VariableTableWithGeneric implements Command  {
             static final int COMMAND = 5;
+            private static final String ASM_VAR_NAME = "$asm";
+            private static final String ASM_VAR_SIGNATURE = "Ljava/lang/String;";
+            private static final String ASM_VAR_GEN_SIGNATURE = null;
 
             /**
              * Information about the variable.
@@ -188,6 +193,7 @@ public class JDWPMethod {
                     answer.writeStringOrEmpty(var.genericSignature());
                     answer.writeInt(var.getLength());
                     answer.writeInt(var.slot());
+                    JDWP.localsByID.put(var.slot(), var);
                 }
             }
 
@@ -195,17 +201,85 @@ public class JDWPMethod {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 ReferenceTypeImpl referenceType = command.readReferenceType();
                 MethodImpl method = referenceType.methodById(command.readMethodRef());
+                JDWP.localsByID.clear();
                 try {
                     List<LocalVariableImpl> variables = method.variables();
                     answer.writeInt(method.argSlotCount());
-                    answer.writeInt(variables.size());
-                    for (LocalVariableImpl variable : variables) {
-                        SlotInfo.write(variable, gc, answer);
+                    int maxSlot = 0;
+
+                    System.out.println("Queueing MI command to list local variables and function arguments");
+                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(JDWP.currentThreadID), String.valueOf(0)); // TODO: AAV No thread and frame info available here!!!
+                    int tokenID = JDWP.getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
+
+                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
                     }
+                    MIArg[] vals = replyloc.getVariables();
+
+                    int gdbSize = getGDBVariablesSize(vals);
+                    int vmSize = variables.size();
+                    answer.writeInt(gdbSize + 1); //Number of slots from GDB, +1 for assembly variable
+                    if (gdbSize != vmSize) {
+                        System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + vmSize);
+                    }
+                    for (MIArg val: vals) {
+                        if (val.getName().equals("this")) {
+                            continue;
+                        }
+                        LocalVariableImpl variable = containsInVMSlots(variables, val.getName());
+                        if (variable != null) {
+                            if (variable.slot() > maxSlot) {
+                                maxSlot = variable.slot();
+                            }
+                            SlotInfo.write(variable, gc, answer); // TODO Hack
+                        } else {
+                            LocalVariableImpl gdbVar = new LocalVariableImpl(
+                                    method,
+                                    maxSlot + 1,
+                                    new LocationImpl(method, 0),
+                                    new LocationImpl(method, method.ref().getCodeSize() - 1),
+                                    val.getName(),
+                                    "", // TODO need signature of variable that is not in VM list but in GDB list
+                                    ""); // TODO
+                            SlotInfo.write(gdbVar, gc, answer);
+                        }
+                    }
+
+                    // Add assembly variable
+                    LocalVariableImpl asmVar = new LocalVariableImpl(
+                            method,
+                            maxSlot + 1,
+                            new LocationImpl(method, 0),
+                            new LocationImpl(method, method.ref().getCodeSize() - 1),
+                            ASM_VAR_NAME,
+                            ASM_VAR_SIGNATURE,
+                            ASM_VAR_GEN_SIGNATURE);
+                    SlotInfo.write(asmVar, gc, answer);
 
                 } catch (AbsentInformationException e) {
                     answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
                 }
+            }
+
+            private LocalVariableImpl containsInVMSlots(List<LocalVariableImpl> variables, String name) {
+                for (LocalVariableImpl variable : variables) {
+                    if (variable.name().equals(name)) {
+                        return variable;
+                    }
+                }
+                return null;
+            }
+
+            private int getGDBVariablesSize(MIArg[] vals) {
+                int gdbSize = vals.length;
+                for (MIArg val : vals) {
+                    if (val.getName().equals("this")) {
+                        gdbSize--;
+                    }
+                }
+                return gdbSize;
             }
         }
     }
