@@ -26,6 +26,9 @@
 package jdwp;
 
 import com.sun.jdi.AbsentInformationException;
+import gdb.mi.service.command.commands.MICommand;
+import gdb.mi.service.command.output.MIResultRecord;
+import gdb.mi.service.command.output.MiSymbolInfoVariablesInfo;
 import jdwp.jdi.*;
 
 import java.util.List;
@@ -156,12 +159,54 @@ public class JDWPReferenceType {
             static final int COMMAND = 6;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+            /*
+               -symbol-info-variables [--include-nondebug] (Only gives us global field names - no values. Maybe contained in 1.'s output already)
+                        [--type type_regexp]
+                        [--name name_regexp]
+                        [--max-results limit]
+                    Return a list containing the names and types for all global variables taken from the debug information. The variables are grouped by source file, and shown with the line number on which each variable is defined.
+             */
                 ReferenceTypeImpl referenceType = command.readReferenceType();
                 int size = command.readInt();
-                answer.writeInt(size);
-                for (int i = 0; i < size; i++) {
-                    answer.writeValue(referenceType.getValue(referenceType.fieldById(command.readFieldRef())));
+
+                // -symbol-info-variables --name HelloField::
+                String className = System.getProperty("program.class");
+                System.out.println("Queueing MI command to list global variables (only names) for "+ className);
+                MICommand cmd = gc.getCommandFactory().createMiSymbolInfoVariables("", className+"::", 0, false);
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
+
+                MiSymbolInfoVariablesInfo replyloc = (MiSymbolInfoVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
+
+                MiSymbolInfoVariablesInfo.SymbolVariableInfo[] files = replyloc.getSymbolVariables();
+                for ( MiSymbolInfoVariablesInfo.SymbolVariableInfo file: files) { // usually only one file in the array due to className filter for GDB command
+                        MiSymbolInfoVariablesInfo.Symbols[] vals = file.getSymbols();
+                        answer.writeInt(size);
+                        for (int i = 0; i < size; i++) {
+                            FieldImpl field = referenceType.fieldById(command.readFieldRef());
+                            ValueImpl value = referenceType.getValue(field);
+                            MiSymbolInfoVariablesInfo.Symbols val = containsInVMFields(vals, field.name());
+                            if (val != null) {
+                                answer.writeValue(value); // TODO Hack
+                            } else {
+                                String tag = val.getType();
+                                // TODO get value of static field from GDB
+                            }
+                        }
+                }
+            }
+
+            private MiSymbolInfoVariablesInfo.Symbols containsInVMFields(MiSymbolInfoVariablesInfo.Symbols[] vals, String name) {
+                for (MiSymbolInfoVariablesInfo.Symbols val : vals) {
+                    String varName = val.getName().split("::")[1]; //Fib.Fib::res
+                    if (varName.equals(name)) {
+                        return val;
+                    }
+                }
+                return null;
             }
         }
 

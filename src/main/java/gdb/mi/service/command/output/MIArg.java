@@ -96,6 +96,7 @@ public class MIArg {
 
 	/**
 	 * Parsing a DsfMITuple of the form:
+	 * {name="xxx",arg="yyy", value="zzz"}
 	 * {name="xxx",value="yyy"}
 	 * {name="xxx"}
 	 */
@@ -116,6 +117,15 @@ public class MIArg {
 			String aValue = ""; //$NON-NLS-1$
 			if (args.length == 2) {
 				value = args[1].getMIValue();
+				if (value != null && value instanceof MIConst) {
+					aValue = ((MIConst) value).getCString();
+				} else {
+					aValue = ""; //$NON-NLS-1$
+				}
+			}
+
+			if (args.length == 3) {
+				value = args[2].getMIValue();
 				if (value != null && value instanceof MIConst) {
 					aValue = ((MIConst) value).getCString();
 				} else {
