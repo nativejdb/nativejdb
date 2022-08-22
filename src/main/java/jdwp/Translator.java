@@ -229,40 +229,7 @@ public class Translator {
 	}
 
 	public static String getPrimitiveJNI(String param) {
-		String jniParam = "";
-
-		switch (param) {
-			case "":
-				break;
-			case JAVA_BOOLEAN:
-				jniParam = typeSignature.get(JAVA_BOOLEAN);
-				break;
-			case JAVA_BYTE:
-				jniParam = typeSignature.get(JAVA_BYTE);
-				break;
-			case JAVA_CHAR:
-				jniParam = typeSignature.get(JAVA_CHAR);
-				break;
-			case JAVA_SHORT:
-				jniParam = typeSignature.get(JAVA_SHORT);
-				break;
-			case JAVA_INT:
-				jniParam = typeSignature.get(JAVA_INT);
-				break;
-			case JAVA_LONG:
-				jniParam = typeSignature.get(JAVA_LONG);
-				break;
-			case JAVA_FLOAT:
-				jniParam = typeSignature.get(JAVA_FLOAT);
-				break;
-			case JAVA_DOUBLE:
-				jniParam = typeSignature.get(JAVA_DOUBLE);
-				break;
-			case JAVA_VOID:
-				jniParam = typeSignature.get(JAVA_VOID);
-				break;
-		}
-		return jniParam;
+		return typeSignature.get(param);
 	}
 
 	public static LocationImpl locationLookup(String func, int line) {
