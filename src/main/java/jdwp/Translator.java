@@ -11,6 +11,7 @@
 
 package jdwp;
 
+import com.sun.jdi.AbsentInformationException;
 import gdb.mi.service.command.events.*;
 import gdb.mi.service.command.output.MIBreakInsertInfo;
 import gdb.mi.service.command.output.MIResult;
@@ -18,37 +19,12 @@ import gdb.mi.service.command.output.MIValue;
 import gdb.mi.service.command.output.MIInfo;
 import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
-import jdwp.jdi.ConcreteMethodImpl;
-import jdwp.jdi.ThreadReferenceImpl;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class Translator {
-
-	static final String JAVA_BOOLEAN = "boolean";
-	static final String JAVA_BYTE = "byte";
-	static final String JAVA_CHAR = "char";
-	static final String JAVA_SHORT = "short";
-	static final String JAVA_INT = "int";
-	static final String JAVA_LONG = "long";
-	static final String JAVA_FLOAT = "float";
-	static final String JAVA_DOUBLE = "double";
-	static final String JAVA_VOID = "void";
-
-	static final Map<String, String> typeSignature;	// primitive type signature mapping from C/C++ to JNI
-	static {
-		typeSignature = new HashMap<>();
-
-		typeSignature.put(JAVA_BOOLEAN, "Z");
-		typeSignature.put(JAVA_BYTE, "B");
-		typeSignature.put(JAVA_CHAR, "C");
-		typeSignature.put(JAVA_SHORT, "S");
-		typeSignature.put(JAVA_INT, "I");
-		typeSignature.put(JAVA_LONG, "J");
-		typeSignature.put(JAVA_FLOAT, "F");
-		typeSignature.put(JAVA_DOUBLE, "D");
-		typeSignature.put(JAVA_VOID, "V");
-	}
 
 	public static PacketStream getVMStartedPacket(GDBControl gc) {
 		PacketStream packetStream = new PacketStream(gc);
@@ -155,7 +131,7 @@ public class Translator {
 		return id;
 	}
 
-	private static PacketStream  translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
+	private static PacketStream translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
 		System.out.println("Translating end-stepping-range");
 		PacketStream packetStream = new PacketStream(gc);
 		Long threadID = getThreadId(event);
@@ -181,82 +157,54 @@ public class Translator {
 		return packetStream;
 	}
 
-	private static  boolean isPrimitive(String type) {
-		return typeSignature.containsKey(type);
-	}
+	/**
+	 * Returns the LocationImpl that belong to the method of the same line given
+	 */
+	public static LocationImpl locationLookup(String func, int line)  {
+		// normalize GDB function name too due to inconsistency in GDB output for getting frames
+		func = normalizeMethodName(func);
 
-	public static String normalizeFunc(String func) {
-		StringBuilder finalSignature = new StringBuilder();
+		Map<String, MethodImpl> javaMethods = MethodImpl.methods;
+		Set<String> javaMethodNames = javaMethods.keySet();
 
-		if (!func.contains("(")) { // Function does not contain parameter types
-			return func;
-		}
-		String start = func.substring(0, func.indexOf("(")).replace(".", "/");
-		String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
-		String[] params = paramList.split(", ");
-		ArrayList<String> newParams = new ArrayList<>();
-		for (String param: params) {
-			if (param.endsWith("*")) { // zero or more param
-				param = param.substring(0, param.indexOf("*")) + ";";
-			}
-			param = param.replace(" ", "");
-			param = param.replace(".", "/");
-			if (!isPrimitive(param)) {
-				param = "L" + param;
-			} else {
-				// If is primitive, provide JNI signature
-				param = getPrimitiveJNI(param);
-			}
-			if (param.contains("[]")) { // array
-				param = param.replace("[]", "");
-				param = "[" + param;
-			}
-			if (!param.equals("void")) {
-				newParams.add(param);
-			}
-		}
-
-		StringBuilder newParamList = new StringBuilder();
-		for (String newParam : newParams) {
-			newParamList.append(newParam);
-		}
-
-		finalSignature.append(start);
-		finalSignature.append("(");
-		finalSignature.append(newParamList);
-		finalSignature.append(")");
-		return finalSignature.toString();
-	}
-
-	public static String getPrimitiveJNI(String param) {
-		return typeSignature.get(param);
-	}
-
-	public static LocationImpl locationLookup(String func, int line) {
-		String name = normalizeFunc(func);
-		MethodImpl impl = MethodImpl.methods.get(name);
-		if (impl != null) {
-			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(line);
-			if (list != null && list.size() >= 1) {
-				return list.get(0);
-			}
-			return null;
-		}
-		if (!name.contains("(")) {
-			Set<String> keys = MethodImpl.methods.keySet();
-			for (String key: keys) {
-				if (key.contains(name)) {
-					ConcreteMethodImpl impl1 = (ConcreteMethodImpl) MethodImpl.methods.get(key);
-					List<LocationImpl> list = ((ConcreteMethodImpl) impl1).getBaseLocations().lineMapper.get(line);
-					if (list != null && list.size() >= 1) {
-						return list.get(0);
+		for (String javaMethodName : javaMethodNames) {
+			String gdbName = normalizeMethodName(javaMethodName);
+			if (gdbName.equals(func)) {
+				MethodImpl javaMethod = javaMethods.get(javaMethodName);
+				try {
+					List<LocationImpl> locations = javaMethod.allLineLocations();
+					for (LocationImpl location : locations) {
+						if (location.lineNumber() == line) {
+							return location;
+						}
 					}
+				} catch (AbsentInformationException e) {
+					// move on
 				}
 			}
 		}
 		return null;
 	}
 
+	/**
+	 * Translates a Java method signature into one GDB recognizes.
+	 * Namely, gets method file and method name, without parameters.
+	 */
+	public static String normalizeMethodName(String javaMethodName) {
+
+		String leftParen = "(";
+		String gdbStr = javaMethodName;
+
+		// Remove everything after parenthesis
+		if (javaMethodName.contains(leftParen)) {
+			int leftParenIndex = javaMethodName.indexOf(leftParen);
+			gdbStr = gdbStr.substring(0, leftParenIndex);
+		}
+
+		// Replaces `/` with `.`
+		gdbStr = gdbStr.replace("/", ".");
+		return gdbStr;
+	}
 
 }
 

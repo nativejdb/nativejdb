@@ -35,8 +35,6 @@ import java.util.ArrayList;
 
 public class JDWPThreadReference {
 
-
-
     static class ThreadReference {
         static final int COMMAND_SET = 11;
         private ThreadReference() {}  // hide constructor
@@ -225,8 +223,6 @@ public class JDWPThreadReference {
                 }
             }
 
-
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 String threadId = command.readObjectRef() + "";
 
@@ -245,7 +241,6 @@ public class JDWPThreadReference {
                 int framesLength = 0;
                 List<Integer> frameIds = new ArrayList<>();
                 List<LocationImpl> locations = new ArrayList<>();
-
 
                 for (MIFrame frame: frames) {
                     int frameId = frame.getLevel();

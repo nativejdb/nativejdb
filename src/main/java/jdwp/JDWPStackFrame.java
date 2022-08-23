@@ -29,7 +29,25 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
 
+import java.util.Map;
+
 public class JDWPStackFrame {
+
+    /**
+     * Obtains the frame that has the same function name as the target frame.
+     */
+    private static Map<Integer, LocalVariableImpl> getFrame(MIFrame targetFrame) {
+
+        for (Map.Entry<MIFrame, Map<Integer, LocalVariableImpl>> entry : JDWP.localsByFrame.entrySet()) {
+            String targetFunc = targetFrame.getFunction();
+            MIFrame currFrame = entry.getKey();
+            if (targetFunc.equals(currFrame.getFunction())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     static class StackFrame {
         static final int COMMAND_SET = 16;
         private StackFrame() {}  // hide constructor
@@ -65,6 +83,7 @@ public class JDWPStackFrame {
                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
                 MIArg[] vals = replyloc.getVariables();
+                MIFrame topFrame = JDWP.framesById.get(0);      // the top-level frame is the current method on the call stack
 
                 int gdbSize = getGDBVariablesSize(vals);
                 answer.writeInt(slots);
@@ -74,9 +93,9 @@ public class JDWPStackFrame {
                 for (int i = 0; i < slots; i++) {
                     int slot = command.readInt();
                     byte tag = command.readByte();
-
-                    LocalVariableImpl vmVar = JDWP.localsByID.get(slot);
+                    LocalVariableImpl vmVar = getFrame(topFrame).get(slot);
                     MIArg gdbVar = containsInGDBVariables(vals, vmVar.name());
+
                     if (gdbVar != null) {
                         String value = gdbVar.getValue();
                         if (!gdbVar.getName().equals("this") && !value.equals("<optimized out>")) {
@@ -86,11 +105,14 @@ public class JDWPStackFrame {
                                     answer.writeUntaggedValue(null); //TODO Implement
                                     break;
                                 case JDWP.Tag.BYTE:
+                                    // GDB returns "127 \b"
                                     String[] splited = value.split("\\s+");
                                     answer.writeByte(Byte.parseByte(splited[0]));
                                     break;
                                 case JDWP.Tag.CHAR:
-                                    answer.writeChar(value.charAt(0));
+                                    // GDB returns "97"
+                                    char charValue = (char) Integer.parseInt(value);
+                                    answer.writeChar(charValue);
                                     break;
                                 case JDWP.Tag.FLOAT:
                                     answer.writeFloat(Float.parseFloat(value));
@@ -115,13 +137,13 @@ public class JDWPStackFrame {
                                     break;
                                 case JDWP.Tag.OBJECT:
                                     answer.writeNullObjectRef(); //TODO Implement
+                                    break;
                             }
                         } else if (value.equals("<optimized out>")) {
                             answer.writeByte(JDWP.Tag.STRING);
                             answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
                         }
                     } else if (vmVar.name().equals("$asm")) {
-
                         answer.writeByte(JDWP.Tag.STRING);
                         long newAsmId = JDWP.getNewAsmId();
                         answer.writeObjectRef(newAsmId);

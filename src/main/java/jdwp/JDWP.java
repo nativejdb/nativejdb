@@ -51,7 +51,7 @@ public class JDWP {
 
     static Map<Integer, MIFrame> framesById = new HashMap<>();
 
-    static Map<Integer, LocalVariableImpl> localsByID = new HashMap<>();
+    static Map<MIFrame, Map<Integer, LocalVariableImpl>> localsByFrame = new HashMap<>();
 
     static ArrayList<ReferenceTypeImpl> stringClasses = new ArrayList<>();  // get java/lang/String class for asm variable
 

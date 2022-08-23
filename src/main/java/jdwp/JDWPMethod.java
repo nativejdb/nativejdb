@@ -34,7 +34,9 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class JDWPMethod {
     static class Method {
@@ -193,7 +195,13 @@ public class JDWPMethod {
                     answer.writeStringOrEmpty(var.genericSignature());
                     answer.writeInt(var.getLength());
                     answer.writeInt(var.slot());
-                    JDWP.localsByID.put(var.slot(), var);
+
+                    // Add this frame and its associated locals to the map
+                    // This frame will be mapped to the current method and this command will not be called again
+                    // with next breakpoint hit.
+                    MIFrame frame = JDWP.framesById.get(0);
+                    Map<Integer, LocalVariableImpl> frameMap = JDWP.localsByFrame.get(frame);
+                    frameMap.put(var.slot(), var);
                 }
             }
 
@@ -201,7 +209,8 @@ public class JDWPMethod {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 ReferenceTypeImpl referenceType = command.readReferenceType();
                 MethodImpl method = referenceType.methodById(command.readMethodRef());
-                JDWP.localsByID.clear();
+                MIFrame frame = JDWP.framesById.get(0);
+                JDWP.localsByFrame.put(frame, new HashMap<>());
                 try {
                     List<LocalVariableImpl> variables = method.variables();
                     answer.writeInt(method.argSlotCount());
