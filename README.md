@@ -26,8 +26,9 @@ NativeJDB uses the [JDWP protocol](https://docs.oracle.com/en/java/javase/11/doc
     - Clear Breakpoints (Delete/Disable)
     - Step Over / Step Into / Step Return
     - Stack Frames information in IDE debugger pane
-    - Variables (Local + Static) values (Work-in-progress)
-    - View of assembly code within a stack frame (work in progress)
+    - Primitive variables (Local + Static) values (Work-in-progress)
+    - View of assembly code within a stack frame
+    - View of variables optimized out by native-image compilation
     - Thread info
 
 ## Requirements
@@ -110,6 +111,14 @@ Set breakpoints in the source code file for your example application in the `nat
 
 On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Edit Configurations --> Remote JVM Debug --> [nativejdbExamples/.run/Hello](https://github.com/nativejdb/nativejdbExamples/blob/main/.run/Hello.run.xml)
 
+
+###  Additional options to maximize your experience 
+
+- Customize the number of assembly instructions using `ASMLINE` flag. 
+
+When running `make nativejdb`, specify the `ASMLINE=<num>` flag to modify the number of assembly instructions displayed. If nothing is passed in, it will be defaulted to 10.
+
+Example: `make nativejdb CLASSNAME=HelloNested ASMLINE=20`
 
 ## Current limitations:
 
