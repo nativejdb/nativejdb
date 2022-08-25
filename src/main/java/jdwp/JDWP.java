@@ -185,7 +185,7 @@ public class JDWP {
         int SUSPEND_STATUS_SUSPENDED = 0x1;
     }
 
-    interface ClassStatus {
+    public interface ClassStatus {
         int VERIFIED = 1;
         int PREPARED = 2;
         int INITIALIZED = 4;

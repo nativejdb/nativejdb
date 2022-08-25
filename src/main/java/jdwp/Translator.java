@@ -12,15 +12,16 @@
 package jdwp;
 
 import gdb.mi.service.command.events.*;
-import gdb.mi.service.command.output.MIBreakInsertInfo;
-import gdb.mi.service.command.output.MIResult;
-import gdb.mi.service.command.output.MIValue;
-import gdb.mi.service.command.output.MIInfo;
+import gdb.mi.service.command.output.*;
+import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo.SymbolFileInfo;
+import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo.Symbols;
 import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ConcreteMethodImpl;
-import jdwp.jdi.ThreadReferenceImpl;
+import jdwp.model.ReferenceType;
 
+import javax.lang.model.SourceVersion;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -187,47 +188,150 @@ public class Translator {
 		return typeSignature.containsKey(type);
 	}
 
-	public static String normalizeFunc(String func) {
-		StringBuilder finalSignature = new StringBuilder();
+	public static class MethodInfo {
+		private String className;
+		private String methodName;
+		private String returnType;
+		private List<String> argumentTypes = new ArrayList<>();
 
-		if (!func.contains("(")) { // Function does not contain parameter types
-			return func;
-		}
-		String start = func.substring(0, func.indexOf("(")).replace(".", "/");
-		String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
-		String[] params = paramList.split(", ");
-		ArrayList<String> newParams = new ArrayList<>();
-		for (String param: params) {
-			if (param.endsWith("*")) { // zero or more param
-				param = param.substring(0, param.indexOf("*")) + ";";
-			}
-			param = param.replace(" ", "");
-			param = param.replace(".", "/");
-			if (!isPrimitive(param)) {
-				param = "L" + param;
-			} else {
-				// If is primitive, provide JNI signature
-				param = getPrimitiveJNI(param);
-			}
-			if (param.contains("[]")) { // array
-				param = param.replace("[]", "");
-				param = "[" + param;
-			}
-			if (!param.equals("void")) {
-				newParams.add(param);
-			}
+		private int modifier = Modifier.STATIC | Modifier.PUBLIC;
+		private final Long uniqueID;
+		private static Long counter = 0L;
+
+		public MethodInfo(String className, String methodName) {
+			this.className = className;
+			this.methodName = methodName;
+			this.uniqueID = counter++;
 		}
 
-		StringBuilder newParamList = new StringBuilder();
-		for (String newParam : newParams) {
-			newParamList.append(newParam);
+		public void setReturnType(String returnType) {
+			this.returnType = returnType;
 		}
 
-		finalSignature.append(start);
-		finalSignature.append("(");
-		finalSignature.append(newParamList);
-		finalSignature.append(")");
-		return finalSignature.toString();
+		public void addArgumentType(String paramType) {
+			argumentTypes.add(paramType);
+		}
+
+		public String getSignature() {
+			StringBuilder builder = new StringBuilder("(");
+			for(String argType : argumentTypes) {
+				builder.append(gdb2JNIType(argType));
+			}
+			builder.append(')');
+			builder.append(gdb2JNIType(returnType));
+			return builder.toString();
+		}
+
+		public void addModifier(int modifier) {
+			this.modifier |= modifier;
+		}
+
+		public void removeModifier(int modifier) {
+			this.modifier &= ~modifier;
+		}
+
+		public int getModifier() {
+			return modifier;
+		}
+
+		public Long getUniqueID() {
+			return uniqueID;
+		}
+	}
+
+	public static MethodInfo gdbSymbolToMethodInfo(String name, String type) {
+		String[] functionNames = getClassAndFunctionName(name);
+		MethodInfo info = new MethodInfo(functionNames[0], functionNames[1]);
+		getSignature(type, functionNames[0], info);
+		return info;
+
+	}
+
+	public static String normalizeType(String type) {
+		if (type.startsWith("class ")) {
+			type = type.substring(6);
+		} else if (type.startsWith("union ")) {
+			type = type.substring(6);
+		}
+		if (type.charAt(type.length() - 1) == '*') {
+			type = type.substring(0, type.length() - 1);
+		}
+		return type.trim();
+	}
+
+	/**
+	 * Normalize a type information returned by GDB to the JNI signature. The type field has the following structure:
+	 * <code>return_type (parm1_type,...)</code>
+	 * where return type can be <code>void, int or union interface_name * or class class_name *</code>
+	 *
+	 * @param type the type information from GDB
+	 * @return the JNI signature
+	 */
+	public static void getSignature(String type, String className, MethodInfo info) {
+		int index = type.indexOf('(');
+		if (index == (-1)) {
+			info.setReturnType(normalizeType(type));
+		} else {
+			info.setReturnType(normalizeType(type.substring(0, type.indexOf("("))));
+			String paramList = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
+			String[] params = paramList.split(", ");
+			for (int i=0; i < params.length;++i) {
+				if (!params[i].equals("void")) {
+					String paramType = normalizeType(params[i]);
+					if (i !=0 || !paramType.equals(className)) {
+						info.addArgumentType(paramType);
+					} else {
+						info.removeModifier(Modifier.STATIC);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Return the function name from the name field. The returned array is a 2 element array whose first value is the
+	 * class name and the second value is the function (method) name. If no class is found then the first element is
+	 * null.
+	 *
+	 * @param name the GDB name field (ie <code>java.util.List::of(java.lang.Object[] *)</code>)
+	 * @return a 2 element array
+	 */
+	public static String[] getClassAndFunctionName(String name) {
+		String[] names = new String[2];
+
+		int index = name.indexOf("::");
+		if (index != (-1)) {
+			names[0] = name.substring(0, index);
+			name = name.substring(index + 2);
+
+		}
+		index = name.indexOf('(');
+		if (index != (-1)) {
+			names[1] = name.substring(0, index);
+		} else {
+			names[1] = name;
+		}
+		return names;
+	}
+
+	public static String gdb2JNIType(String param) {
+		if (param.endsWith("*")) { // zero or more param
+			param = param.substring(0, param.indexOf("*"));
+		}
+		param = param.replace(" ", "");
+		param = param.replace(".", "/");
+		String prefix = "";
+		while (param.endsWith("[]")) {
+			param = param.substring(0, param.length() - 2);
+			prefix += "[";
+		}
+		if (!isPrimitive(param)) {
+			param = "L" + param + ";";
+		} else {
+			// If is primitive, provide JNI signature
+			param = getPrimitiveJNI(param);
+		}
+		return prefix + param;
 	}
 
 	public static String getPrimitiveJNI(String param) {
@@ -235,7 +339,7 @@ public class Translator {
 	}
 
 	public static LocationImpl locationLookup(String func, int line) {
-		String name = normalizeFunc(func);
+		String name = func; //TODO
 		MethodImpl impl = MethodImpl.methods.get(name);
 		if (impl != null) {
 			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(line);
@@ -315,6 +419,36 @@ public class Translator {
 		return name.substring(0, name.lastIndexOf("_"));
 	}
 
+	public static void translateReferenceTypes(Map<Long, ReferenceType> referenceTypes, MiSymbolInfoFunctionsInfo response) {
+		Map<String, ReferenceType> types = new HashMap<>();
+		for(SymbolFileInfo symbolFile : response.getSymbolFiles()) {
+			for(Symbols symbol : symbolFile.getSymbols()) {
+				var index = symbol.getName().indexOf("::");
+				if (index != (-1)) {
+					var className = symbol.getName().substring(0, index);
+					if (isJavaClassName(className)) {
+						var methodInfo = gdbSymbolToMethodInfo(symbol.getName(), symbol.getType());
+						var refType = types.computeIfAbsent(className, key -> {
+							var type = new ReferenceType(className);
+							referenceTypes.put(type.getUniqueID(), type);
+							return type;
+						});
+						refType.addMethod(methodInfo);
+					}
+				}
+			}
+		}
+	}
+
+	private static boolean isJavaClassName(String className) {
+		String[] members = className.split("\\.");
+		for(String member : members) {
+			if (!SourceVersion.isIdentifier(member)) {
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
 

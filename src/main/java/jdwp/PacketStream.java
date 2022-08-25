@@ -186,7 +186,7 @@ public class PacketStream {
         writeString(string);
     }
 
-    void writeString(String string) {
+    public void writeString(String string) {
         try {
             byte[] stringBytes = string.getBytes("UTF8");
             writeInt(stringBytes.length);

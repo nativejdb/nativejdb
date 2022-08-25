@@ -93,39 +93,11 @@ public class JDWPVirtualMachine {
         static class AllClasses implements Command  {
             static final int COMMAND = 3;
 
-            static class ClassInfo {
-
-                public static void write(ReferenceTypeImpl referenceType, PacketStream answer) {
-                    answer.writeByte(referenceType.tag());
-                    answer.writeClassRef(referenceType.uniqueID());
-                    answer.writeString(referenceType.signature());
-                    answer.writeInt(referenceType.ref().getClassStatus());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                List<ReferenceTypeImpl> referenceTypes = gc.vm.allClasses();
-                answer.writeInt(referenceTypes.size());
-                for (ReferenceTypeImpl referenceType : referenceTypes) {
-                    ClassInfo.write(referenceType, answer);
+                answer.writeInt(gc.getReferenceTypes().size());
+                for(var type : gc.getReferenceTypes().values()) {
+                    type.write(answer, false);
                 }
-
-                /*System.out.println("Queueing MI command to get all classes info");
-                MICommand cmd = gc.getCommandFactory().createMiFileListExecSourceFiles();
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MiSourceFilesInfo reply = (MiSourceFilesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
-                    return;
-                }
-
-                MiSourceFilesInfo.SourceFileInfo[] refTypes = reply.getSourceFiles();
-                answer.writeInt(refTypes.length);
-                for (MiSourceFilesInfo.SourceFileInfo referenceType : refTypes) {
-                    //ClassInfo.write(referenceType, answer);
-                }*/
             }
         }
 
@@ -595,43 +567,12 @@ public class JDWPVirtualMachine {
         static class AllClassesWithGeneric implements Command  {
             static final int COMMAND = 20;
 
-            static class ClassInfo {
-
-                public static void write(ReferenceTypeImpl cls, GDBControl gc, PacketStream answer) {
-                    answer.writeByte(cls.tag());
-                    answer.writeClassRef(cls.uniqueID());
-                    answer.writeString(cls.signature());
-                    answer.writeStringOrEmpty(cls.genericSignature());
-                    answer.writeInt(cls.ref().getClassStatus());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                List<ReferenceTypeImpl> allClasses = gc.vm.allClasses();
-                answer.writeInt(allClasses.size());
-                for (ReferenceTypeImpl cls : allClasses) {
-                    if (cls.signature().contains("Ljava/lang/String;")) {
-                        JDWP.stringClasses.add(cls);
-                    }
-                    ClassInfo.write(cls, gc, answer);
+                var types = gc.getReferenceTypes();
+                answer.writeInt(types.size());
+                for(var type : types.values()) {
+                    type.write(answer, true);
                 }
-
-                /*System.out.println("Queueing MI command to get all classes info");
-                MICommand cmd = gc.getCommandFactory().createMiSymbolInfoFunctions();
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MiSymbolInfoFunctionsInfo reply = (MiSymbolInfoFunctionsInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
-                    return;
-                }
-
-                MiSymbolInfoFunctionsInfo.SymbolFileInfo[] referenceTypes = reply.getSymbolFiles();
-                answer.writeInt(referenceTypes.length);
-                for (MiSymbolInfoFunctionsInfo.SymbolFileInfo referenceType : referenceTypes) {
-                    //ClassInfo.write(referenceType, answer);
-                }*/
             }
         }
 

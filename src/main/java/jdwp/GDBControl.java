@@ -27,9 +27,15 @@ package jdwp;
 
 import com.sun.jdi.connect.spi.Connection;
 import gdb.mi.service.command.AbstractMIControl;
+import gdb.mi.service.command.commands.MICommand;
+import gdb.mi.service.command.commands.MISymbolInfoFunctions;
+import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo;
 import jdwp.jdi.VirtualMachineImpl;
+import jdwp.model.ReferenceType;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GDBControl extends AbstractMIControl {
     private boolean initialized = false;
@@ -47,6 +53,8 @@ public class GDBControl extends AbstractMIControl {
     InputStream  gdbOutput = null;
     InputStream  gdbError = null;
     BufferedReader outputReader = null;
+
+    private Map<Long, ReferenceType> referenceTypes = new HashMap<>();
 
     public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
         super(); //AbstractMIControl sets up command factory
@@ -98,6 +106,16 @@ public class GDBControl extends AbstractMIControl {
 
             }
         }
+        loadSymbols();
+    }
+
+    private void loadSymbols() {
+        MICommand<MiSymbolInfoFunctionsInfo> cmd = getCommandFactory().createMiSymbolInfoFunctions();
+        int token = JDWP.getNewTokenId();
+        queueCommand(token, cmd);
+        MiSymbolInfoFunctionsInfo response = (MiSymbolInfoFunctionsInfo) getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+        Translator.translateReferenceTypes(referenceTypes, response);
+
     }
 
     void flush() {
@@ -138,5 +156,9 @@ public class GDBControl extends AbstractMIControl {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public Map<Long, ReferenceType> getReferenceTypes() {
+        return referenceTypes;
     }
 }
