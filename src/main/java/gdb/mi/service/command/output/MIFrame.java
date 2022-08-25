@@ -42,6 +42,10 @@ public class MIFrame {
 		return (fname.length() != 0) ? fname : file;
 	}
 
+	public String getActualFile() {
+		return file;
+	}
+
 	public String getFullname() {
 		return fullname;
 	}
