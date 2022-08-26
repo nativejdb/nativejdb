@@ -26,6 +26,31 @@ import java.util.*;
 
 public class Translator {
 
+	static final String JAVA_BOOLEAN = "boolean";
+	static final String JAVA_BYTE = "byte";
+	static final String JAVA_CHAR = "char";
+	static final String JAVA_SHORT = "short";
+	static final String JAVA_INT = "int";
+	static final String JAVA_LONG = "long";
+	static final String JAVA_FLOAT = "float";
+	static final String JAVA_DOUBLE = "double";
+	static final String JAVA_VOID = "void";
+
+	static final Map<String, String> typeSignature;	// primitive type signature mapping from C/C++ to JNI
+	static {
+		typeSignature = new HashMap<>();
+
+		typeSignature.put(JAVA_BOOLEAN, "Z");
+		typeSignature.put(JAVA_BYTE, "B");
+		typeSignature.put(JAVA_CHAR, "C");
+		typeSignature.put(JAVA_SHORT, "S");
+		typeSignature.put(JAVA_INT, "I");
+		typeSignature.put(JAVA_LONG, "J");
+		typeSignature.put(JAVA_FLOAT, "F");
+		typeSignature.put(JAVA_DOUBLE, "D");
+		typeSignature.put(JAVA_VOID, "V");
+	}
+
 	public static PacketStream getVMStartedPacket(GDBControl gc) {
 		PacketStream packetStream = new PacketStream(gc);
 		byte suspendPolicy = JDWP.SuspendPolicy.ALL;
@@ -155,6 +180,10 @@ public class Translator {
 
 		}
 		return packetStream;
+	}
+
+	private static  boolean isPrimitive(String type) {
+		return typeSignature.containsKey(type);
 	}
 
 	/**
