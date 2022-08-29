@@ -96,6 +96,20 @@ make stop
 
 To debug NativeJDB debugger code itself: Run ---> Remote JVM Debug --> [JDWPDebug](./.run/JDWPDebug.run.xml)
 
+## Developer tools: Wireshark and jdwptracer
+
+Wireshark is an open-source packet analyzer which has the capability to sniff network traffic, decode packets, and interpret them. 
+To be able to contribute to this project, it is important to understand how JDWP works in a real-world setting.
+Wireshark is thus helpful in providing the tools to break down the command and reply packets sent between the debugger and debuggee.
+
+[jdwptracer](https://github.com/jeffmaury/jdwptracer) is a proxy that traces JDWP packets like Wireshark. It provides additional information 
+that Wireshark does not, specifically dissecting the data portion for JDWP commands. 
+
+Check out 
+* this [section](tools/README.md#developer-tool-wireshark) for guidelines and resources for Wireshark, and 
+* this [section](tools/README.md#developer-tool-jdwptracer) on using jdwptracer
+
+
 ## Contributing
 
 Please check [contribution guidelines](./CONTRIBUTING.md).
