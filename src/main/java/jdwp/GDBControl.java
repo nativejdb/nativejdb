@@ -110,7 +110,7 @@ public class GDBControl extends AbstractMIControl {
     }
 
     private void loadSymbols() {
-        MICommand<MiSymbolInfoFunctionsInfo> cmd = getCommandFactory().createMiSymbolInfoFunctions();
+        MICommand<MiSymbolInfoFunctionsInfo> cmd = getCommandFactory().createMiSymbolInfoFunctions("", "::", 0, false);
         int token = JDWP.getNewTokenId();
         queueCommand(token, cmd);
         MiSymbolInfoFunctionsInfo response = (MiSymbolInfoFunctionsInfo) getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);

@@ -424,17 +424,15 @@ public class Translator {
 		for(SymbolFileInfo symbolFile : response.getSymbolFiles()) {
 			for(Symbols symbol : symbolFile.getSymbols()) {
 				var index = symbol.getName().indexOf("::");
-				if (index != (-1)) {
-					var className = symbol.getName().substring(0, index);
-					if (isJavaClassName(className)) {
-						var methodInfo = gdbSymbolToMethodInfo(symbol.getName(), symbol.getType());
-						var refType = types.computeIfAbsent(className, key -> {
-							var type = new ReferenceType(className);
-							referenceTypes.put(type.getUniqueID(), type);
-							return type;
-						});
-						refType.addMethod(methodInfo);
-					}
+				var className = symbol.getName().substring(0, index);
+				if (isJavaClassName(className)) {
+					var methodInfo = gdbSymbolToMethodInfo(symbol.getName(), symbol.getType());
+					var refType = types.computeIfAbsent(className, key -> {
+						var type = new ReferenceType(className);
+						referenceTypes.put(type.getUniqueID(), type);
+						return type;
+					});
+					refType.addMethod(methodInfo);
 				}
 			}
 		}
