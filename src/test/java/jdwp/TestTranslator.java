@@ -27,10 +27,10 @@ public class TestTranslator {
     public void testNormalizeFuncName() {
 
         // Tests objects as parameters
-        assertEquals("main", Translator.getClassAndFunctionName("HelloMethod.HelloMethod::main(java.lang.String[] *)"));
-        assertEquals("main", Translator.getClassAndFunctionName("main(java.lang.String[] *)"));
-        assertEquals("main", Translator.getClassAndFunctionName("HelloMethod.HelloMethod::main"));
-        assertEquals("main", Translator.getClassAndFunctionName("main"));
+        assertEquals("main", Translator.getClassAndFunctionName("HelloMethod.HelloMethod::main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassAndFunctionName("main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassAndFunctionName("HelloMethod.HelloMethod::main")[1]);
+        assertEquals("main", Translator.getClassAndFunctionName("main")[1]);
     }
 
     private void testMethodSignature(String type, String jni) {
