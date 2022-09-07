@@ -32,6 +32,7 @@ import jdwp.jdi.ReferenceTypeImpl;
 import jdwp.jdi.ThreadGroupReferenceImpl;
 import jdwp.jdi.ThreadReferenceImpl;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,11 +49,14 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeString(gc.vm.description());
-                answer.writeInt(gc.vm.jdwpMajor());
-                answer.writeInt(gc.vm.jdwpMinor());
-                answer.writeString(gc.vm.version());
-                answer.writeString(gc.vm.name());
+                int major = Integer.parseInt(System.getProperty("java.specification.version"));
+                int minor = 0;
+                answer.writeString(MessageFormat.format("Java Debug Interface (nativejdb) version {0}.{1} \nJVM version {2} ({3},{4})",
+                        major, minor, System.getProperty("java.vm.version"), System.getProperty("java.vm.name"), System.getProperty("java.vm.info")));
+                answer.writeInt(major);
+                answer.writeInt(minor);
+                answer.writeString(System.getProperty("java.vm.version"));
+                answer.writeString(System.getProperty("java.vm.name"));
             }
         }
 
