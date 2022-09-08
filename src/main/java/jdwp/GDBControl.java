@@ -28,14 +28,11 @@ package jdwp;
 import com.sun.jdi.connect.spi.Connection;
 import gdb.mi.service.command.AbstractMIControl;
 import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.commands.MISymbolInfoFunctions;
 import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo;
 import jdwp.jdi.VirtualMachineImpl;
-import jdwp.model.ReferenceType;
+import jdwp.model.ReferenceTypes;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
 
 public class GDBControl extends AbstractMIControl {
     private boolean initialized = false;
@@ -54,7 +51,7 @@ public class GDBControl extends AbstractMIControl {
     InputStream  gdbError = null;
     BufferedReader outputReader = null;
 
-    private Map<Long, ReferenceType> referenceTypes = new HashMap<>();
+    private ReferenceTypes referenceTypes = new ReferenceTypes();
 
     public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
         super(); //AbstractMIControl sets up command factory
@@ -158,7 +155,7 @@ public class GDBControl extends AbstractMIControl {
         }
     }
 
-    public Map<Long, ReferenceType> getReferenceTypes() {
+    public ReferenceTypes getReferenceTypes() {
         return referenceTypes;
     }
 }

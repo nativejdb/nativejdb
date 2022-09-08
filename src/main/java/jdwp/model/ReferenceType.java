@@ -47,7 +47,7 @@ public class ReferenceType {
 
     }
 
-    private String getSignature() {
+    public String getSignature() {
         return Translator.gdb2JNIType(className);
     }
 }

@@ -31,9 +31,11 @@ import gdb.mi.service.command.output.*;
 import jdwp.jdi.ReferenceTypeImpl;
 import jdwp.jdi.ThreadGroupReferenceImpl;
 import jdwp.jdi.ThreadReferenceImpl;
+import jdwp.model.ReferenceType;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class JDWPVirtualMachine {
@@ -98,8 +100,9 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeInt(gc.getReferenceTypes().size());
-                for(var type : gc.getReferenceTypes().values()) {
+                Collection<ReferenceType> types = gc.getReferenceTypes().getTypes();
+                answer.writeInt(types.size());
+                for(var type : types) {
                     type.write(answer, false);
                 }
             }
@@ -572,9 +575,9 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 20;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                var types = gc.getReferenceTypes();
+                var types = gc.getReferenceTypes().getTypes();
                 answer.writeInt(types.size());
-                for(var type : types.values()) {
+                for(var type : types) {
                     type.write(answer, true);
                 }
             }

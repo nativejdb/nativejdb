@@ -19,6 +19,7 @@ import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ConcreteMethodImpl;
 import jdwp.model.ReferenceType;
+import jdwp.model.ReferenceTypes;
 
 import javax.lang.model.SourceVersion;
 import java.lang.reflect.Modifier;
@@ -419,7 +420,7 @@ public class Translator {
 		return name.substring(0, name.lastIndexOf("_"));
 	}
 
-	public static void translateReferenceTypes(Map<Long, ReferenceType> referenceTypes, MiSymbolInfoFunctionsInfo response) {
+	public static void translateReferenceTypes(ReferenceTypes referenceTypes, MiSymbolInfoFunctionsInfo response) {
 		Map<String, ReferenceType> types = new HashMap<>();
 		for(SymbolFileInfo symbolFile : response.getSymbolFiles()) {
 			for(Symbols symbol : symbolFile.getSymbols()) {
@@ -429,7 +430,7 @@ public class Translator {
 					var methodInfo = gdbSymbolToMethodInfo(symbol.getName(), symbol.getType());
 					var refType = types.computeIfAbsent(className, key -> {
 						var type = new ReferenceType(className);
-						referenceTypes.put(type.getUniqueID(), type);
+						referenceTypes.addReferenceType(type);
 						return type;
 					});
 					refType.addMethod(methodInfo);
