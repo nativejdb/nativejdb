@@ -22,6 +22,8 @@ import jdwp.jdi.ConcreteMethodImpl;
 import jdwp.jdi.ThreadReferenceImpl;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Translator {
 
@@ -257,6 +259,61 @@ public class Translator {
 		return null;
 	}
 
+	/**
+	 * May or may not be helpful since we may be able to get this info from
+	 * MISymbolInfoFunctionsInfo.SymbolFileInfo.getFile()
+	 *
+	 * Determines the file and function name for Qbicc applications.
+	 * Filename is needed for break-insert commands.
+	 *
+	 * Example:
+	 * Input: "_JHelloNested_HelloNested_main__3Ljava_lang_String_2_V"
+	 * Output: "HelloNested/HelloNested.java"
+	 */
+	public static String getQbiccFilename(String name) {
+
+		// 1. Find first instance of "__" and keep only the beginning
+		// "_JHelloNested_HelloNested_main__3Ljava_lang_String_2_V" --> "_JHelloNested_HelloNested_main"
+		String fileFuncName = name.substring(0, name.indexOf("__"));
+
+		// 2. Parse out "_J" in beginning
+		// "_JHelloNested_HelloNested_main" --> "HelloNested_HelloNested_main"
+		fileFuncName = fileFuncName.substring(2);
+
+		// 3. Determines if filename contains object (identifiable from numeric id) name subclasses.
+		// 	  If that's the case, get rid of everything from numeric values.
+		// With no numeric: "HelloNested_HelloNested_main" --> "HelloNested_HelloNested"
+		// With numeric:    "HelloNested_HelloNested_00024Greeter_greeter" --> "HelloNested_HelloNested"
+		fileFuncName = getFileNamesOnly(fileFuncName);
+
+		// 4. Build filename string by splitting "_" 's
+		// "HelloNested_HelloNested" --> "HelloNested/HelloNested/"
+		String[] files = fileFuncName.split("_");
+		StringBuilder javaFilename = new StringBuilder();
+
+		for (String file : files) {
+			javaFilename.append(file);
+			javaFilename.append("/");
+		}
+
+		// 5. Replace final "/" with ".java"
+		// "HelloNested/HelloNested/" --> "HelloNested.HelloNested.java"
+		javaFilename.setLength(javaFilename.length() - 1);
+		javaFilename.append(".java");
+
+		return javaFilename.toString();
+	}
+
+	private static String getFileNamesOnly(String name) {
+		// Find the numeric value
+		Matcher matcher = Pattern.compile("\\d+").matcher(name);
+		if (matcher.find()) {
+			String number = matcher.group();
+			return name.substring(0, name.indexOf(number) - 1);
+		}
+
+		return name.substring(0, name.lastIndexOf("_"));
+	}
 
 }
 

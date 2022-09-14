@@ -72,4 +72,25 @@ public class TestTranslator {
             replaceLen = currType.length();
         }
     }
+
+    @Test
+    public void testGetQbiccFilenames() {
+        String input = "_JHelloNested_HelloNested_main__3Ljava_lang_String_2_V";
+        String output = "HelloNested/HelloNested.java";
+        assertEquals(output, Translator.getQbiccFilename(input));
+    }
+
+    @Test
+    public void testGetQbiccFilenamesWithObjects() {
+        String input = "_JHelloNested_HelloNested_00024Greeter_greeter__3Ljava_lang_String_2_LHelloNested_HelloNested_00024Greeter_2";
+        String output = "HelloNested/HelloNested.java";
+        assertEquals(output, Translator.getQbiccFilename(input));
+    }
+
+    @Test
+    public void testGetQbiccFilenamesWithJavaClasses() {
+        String input = "_Jjava_util_Map_entry__Ljava_lang_Object_2Ljava_lang_Object_2_Ljava_util_Map_00024Entry_2";
+        String output = "java/util/Map.java";
+        assertEquals(output, Translator.getQbiccFilename(input));
+    }
 }
