@@ -28,6 +28,9 @@ package jdwp;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
+import jdwp.model.VariableInfo;
+
+import java.util.ArrayList;
 
 public class JDWPStackFrame {
     static class StackFrame {
@@ -67,27 +70,36 @@ public class JDWPStackFrame {
                 MIArg[] vals = replyloc.getVariables();
 
                 int gdbSize = getGDBVariablesSize(vals);
-                answer.writeInt(slots);
                 if (gdbSize != slots) {
                     System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
                 }
-                for (int i = 0; i < slots; i++) {
-                    int slot = command.readInt();
-                    byte tag = command.readByte();
 
-                    LocalVariableImpl vmVar = JDWP.localsByID.get(slot);
-                    MIArg gdbVar = containsInGDBVariables(vals, vmVar.name());
-                    if (gdbVar != null) {
-                        String value = gdbVar.getValue();
-                        if (!gdbVar.getName().equals("this") && !value.equals("<optimized out>")) {
+                answer.writeInt(slots);
+
+                var location = gc.getThreadStacks().get(threadID);
+                if (location != null) {
+                    for (var i = 0; i < slots; i++) {
+                        var slot = command.readInt();
+                        byte tag = command.readByte();
+                        var variable = location.getMethod().findVariableBySlot(slot);
+                        MIArg gdbVar = variable != null ? containsInGDBVariables(vals, variable.getName()) : null;
+                        String value;
+                        if (gdbVar != null) {
+                            value = gdbVar.getValue();
+                        } else {
+                            value = "<value not found>";
+                            tag = JDWP.Tag.STRING;
+                        }
+                        String name = variable != null ? variable.getName() : "<slot not found>";
+                        if (!name.equals("this") && !value.equals("<optimized out>")) {
                             answer.writeByte(tag); // get value via GDB print cmd: print *print->value
                             switch (tag) {
                                 case JDWP.Tag.ARRAY:
                                     answer.writeUntaggedValue(null); //TODO Implement
                                     break;
                                 case JDWP.Tag.BYTE:
-                                    String[] splited = value.split("\\s+");
-                                    answer.writeByte(Byte.parseByte(splited[0]));
+                                    String[] split = value.split("\\s+");
+                                    answer.writeByte(Byte.parseByte(split[0]));
                                     break;
                                 case JDWP.Tag.CHAR:
                                     answer.writeChar(value.charAt(0));
@@ -119,15 +131,16 @@ public class JDWPStackFrame {
                         } else if (value.equals("<optimized out>")) {
                             answer.writeByte(JDWP.Tag.STRING);
                             answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
-                        }
-                    } else if (vmVar.name().equals("$asm")) {
+                        } else if (variable.equals("$asm")) {
 
-                        answer.writeByte(JDWP.Tag.STRING);
-                        long newAsmId = JDWP.getNewAsmId();
-                        answer.writeObjectRef(newAsmId);
+                            answer.writeByte(JDWP.Tag.STRING);
+                            long newAsmId = JDWP.getNewAsmId();
+                            answer.writeObjectRef(newAsmId);
+                        }
                     }
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                 }
-                // TODO write GDB variables that are not in the VM slots
            }
 
             private MIArg containsInGDBVariables(MIArg[] vals, String name) {

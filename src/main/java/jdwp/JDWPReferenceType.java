@@ -52,8 +52,13 @@ public class JDWPReferenceType {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                answer.writeString(referenceType.signature());
+                var referenceTypeID = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
+                if (referenceType != null) {
+                    answer.writeString(referenceType.getSignature());
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                }
             }
         }
 
@@ -128,22 +133,17 @@ public class JDWPReferenceType {
         static class Methods implements Command  {
             static final int COMMAND = 5;
 
-            static class MethodInfo {
-
-                public static void write(MethodImpl method, GDBControl gc, PacketStream answer) {
-                    answer.writeMethodRef(method.uniqueID());
-                    answer.writeString(method.name());
-                    answer.writeString(method.signature());
-                    answer.writeInt(method.modifiers());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<MethodImpl> methods = type.methods();
-                answer.writeInt(methods.size());
-                for (MethodImpl method : methods) {
-                    MethodInfo.write(method, gc, answer);
+                long id = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(id);
+                if (referenceType == null) {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                } else {
+                    var methods = referenceType.getMethods();
+                    answer.writeInt(methods.size());
+                    for (var method : methods) {
+                        method.write(answer, false);
+                    }
                 }
             }
         }
@@ -218,11 +218,12 @@ public class JDWPReferenceType {
             static final int COMMAND = 7;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                try {
-                    answer.writeString(type.baseSourceName());
-                } catch (AbsentInformationException e) {
-                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
+                var refType = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(refType);
+                if (referenceType == null) {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                } else {
+                    answer.writeString(referenceType.getBaseSourceFile());
                 }
             }
         }
@@ -344,9 +345,14 @@ public class JDWPReferenceType {
             static final int COMMAND = 13;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                answer.writeString(type.signature());
-                answer.writeStringOrEmpty(type.genericSignature());
+                var referenceTypeID = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
+                if (referenceType != null) {
+                    answer.writeString(referenceType.getSignature());
+                    answer.writeString("");
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                }
             }
         }
 
@@ -402,23 +408,17 @@ public class JDWPReferenceType {
         static class MethodsWithGeneric implements Command  {
             static final int COMMAND = 15;
 
-            static class MethodInfo {
-
-                public static void write(MethodImpl method, GDBControl gc, PacketStream answer) {
-                    answer.writeMethodRef(method.uniqueID());
-                    answer.writeString(method.name());
-                    answer.writeString(method.signature());
-                    answer.writeStringOrEmpty(method.genericSignature());
-                    answer.writeInt(method.modifiers());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<MethodImpl> methods = type.methods();
-                answer.writeInt(methods.size());
-                for (MethodImpl method : methods) {
-                    MethodInfo.write(method, gc, answer);
+                var id = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(id);
+                if (referenceType == null) {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                } else {
+                    var methods = referenceType.getMethods();
+                    answer.writeInt(methods.size());
+                    for (var method : methods) {
+                        method.write(answer, true);
+                    }
                 }
             }
         }

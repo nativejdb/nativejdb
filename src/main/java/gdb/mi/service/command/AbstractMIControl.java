@@ -282,6 +282,7 @@ public abstract class AbstractMIControl {
 
 				try {
 					if (fOutputStream != null) {
+						System.out.println(str);
 						fOutputStream.write(str.getBytes());
 						fOutputStream.flush();
 					}
@@ -328,7 +329,7 @@ public abstract class AbstractMIControl {
 				String line;
 				while ((line = reader.readLine()) != null) {
 					if (line.length() != 0) {
-						System.out.println(line);
+						System.out.println(line.substring(0, Math.min(line.length(), 256)));
 						processMIOutput(line);
 					}
 				}

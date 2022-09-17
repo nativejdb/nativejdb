@@ -73,21 +73,12 @@ public class JDWPVirtualMachine {
         static class ClassesBySignature implements Command  {
             static final int COMMAND = 2;
 
-            static class ClassInfo {
-
-                public static void write(ReferenceTypeImpl referenceType, GDBControl gc, PacketStream answer) {
-                    answer.writeByte(referenceType.tag());
-                    answer.writeClassRef(referenceType.uniqueID());
-                    answer.writeInt(referenceType.ref().getClassStatus());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 String signature = command.readString();
-                List<ReferenceTypeImpl> referenceTypes = gc.vm.findReferenceTypes(signature);
+                Collection<ReferenceType> referenceTypes = gc.getReferenceTypes().findBySignature(signature);
                 answer.writeInt(referenceTypes.size());
-                for (ReferenceTypeImpl referenceType : referenceTypes) {
-                    VirtualMachine.ClassesBySignature.ClassInfo.write(referenceType, gc, answer);
+                for (var referenceType : referenceTypes) {
+                    referenceType.writeReference(answer);
                 }
             }
         }

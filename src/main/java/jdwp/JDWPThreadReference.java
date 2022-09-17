@@ -29,6 +29,7 @@ import com.sun.jdi.IncompatibleThreadStateException;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 import jdwp.jdi.*;
+import jdwp.model.MethodLocation;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -244,7 +245,7 @@ public class JDWPThreadReference {
                 MIFrame[] frames = reply.getMIFrames();
                 int framesLength = 0;
                 List<Integer> frameIds = new ArrayList<>();
-                List<LocationImpl> locations = new ArrayList<>();
+                var locations = new ArrayList<MethodLocation>();
 
 
                 for (MIFrame frame: frames) {
@@ -252,9 +253,11 @@ public class JDWPThreadReference {
                     JDWP.framesById.put(frameId, frame);
 
                     LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
-                    if (loc != null) {
+                    var location = gc.getReferenceTypes().getLocation(frame.getFunction(),
+                            frame.getLine());
+                    if (location != null) {
                         framesLength++;
-                        locations.add(loc);
+                        locations.add(location);
                         frameIds.add(frameId);
                     }
                 }
@@ -293,8 +296,8 @@ public class JDWPThreadReference {
                 int framesLength = 0;
 
                 for (MIFrame frame: frames) {
-                    LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
-                    if (loc != null) {
+                    var location = gc.getReferenceTypes().getLocation(frame.getFunction(), frame.getLine());
+                    if (location != null) {
                         framesLength++;
                     }
                 }

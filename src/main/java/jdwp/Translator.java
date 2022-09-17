@@ -18,6 +18,8 @@ import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo.Symbols;
 import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ConcreteMethodImpl;
+import jdwp.model.MethodLocation;
+import jdwp.model.MethodInfo;
 import jdwp.model.ReferenceType;
 import jdwp.model.ReferenceTypes;
 
@@ -39,7 +41,7 @@ public class Translator {
 	static final String JAVA_DOUBLE = "double";
 	static final String JAVA_VOID = "void";
 
-	static final Map<String, String> typeSignature;	// primitive type signature mapping from C/C++ to JNI
+	public static final Map<String, String> typeSignature;	// primitive type signature mapping from C/C++ to JNI
 	static {
 		typeSignature = new HashMap<>();
 
@@ -123,9 +125,10 @@ public class Translator {
 		byte suspendPolicy = info.getMIInfoSuspendPolicy();
 		int requestId = info.getMIInfoRequestID();
 		byte eventKind = info.getMIInfoEventKind();
-		LocationImpl loc = JDWP.bkptsLocation.get(eventNumber);
+		MethodLocation loc = JDWP.bkptsLocation.get(eventNumber);
 		long threadID = getThreadId(event);
 		System.out.println("THREAD ID FOR HIT: "+ threadID);
+		gc.getThreadStacks().put(threadID, loc);
 		//long threadID = getMainThreadId(gc);
 
 		packetStream.writeByte(suspendPolicy);
@@ -177,7 +180,7 @@ public class Translator {
 		packetStream.writeObjectRef(getMainThreadId(gc));
 		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
 		if (loc != null) {
-			packetStream.writeLocation(loc);
+			//packetStream.writeLocation(loc);
 			JDWP.stepByThreadID.remove(threadID);
 			return packetStream;
 
@@ -189,60 +192,10 @@ public class Translator {
 		return typeSignature.containsKey(type);
 	}
 
-	public static class MethodInfo {
-		private String className;
-		private String methodName;
-		private String returnType;
-		private List<String> argumentTypes = new ArrayList<>();
-
-		private int modifier = Modifier.STATIC | Modifier.PUBLIC;
-		private final Long uniqueID;
-		private static Long counter = 0L;
-
-		public MethodInfo(String className, String methodName) {
-			this.className = className;
-			this.methodName = methodName;
-			this.uniqueID = counter++;
-		}
-
-		public void setReturnType(String returnType) {
-			this.returnType = returnType;
-		}
-
-		public void addArgumentType(String paramType) {
-			argumentTypes.add(paramType);
-		}
-
-		public String getSignature() {
-			StringBuilder builder = new StringBuilder("(");
-			for(String argType : argumentTypes) {
-				builder.append(gdb2JNIType(argType));
-			}
-			builder.append(')');
-			builder.append(gdb2JNIType(returnType));
-			return builder.toString();
-		}
-
-		public void addModifier(int modifier) {
-			this.modifier |= modifier;
-		}
-
-		public void removeModifier(int modifier) {
-			this.modifier &= ~modifier;
-		}
-
-		public int getModifier() {
-			return modifier;
-		}
-
-		public Long getUniqueID() {
-			return uniqueID;
-		}
-	}
-
-	public static MethodInfo gdbSymbolToMethodInfo(String name, String type) {
-		String[] functionNames = getClassAndFunctionName(name);
-		MethodInfo info = new MethodInfo(functionNames[0], functionNames[1]);
+	public static MethodInfo createMethodInfoFromGDB(ReferenceType referenceType, String name, String type) {
+		String[] functionNames = getClassFunctionNameAndParameters(name);
+		MethodInfo info = new MethodInfo(referenceType, functionNames[1] + functionNames[2],
+				functionNames[1]);
 		getSignature(type, functionNames[0], info);
 		return info;
 
@@ -297,8 +250,8 @@ public class Translator {
 	 * @param name the GDB name field (ie <code>java.util.List::of(java.lang.Object[] *)</code>)
 	 * @return a 2 element array
 	 */
-	public static String[] getClassAndFunctionName(String name) {
-		String[] names = new String[2];
+	public static String[] getClassFunctionNameAndParameters(String name) {
+		String[] names = new String[3];
 
 		int index = name.indexOf("::");
 		if (index != (-1)) {
@@ -309,8 +262,10 @@ public class Translator {
 		index = name.indexOf('(');
 		if (index != (-1)) {
 			names[1] = name.substring(0, index);
+			names[2] = name.substring(index);
 		} else {
 			names[1] = name;
+			names[2] = "";
 		}
 		return names;
 	}
@@ -427,13 +382,8 @@ public class Translator {
 				var index = symbol.getName().indexOf("::");
 				var className = symbol.getName().substring(0, index);
 				if (isJavaClassName(className)) {
-					var methodInfo = gdbSymbolToMethodInfo(symbol.getName(), symbol.getType());
-					var refType = types.computeIfAbsent(className, key -> {
-						var type = new ReferenceType(className);
-						referenceTypes.addReferenceType(type);
-						return type;
-					});
-					refType.addMethod(methodInfo);
+					var refType = types.computeIfAbsent(className, key -> new ReferenceType(referenceTypes, symbolFile.getFilename(), className));
+					createMethodInfoFromGDB(refType, symbol.getName(), symbol.getType());
 				}
 			}
 		}
@@ -448,6 +398,7 @@ public class Translator {
 		}
 		return true;
 	}
+
 }
 
 

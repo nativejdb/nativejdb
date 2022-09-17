@@ -12,9 +12,13 @@
 
 package jdwp;
 
+import jdwp.model.MethodInfo;
+import jdwp.model.ReferenceType;
+import jdwp.model.ReferenceTypes;
 import org.junit.Test;
 
 import java.lang.reflect.Modifier;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
@@ -27,16 +31,18 @@ public class TestTranslator {
     public void testNormalizeFuncName() {
 
         // Tests objects as parameters
-        assertEquals("main", Translator.getClassAndFunctionName("HelloMethod.HelloMethod::main(java.lang.String[] *)")[1]);
-        assertEquals("main", Translator.getClassAndFunctionName("main(java.lang.String[] *)")[1]);
-        assertEquals("main", Translator.getClassAndFunctionName("HelloMethod.HelloMethod::main")[1]);
-        assertEquals("main", Translator.getClassAndFunctionName("main")[1]);
+        assertEquals("main", Translator.getClassFunctionNameAndParameters("HelloMethod.HelloMethod::main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassFunctionNameAndParameters("main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassFunctionNameAndParameters("HelloMethod.HelloMethod::main")[1]);
+        assertEquals("main", Translator.getClassFunctionNameAndParameters("main")[1]);
     }
 
     private void testMethodSignature(String type, String jni) {
-        Translator.MethodInfo info = new Translator.MethodInfo("", "");
+        ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
+        ReferenceType referenceType = new ReferenceType(types,"", "");
+        MethodInfo info = new MethodInfo(referenceType, "","");
         Translator.getSignature(type, "", info);
-        assertEquals(jni, info.getSignature());
+        assertEquals(jni, info.getJNISignature());
     }
 
     @Test
@@ -103,14 +109,18 @@ public class TestTranslator {
 
     @Test
     public void testStaticMethod() {
-        Translator.MethodInfo info = new Translator.MethodInfo("classname", "methodName");
+        ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
+        ReferenceType referenceType = new ReferenceType(types, "", "classname");
+        MethodInfo info = new MethodInfo(referenceType, "methodName()", "methodName");
         Translator.getSignature("boolean (void)", "classname", info);
         assertTrue((info.getModifier() & Modifier.STATIC) == Modifier.STATIC);
     }
 
     @Test
     public void testInstanceMethod() {
-        Translator.MethodInfo info = new Translator.MethodInfo("classname", "methodName");
+        ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
+        ReferenceType referenceType = new ReferenceType(types, "", "classname");
+        MethodInfo info = new MethodInfo(referenceType, "methodName()", "methodName");
         Translator.getSignature("boolean (classname *)", "classname", info);
         assertFalse((info.getModifier() & Modifier.STATIC) == Modifier.STATIC);
     }

@@ -40,6 +40,7 @@ package jdwp;
 
 import jdwp.jdi.*;
 import com.sun.jdi.InternalException;
+import jdwp.model.MethodLocation;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -196,6 +197,13 @@ public class PacketStream {
         }
     }
 
+    void writeLocation(MethodLocation location) {
+        writeByte(JDWP.TypeTag.CLASS);
+        writeClassRef(location.getMethod().getReferenceType().getUniqueID());
+        writeMethodRef(location.getMethod().getUniqueID());
+        writeLong(location.getLine());
+    }
+
     void writeLocation(LocationImpl location) {
         ReferenceTypeImpl refType = location.declaringType();
         byte tag;
@@ -212,6 +220,7 @@ public class PacketStream {
         writeMethodRef(location.methodRef());
         writeLong(location.codeIndexInt());
     }
+
     //
     void writeValue(ValueImpl val) {
 //        try {
@@ -238,6 +247,10 @@ public class PacketStream {
         else {
             val.writeUntaggedValue(this);
         }
+    }
+
+    public void setErrorCode(short errorCode) {
+        pkt.errorCode = errorCode;
     }
 
 

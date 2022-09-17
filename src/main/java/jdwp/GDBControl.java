@@ -30,9 +30,13 @@ import gdb.mi.service.command.AbstractMIControl;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo;
 import jdwp.jdi.VirtualMachineImpl;
+import jdwp.model.MethodLocation;
 import jdwp.model.ReferenceTypes;
 
 import java.io.*;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GDBControl extends AbstractMIControl {
     private boolean initialized = false;
@@ -51,7 +55,9 @@ public class GDBControl extends AbstractMIControl {
     InputStream  gdbError = null;
     BufferedReader outputReader = null;
 
-    private ReferenceTypes referenceTypes = new ReferenceTypes();
+    private ReferenceTypes referenceTypes;
+
+    private Map<Long, MethodLocation> threadID2Stack = new HashMap<>();
 
     public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
         super(); //AbstractMIControl sets up command factory
@@ -61,6 +67,7 @@ public class GDBControl extends AbstractMIControl {
         try {
             String exec = System.getProperty("native.exec");
             String src = System.getProperty("native.src");
+            referenceTypes = new ReferenceTypes(Paths.get(src));
             ProcessBuilder builder = new ProcessBuilder("gdb", "--interpreter=mi", exec);
             builder.redirectErrorStream(true); // so we can ignore the error stream
 
@@ -157,5 +164,9 @@ public class GDBControl extends AbstractMIControl {
 
     public ReferenceTypes getReferenceTypes() {
         return referenceTypes;
+    }
+
+    public Map<Long, MethodLocation> getThreadStacks() {
+        return threadID2Stack;
     }
 }

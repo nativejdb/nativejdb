@@ -26,14 +26,13 @@
 package jdwp;
 
 import gdb.mi.service.command.events.MIEvent;
-import gdb.mi.service.command.Listener;
-import gdb.mi.service.command.MIRunControlEventProcessor;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIBreakInsertInfo;
 import gdb.mi.service.command.output.MIInfo;
 import gdb.mi.service.command.output.MIResultRecord;
-import jdwp.jdi.LocationImpl;
 import jdwp.jdi.ReferenceTypeImpl;
+import jdwp.model.MethodLocation;
+import jdwp.model.MethodInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,31 +75,37 @@ public class JDWPEventRequest {
                             byte modKind = command.readByte();
                             if (modKind == 7) {
                                 byte typeTag = command.readByte();
-                                ReferenceTypeImpl refType = command.readReferenceType();
-                                long methodId = command.readMethodRef();
-                                long index = command.readLong();
-                                LocationImpl loc = new LocationImpl(refType.methodById(methodId), index);
-                                String location = refType.baseSourceName() + ":" + loc.lineNumber();
+                                var classID = command.readObjectRef();
+                                var referenceType = gc.getReferenceTypes().findbyId(classID);
+                                if (referenceType == null) {
+                                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                                } else {
+                                    var methodId = command.readMethodRef();
+                                    MethodInfo method = referenceType.findMethodById(methodId);
+                                    if (method == null) {
+                                        answer.setErrorCode((short) JDWP.Error.INVALID_METHODID);
+                                    } else {
+                                        var index = command.readLong();
+                                        var location = referenceType.getBaseSourceFile() + ':' + index;
+                                        System.out.println("Queueing MI command to insert breakpoint at " + location);
+                                        MICommand cmd = gc.getCommandFactory().createMIBreakInsert(false, false, "", 0, location, "0", false, false);
+                                        int tokenID = JDWP.getNewTokenId();
+                                        gc.queueCommand(tokenID, cmd);
 
-                                System.out.println("Queueing MI command to insert breakpoint at "+location);
-                                MICommand cmd = gc.getCommandFactory().createMIBreakInsert(false, false, "", 0, location, "0", false, false);
-                                int tokenID = JDWP.getNewTokenId();
-                                gc.queueCommand(tokenID, cmd);
+                                        MIBreakInsertInfo reply = (MIBreakInsertInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                                        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                                            answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                                            return;
+                                        }
 
-                                MIBreakInsertInfo reply = (MIBreakInsertInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                                    return;
-                                }
+                                        if (differentBreakLine(reply)) { // This is an invalid location in the source to set a breakpoint
+                                            //answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
 
-                                if (differentBreakLine(reply)) { // This is an invalid location in the source to set a breakpoint
-                                    //answer.pkt.errorCode = JDWP.Error.INVALID_LOCATION;
-
-                                    // remove the breakpoint in GDB
-                                    System.out.println("Queueing MI command to disable breakpoint at "+location);
-                                    cmd = gc.getCommandFactory().createMIBreakDisable(reply.getMIBreakpoint().getNumber());
-                                    tokenID = JDWP.getNewTokenId();
-                                    gc.queueCommand(tokenID, cmd);
+                                            // remove the breakpoint in GDB
+                                            System.out.println("Queueing MI command to disable breakpoint at " + location);
+                                            cmd = gc.getCommandFactory().createMIBreakDisable(reply.getMIBreakpoint().getNumber());
+                                            tokenID = JDWP.getNewTokenId();
+                                            gc.queueCommand(tokenID, cmd);
 //
 //                                    MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
 //                                    if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
@@ -108,22 +113,23 @@ public class JDWPEventRequest {
 //                                        return;
 //                                    }
 
-                                    answer.writeInt(command.pkt.id);
-                                    return;
+                                            answer.writeInt(command.pkt.id);
+                                            return;
+                                        }
+
+                                        reply.setMIInfoRequestID(command.pkt.id); //TODO maybe another unique ID??
+                                        reply.setMIInfoEventKind(eventKind);
+                                        reply.setMIInfoSuspendPolicy(suspendPolicy);
+
+                                        Integer bkptNumber = Integer.valueOf(reply.getMIBreakpoint().getNumber());
+                                        JDWP.bkptsByRequestID.put(reply.getMIInfoRequestID(), reply);
+                                        JDWP.bkptsByBreakpointNumber.put(bkptNumber, reply);
+                                        JDWP.bkptsLocation.put(bkptNumber, new MethodLocation(method, (int) index));
+                                        answer.writeInt(reply.getMIInfoRequestID());
+                                    }
                                 }
-
-                                reply.setMIInfoRequestID(command.pkt.id); //TODO maybe another unique ID??
-                                reply.setMIInfoEventKind(eventKind);
-                                reply.setMIInfoSuspendPolicy(suspendPolicy);
-
-                                Integer bkptNumber = Integer.valueOf(reply.getMIBreakpoint().getNumber());
-                                JDWP.bkptsByRequestID.put(reply.getMIInfoRequestID(), reply);
-                                JDWP.bkptsByBreakpointNumber.put(bkptNumber, reply);
-                                JDWP.bkptsLocation.put(bkptNumber, loc);
-                                answer.writeInt(reply.getMIInfoRequestID());
                             }
                         }
-
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
