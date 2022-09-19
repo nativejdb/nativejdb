@@ -133,7 +133,7 @@ public class JDWPStackFrame {
                                                 answer.writeString(value);
                                                 break;
                                             case JDWP.Tag.OBJECT:
-                                                answer.writeNullObjectRef(); //TODO Implement
+                                                answer.writeObjectRef(Long.decode(value));
                                         }
                                     } else if (value.equals("<optimized out>")) {
                                         answer.writeByte(JDWP.Tag.STRING);

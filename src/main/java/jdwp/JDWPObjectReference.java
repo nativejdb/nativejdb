@@ -52,24 +52,33 @@ public class JDWPObjectReference {
                     var referenceType = gc.getReferenceTypes().findByClassName(String.class.getName());
                     if (referenceType != null){
                         answer.writeByte(JDWP.Tag.STRING);
-                        answer.writeObjectRef(referenceType.getUniqueID()));
+                        answer.writeObjectRef(referenceType.getUniqueID());
                     } else {
                         answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                     }
                 } else {
-                    var cmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('java.lang.Object'*)(" + objectID + "))->hub->name->value->data");
+                    /* strings are not null terminated so we need to handle the length as well as the buffer */
+                    var dataCmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('java.lang.Object'*)(" + objectID + "))->hub->name->value->data");
                     var token = JDWP.getNewTokenId();
-                    gc.queueCommand(token, cmd);
-                    var reply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    gc.queueCommand(token, dataCmd);
+                    var dataReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                         answer.setErrorCode((short) JDWP.Error.INTERNAL);
                     } else {
-                        var referenceType = gc.getReferenceTypes().findByClassName(reply.getType());
-                        if (referenceType != null) {
-                            answer.writeByte(JDWP.TypeTag.CLASS);
-                            answer.writeClassRef(referenceType.getUniqueID());
+                        var lenCmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('java.lang.Object'*)(" + objectID + "))->hub->name->value->len");
+                        token = JDWP.getNewTokenId();
+                        gc.queueCommand(token, lenCmd);
+                        var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                        if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                            answer.setErrorCode((short) JDWP.Error.INTERNAL);
                         } else {
-                            answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                            var referenceType = gc.getReferenceTypes().findByClassName(dataReply.getType().substring(0, Integer.parseInt(lenReply.getValue())));
+                            if (referenceType != null) {
+                                answer.writeByte(JDWP.TypeTag.CLASS);
+                                answer.writeClassRef(referenceType.getUniqueID());
+                            } else {
+                                answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                            }
                         }
                     }
                 }
