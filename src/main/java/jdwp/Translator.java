@@ -128,9 +128,6 @@ public class Translator {
 		MethodLocation loc = JDWP.bkptsLocation.get(eventNumber);
 		long threadID = getThreadId(event);
 		System.out.println("THREAD ID FOR HIT: "+ threadID);
-		gc.getThreadStacks().put(threadID, loc);
-		//long threadID = getMainThreadId(gc);
-
 		packetStream.writeByte(suspendPolicy);
 		packetStream.writeInt(1); // Number of events in this response packet
 		packetStream.writeByte(eventKind);

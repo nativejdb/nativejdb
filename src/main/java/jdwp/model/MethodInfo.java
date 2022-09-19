@@ -105,7 +105,7 @@ public class MethodInfo {
     }
 
     public int getArgumentCount() {
-        return argumentTypes.size();
+        return argumentTypes.size() + (modifier & Modifier.STATIC) == 0 ? 1 : 0;
     }
 
     public VariableInfo findVariableBySlot(int slot) {

@@ -322,4 +322,8 @@ public class CommandFactory {
 	public MICommand<MIVarUpdateInfo> createMIVarUpdate(String name) {
 		return new MIVarUpdate(name);
 	}
+
+	public MICommand<MIDataEvaluateExpressionInfo> createMIDataEvaluationExpression(String expression) {
+		return new MIDataEvaluateExpression(expression);
+	}
 }

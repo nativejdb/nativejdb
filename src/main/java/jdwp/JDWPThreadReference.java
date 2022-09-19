@@ -27,9 +27,16 @@ package jdwp;
 
 import com.sun.jdi.IncompatibleThreadStateException;
 import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.*;
-import jdwp.jdi.*;
-import jdwp.model.MethodLocation;
+import gdb.mi.service.command.output.MIFrame;
+import gdb.mi.service.command.output.MIResultRecord;
+import gdb.mi.service.command.output.MIStackListFramesInfo;
+import gdb.mi.service.command.output.MIThread;
+import gdb.mi.service.command.output.MIThreadInfoInfo;
+import jdwp.jdi.MonitorInfoImpl;
+import jdwp.jdi.ObjectReferenceImpl;
+import jdwp.jdi.StackFrameImpl;
+import jdwp.jdi.ThreadReferenceImpl;
+import jdwp.model.FrameInfo;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -55,6 +62,8 @@ public class JDWPThreadReference {
                 MICommand cmd = gc.getCommandFactory().createMIThreadInfo();
                 int tokenID = JDWP.getNewTokenId();
                 gc.queueCommand(tokenID, cmd);
+
+
 
                 MIThreadInfoInfo reply = (MIThreadInfoInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
                 if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
@@ -242,29 +251,11 @@ public class JDWPThreadReference {
                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
 
-                MIFrame[] frames = reply.getMIFrames();
-                int framesLength = 0;
-                List<Integer> frameIds = new ArrayList<>();
-                var locations = new ArrayList<MethodLocation>();
-
-
-                for (MIFrame frame: frames) {
-                    int frameId = frame.getLevel();
-                    JDWP.framesById.put(frameId, frame);
-
-                    LocationImpl loc = Translator.locationLookup(frame.getFunction(), frame.getLine());
-                    var location = gc.getReferenceTypes().getLocation(frame.getFunction(),
-                            frame.getLine());
-                    if (location != null) {
-                        framesLength++;
-                        locations.add(location);
-                        frameIds.add(frameId);
-                    }
-                }
-                answer.writeInt(framesLength);
-                for (int i = 0; i < framesLength; i++) {
-                    answer.writeFrameRef(frameIds.get(i));
-                    answer.writeLocation(locations.get(i));
+                ArrayList<FrameInfo> frameInfos = getFrameInfos(gc, reply.getMIFrames());
+                answer.writeInt(frameInfos.size());
+                for (var frameInfo : frameInfos) {
+                    answer.writeFrameRef(frameInfo.getFrameID());
+                    answer.writeLocation(frameInfo.getLocation());
                 }
             }
         }
@@ -279,29 +270,18 @@ public class JDWPThreadReference {
             static final int COMMAND = 7;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                String threadId = command.readObjectRef() + "";
+                long threadId = command.readObjectRef();
 
                 System.out.println("Queueing MI command to get frames");
                 //MICommand cmd = gc.getCommandFactory().createMIStackListFrames(String.valueOf(threadId));
-                MICommand cmd = gc.getCommandFactory().createMIStackListFrames(threadId);
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MIStackListFramesInfo reply = (MIStackListFramesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                MIStackListFramesInfo reply = executeMiStackListFramesInfo(gc, threadId);
                 if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
 
-                MIFrame[] frames = reply.getMIFrames();
-                int framesLength = 0;
-
-                for (MIFrame frame: frames) {
-                    var location = gc.getReferenceTypes().getLocation(frame.getFunction(), frame.getLine());
-                    if (location != null) {
-                        framesLength++;
-                    }
-                }
-                answer.writeInt(framesLength);
+                var frameInfos = getFrameInfos(gc, reply.getMIFrames());
+                answer.writeInt(frameInfos
+                        .size());
             }
         }
 
@@ -478,5 +458,27 @@ public class JDWPThreadReference {
                 JDWP.notImplemented(answer);
             }
         }
+    }
+
+    public static MIStackListFramesInfo executeMiStackListFramesInfo(GDBControl gc, long threadId) {
+        MICommand cmd = gc.getCommandFactory().createMIStackListFrames(Long.toString(threadId));
+        int tokenID = JDWP.getNewTokenId();
+        gc.queueCommand(tokenID, cmd);
+
+        MIStackListFramesInfo reply = (MIStackListFramesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+        return reply;
+    }
+
+    public static ArrayList<FrameInfo> getFrameInfos(GDBControl gc, MIFrame[] frames) {
+        var frameInfos = new ArrayList<FrameInfo>();
+
+        for (MIFrame frame: frames) {
+            var location = gc.getReferenceTypes().getLocation(frame.getFunction(),
+                    frame.getLine());
+            if (location != null) {
+                frameInfos.add(new FrameInfo(location, frame.getLevel()));
+            }
+        }
+        return frameInfos;
     }
 }

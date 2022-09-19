@@ -25,6 +25,8 @@
 
 package jdwp;
 
+import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
+import gdb.mi.service.command.output.MIResultRecord;
 import jdwp.jdi.ObjectReferenceImpl;
 import jdwp.jdi.ReferenceTypeImpl;
 import jdwp.jdi.ThreadReferenceImpl;
@@ -47,15 +49,29 @@ public class JDWPObjectReference {
 
                 long objectID = command.readObjectRef();
                 if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
-                    answer.writeByte(JDWP.Tag.STRING);
-
-                    // Class 1 is the ClassTypeImpl of the java/lang/String class
-                    answer.writeObjectRef(JDWP.stringClasses.get(1).uniqueID());
+                    var referenceType = gc.getReferenceTypes().findByClassName(String.class.getName());
+                    if (referenceType != null){
+                        answer.writeByte(JDWP.Tag.STRING);
+                        answer.writeObjectRef(referenceType.getUniqueID()));
+                    } else {
+                        answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                    }
                 } else {
-                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);
-                    ReferenceTypeImpl referenceType = objectReference.referenceType();
-                    answer.writeByte(referenceType.tag());
-                    answer.writeClassRef(referenceType.uniqueID());
+                    var cmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('java.lang.Object'*)(" + objectID + "))->hub->name->value->data");
+                    var token = JDWP.getNewTokenId();
+                    gc.queueCommand(token, cmd);
+                    var reply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                    } else {
+                        var referenceType = gc.getReferenceTypes().findByClassName(reply.getType());
+                        if (referenceType != null) {
+                            answer.writeByte(JDWP.TypeTag.CLASS);
+                            answer.writeClassRef(referenceType.getUniqueID());
+                        } else {
+                            answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                        }
+                    }
                 }
             }
         }

@@ -57,8 +57,6 @@ public class GDBControl extends AbstractMIControl {
 
     private ReferenceTypes referenceTypes;
 
-    private Map<Long, MethodLocation> threadID2Stack = new HashMap<>();
-
     public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
         super(); //AbstractMIControl sets up command factory
         this.myConnection = myConnection;
@@ -164,9 +162,5 @@ public class GDBControl extends AbstractMIControl {
 
     public ReferenceTypes getReferenceTypes() {
         return referenceTypes;
-    }
-
-    public Map<Long, MethodLocation> getThreadStacks() {
-        return threadID2Stack;
     }
 }

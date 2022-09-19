@@ -283,22 +283,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 10;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<InterfaceTypeImpl> interfaces;
-                if (type instanceof ClassTypeImpl) {
-                    interfaces = ((ClassTypeImpl) type).interfaces();
-                }
-                else if (type instanceof InterfaceTypeImpl) {
-                    interfaces = ((InterfaceTypeImpl) type).superinterfaces();
-                }
-                else {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_CLASS;
-                    return;
-                }
-                answer.writeInt(interfaces.size());
-                for (InterfaceTypeImpl iface : interfaces) {
-                    answer.writeClassRef(iface.uniqueID());
-                }
+                answer.writeInt(0); //TODO: implement interfaces retrieval
             }
         }
 
@@ -383,12 +368,7 @@ public class JDWPReferenceType {
             }
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<FieldImpl> fields = type.fields();
-                answer.writeInt(fields.size());
-                for (FieldImpl field : fields) {
-                    FieldInfo.write(field, gc, answer);
-                }
+                answer.writeInt(0); //TODO: implement fields retrieval
             }
         }
 

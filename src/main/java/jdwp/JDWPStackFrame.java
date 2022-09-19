@@ -58,89 +58,100 @@ public class JDWPStackFrame {
                 int frameID = (int) command.readFrameRef();
                 int slots = command.readInt();
 
-                System.out.println("Queueing MI command to list local variables and function arguments");
-                MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadID), String.valueOf(frameID));
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
+                var threadFrames = JDWPThreadReference.executeMiStackListFramesInfo(gc, threadID);
+                if (threadFrames.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                } else {
+                    System.out.println("Queueing MI command to list local variables and function arguments");
+                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(threadID), String.valueOf(frameID));
+                    int tokenID = JDWP.getNewTokenId();
+                    gc.queueCommand(tokenID, cmd);
 
-                MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                }
-                MIArg[] vals = replyloc.getVariables();
+                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+                    } else {
+                        var framesInfos = JDWPThreadReference.getFrameInfos(gc, threadFrames.getMIFrames());
+                        var frameInfo = framesInfos.stream().filter(info -> info.getFrameID() == frameID).findFirst();
+                        if (frameInfo.isPresent()) {
+                            MIArg[] vals = replyloc.getVariables();
 
-                int gdbSize = getGDBVariablesSize(vals);
-                if (gdbSize != slots) {
-                    System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
-                }
-
-                answer.writeInt(slots);
-
-                var location = gc.getThreadStacks().get(threadID);
-                if (location != null) {
-                    for (var i = 0; i < slots; i++) {
-                        var slot = command.readInt();
-                        byte tag = command.readByte();
-                        var variable = location.getMethod().findVariableBySlot(slot);
-                        MIArg gdbVar = variable != null ? containsInGDBVariables(vals, variable.getName()) : null;
-                        String value;
-                        if (gdbVar != null) {
-                            value = gdbVar.getValue();
-                        } else {
-                            value = "<value not found>";
-                            tag = JDWP.Tag.STRING;
-                        }
-                        String name = variable != null ? variable.getName() : "<slot not found>";
-                        if (!name.equals("this") && !value.equals("<optimized out>")) {
-                            answer.writeByte(tag); // get value via GDB print cmd: print *print->value
-                            switch (tag) {
-                                case JDWP.Tag.ARRAY:
-                                    answer.writeUntaggedValue(null); //TODO Implement
-                                    break;
-                                case JDWP.Tag.BYTE:
-                                    String[] split = value.split("\\s+");
-                                    answer.writeByte(Byte.parseByte(split[0]));
-                                    break;
-                                case JDWP.Tag.CHAR:
-                                    answer.writeChar(value.charAt(0));
-                                    break;
-                                case JDWP.Tag.FLOAT:
-                                    answer.writeFloat(Float.parseFloat(value));
-                                    break;
-                                case JDWP.Tag.DOUBLE:
-                                    answer.writeDouble(Double.parseDouble(value));
-                                    break;
-                                case JDWP.Tag.INT:
-                                    answer.writeInt(Integer.parseInt(value));
-                                    break;
-                                case JDWP.Tag.LONG:
-                                    answer.writeLong(Long.parseLong(value));
-                                    break;
-                                case JDWP.Tag.SHORT:
-                                    answer.writeShort(Short.parseShort(value));
-                                    break;
-                                case JDWP.Tag.BOOLEAN:
-                                    answer.writeBoolean(Boolean.parseBoolean(value));
-                                    break;
-                                case JDWP.Tag.STRING:
-                                    answer.writeString(value);
-                                    break;
-                                case JDWP.Tag.OBJECT:
-                                    answer.writeNullObjectRef(); //TODO Implement
+                            int gdbSize = getGDBVariablesSize(vals);
+                            if (gdbSize != slots) {
+                                System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + slots);
                             }
-                        } else if (value.equals("<optimized out>")) {
-                            answer.writeByte(JDWP.Tag.STRING);
-                            answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
-                        } else if (variable.equals("$asm")) {
 
-                            answer.writeByte(JDWP.Tag.STRING);
-                            long newAsmId = JDWP.getNewAsmId();
-                            answer.writeObjectRef(newAsmId);
+                            answer.writeInt(slots);
+
+                            var location = frameInfo.get().getLocation();
+                            if (location != null) {
+                                for (var i = 0; i < slots; i++) {
+                                    var slot = command.readInt();
+                                    byte tag = command.readByte();
+                                    var variable = location.getMethod().findVariableBySlot(slot);
+                                    MIArg gdbVar = variable != null ? containsInGDBVariables(vals, variable.getName()) : null;
+                                    String value;
+                                    if (gdbVar != null) {
+                                        value = gdbVar.getValue();
+                                    } else {
+                                        value = "<value not found>";
+                                        tag = JDWP.Tag.STRING;
+                                    }
+                                    String name = variable != null ? variable.getName() : "<slot not found>";
+                                    if (!name.equals("this") && !value.equals("<optimized out>")) {
+                                        answer.writeByte(tag); // get value via GDB print cmd: print *print->value
+                                        switch (tag) {
+                                            case JDWP.Tag.ARRAY:
+                                                answer.writeUntaggedValue(null); //TODO Implement
+                                                break;
+                                            case JDWP.Tag.BYTE:
+                                                String[] split = value.split("\\s+");
+                                                answer.writeByte(Byte.parseByte(split[0]));
+                                                break;
+                                            case JDWP.Tag.CHAR:
+                                                answer.writeChar(value.charAt(0));
+                                                break;
+                                            case JDWP.Tag.FLOAT:
+                                                answer.writeFloat(Float.parseFloat(value));
+                                                break;
+                                            case JDWP.Tag.DOUBLE:
+                                                answer.writeDouble(Double.parseDouble(value));
+                                                break;
+                                            case JDWP.Tag.INT:
+                                                answer.writeInt(Integer.parseInt(value));
+                                                break;
+                                            case JDWP.Tag.LONG:
+                                                answer.writeLong(Long.parseLong(value));
+                                                break;
+                                            case JDWP.Tag.SHORT:
+                                                answer.writeShort(Short.parseShort(value));
+                                                break;
+                                            case JDWP.Tag.BOOLEAN:
+                                                answer.writeBoolean(Boolean.parseBoolean(value));
+                                                break;
+                                            case JDWP.Tag.STRING:
+                                                answer.writeString(value);
+                                                break;
+                                            case JDWP.Tag.OBJECT:
+                                                answer.writeNullObjectRef(); //TODO Implement
+                                        }
+                                    } else if (value.equals("<optimized out>")) {
+                                        answer.writeByte(JDWP.Tag.STRING);
+                                        answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
+                                    } else if (variable.equals("$asm")) {
+
+                                        answer.writeByte(JDWP.Tag.STRING);
+                                        long newAsmId = JDWP.getNewAsmId();
+                                        answer.writeObjectRef(newAsmId);
+                                    }
+                                }
+                            } else {
+                                answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                            }
                         }
                     }
-                } else {
-                    answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                 }
+
            }
 
             private MIArg containsInGDBVariables(MIArg[] vals, String name) {
@@ -209,23 +220,12 @@ public class JDWPStackFrame {
                     answer.pkt.errorCode = JDWP.Error.INTERNAL;
                 }
 
-                MIArg[] vals = replyloc.getVariables();
-                for (int j = 0; j < vals.length; j++) {
-                    String name = vals[j].getName();
+                MIArg[] variables = replyloc.getVariables();
+                for (var variable : variables) {
+                    String name = variable.getName();
                     if (name.equals("this")) {
-                        System.out.println("Queueing MI command to print \"this\" object");
-                        cmd = gc.getCommandFactory().createMIPrint("*this");
-                        tokenID = JDWP.getNewTokenId();
-                        gc.queueCommand(tokenID, cmd);
-
-                        MIInfo replyprint = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                        if (replyprint.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                            answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                        }
-
-                        String val = replyprint.getMIOutput().getMIOOBRecords()[1].toString();
                         answer.writeByte(JDWP.Tag.OBJECT);
-                        answer.writeNullObjectRef(); // TODO Need to retrieve object at address
+                        answer.writeObjectRef(Long.decode(variable.getValue()));
                     }
                 }
             }
