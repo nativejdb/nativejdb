@@ -105,11 +105,7 @@ public class JDWPMethod {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                byte[] bytecodes = method.bytecodes();
-                answer.writeInt(bytecodes.length);
-                answer.writeByteArray(bytecodes);
+                answer.setErrorCode((short) JDWP.Error.NOT_IMPLEMENTED);
             }
         }
 
