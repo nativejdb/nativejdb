@@ -161,26 +161,24 @@ public class Translator {
 
 	private static PacketStream  translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
 		System.out.println("Translating end-stepping-range");
-		PacketStream packetStream = new PacketStream(gc);
-		Long threadID = getThreadId(event);
-		//long threadID = getMainThreadId(gc);
-		MIInfo info = JDWP.stepByThreadID.get(threadID);
-		if (info == null) {
-			System.out.println("Returning null");
-			return null;
-		}
-
-		packetStream.writeByte(info.getMIInfoSuspendPolicy());
-		packetStream.writeInt(1); // Number of events in this response packet
-		packetStream.writeByte(info.getMIInfoEventKind());
-		packetStream.writeInt(info.getMIInfoRequestID());
-		packetStream.writeObjectRef(getMainThreadId(gc));
-		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
-		if (loc != null) {
-			//packetStream.writeLocation(loc);
-			JDWP.stepByThreadID.remove(threadID);
-			return packetStream;
-
+		PacketStream packetStream = null;
+		var location = getMethodLocationFromFuncAndLine(gc, event.getFrame().getFunction(),
+				event.getFrame().getLine());
+		if (location != null) {
+			var threadID = getThreadId(event);
+			MIInfo info = JDWP.stepByThreadID.get(threadID);
+			if (info != null) {
+				packetStream = new PacketStream(gc);
+				packetStream.writeByte(info.getMIInfoSuspendPolicy());
+				packetStream.writeInt(1); // Number of events in this response packet
+				packetStream.writeByte(info.getMIInfoEventKind());
+				packetStream.writeInt(info.getMIInfoRequestID());
+				packetStream.writeObjectRef(getMainThreadId(gc));
+				if (location != null) {
+					packetStream.writeLocation(location);
+					JDWP.stepByThreadID.remove(threadID);
+				}
+			}
 		}
 		return packetStream;
 	}
@@ -196,6 +194,19 @@ public class Translator {
 		getSignature(type, functionNames[0], info);
 		return info;
 
+	}
+
+	public static MethodLocation getMethodLocationFromFuncAndLine(GDBControl gc, String func, int line) {
+		MethodLocation location = null;
+		var names = getClassFunctionNameAndParameters(func);
+		var referenceType = gc.getReferenceTypes().findByClassName(names[0]);
+		if (referenceType != null) {
+			var method = referenceType.findMethodByNameAndParameters(names[1] + names[2]);
+			if (method != null) {
+				location = new MethodLocation(method, line);
+			}
+		}
+		return location;
 	}
 
 	public static String normalizeType(String type) {
@@ -240,12 +251,12 @@ public class Translator {
 	}
 
 	/**
-	 * Return the function name from the name field. The returned array is a 2 element array whose first value is the
-	 * class name and the second value is the function (method) name. If no class is found then the first element is
-	 * null.
+	 * Return the function name from the name field. The returned array is a 3 element array whose first value is the
+	 * class name , the second value is the function (method) name and the third is the list of parameters.
+	 * If no class is found then the first element is null.
 	 *
 	 * @param name the GDB name field (ie <code>java.util.List::of(java.lang.Object[] *)</code>)
-	 * @return a 2 element array
+	 * @return a 3 element array
 	 */
 	public static String[] getClassFunctionNameAndParameters(String name) {
 		String[] names = new String[3];
