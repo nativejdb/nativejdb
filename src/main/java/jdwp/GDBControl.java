@@ -56,6 +56,7 @@ public class GDBControl extends AbstractMIControl {
     BufferedReader outputReader = null;
 
     private ReferenceTypes referenceTypes;
+    private boolean steps = false;
 
     public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
         super(); //AbstractMIControl sets up command factory
@@ -162,5 +163,13 @@ public class GDBControl extends AbstractMIControl {
 
     public ReferenceTypes getReferenceTypes() {
         return referenceTypes;
+    }
+
+    public void setSteps(boolean steps) {
+        this.steps = steps;
+    }
+
+    public boolean hasSteps() {
+        return steps;
     }
 }

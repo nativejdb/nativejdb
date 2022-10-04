@@ -183,6 +183,25 @@ public class Translator {
 		return packetStream;
 	}
 
+	public static void translateExecReturn(GDBControl gc, MIInfo info, long threadID) {
+		var event = MIStoppedEvent.parse(info.getMIInfoRequestID(),
+				info.getMIOutput().getMIResultRecord().getMIResults());
+		if (event.getFrame() != null) {
+			var location = getMethodLocationFromFuncAndLine(gc, event.getFrame().getFunction(),
+					event.getFrame().getLine());
+			if (location != null) {
+					var packetStream = new PacketStream(gc);
+					packetStream.writeByte(info.getMIInfoSuspendPolicy());
+					packetStream.writeInt(1); // Number of events in this response packet
+					packetStream.writeByte(info.getMIInfoEventKind());
+					packetStream.writeInt(info.getMIInfoRequestID());
+					packetStream.writeObjectRef(threadID);
+					packetStream.writeLocation(location);
+					packetStream.send();
+				}
+			}
+		}
+
 	private static  boolean isPrimitive(String type) {
 		return typeSignature.containsKey(type);
 	}

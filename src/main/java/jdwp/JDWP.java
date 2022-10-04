@@ -239,6 +239,21 @@ public class JDWP {
         int INVOKE_NONVIRTUAL = 0x02;
     }
 
+    interface ModKind {
+        int Count = 1;
+        int Conditional = 2;
+        int ThreadOnly = 3;
+        int ClassOnly = 4;
+        int ClassMatch = 5;
+        int ClassExclude = 6;
+        int LocationOnly = 7;
+        int ExceptionOnly = 8;
+        int FieldOnly = 9;
+        int Step = 10;
+        int InstanceOnly = 11;
+        int SourceNameMatch = 12;
+    }
+
     static void notImplemented(PacketStream answer) {
         answer.pkt.errorCode = Error.NOT_IMPLEMENTED;
     }
