@@ -51,7 +51,7 @@ public class JDWPObjectReference {
                 if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
                     var referenceType = gc.getReferenceTypes().findByClassName(String.class.getName());
                     if (referenceType != null){
-                        answer.writeByte(JDWP.Tag.STRING);
+                        answer.writeByte(JDWP.TypeTag.CLASS);
                         answer.writeObjectRef(referenceType.getUniqueID());
                     } else {
                         answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
