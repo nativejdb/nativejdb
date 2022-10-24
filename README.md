@@ -32,7 +32,7 @@ NativeJDB uses the [JDWP protocol](https://docs.oracle.com/en/java/javase/11/doc
 
 ## Requirements
 
- - GraalVM Community Edition for Java 11
+ - GraalVM Community Edition 22.2.0+ for Java 11
  - Docker Desktop
  - IntelliJ IDE
 
@@ -72,7 +72,7 @@ This produces a jar file `NativeJDB-1.0-SNAPSHOT.jar` under `/target` which is u
 
 #### 1. Download GraalVM
 
-To generate a native executable within the Linux environment in the Docker container, you will need to download graalvm binary from https://github.com/graalvm/graalvm-ce-builds/releases and untar `graalvm-ce-java11-linux-amd64-*.tar.gz` into the same `NativeJDB` directory.
+To generate a native executable within the Linux environment in the Docker container, you will need to download graalvm binary 22.2.0 or beyond from https://github.com/graalvm/graalvm-ce-builds/releases and untar `graalvm-ce-java11-linux-amd64-*.tar.gz` into the same `NativeJDB` directory.
 
 ```
  make graalvm
