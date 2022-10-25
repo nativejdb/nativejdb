@@ -17,7 +17,7 @@ HEALTHCHECK CMD wget -q -O /dev/null http://localhost:8080/healthy || exit 1
 WORKDIR /jdwp
 
 COPY startProcesses.sh .
-COPY target/NativeJDB-1.0-SNAPSHOT.jar .
+COPY target/NativeJDB-1.0-SNAPSHOT-uber.jar .
 
 RUN export DEBIAN_FRONTEND=noninteractive \
 && apt-get -qqy update \
