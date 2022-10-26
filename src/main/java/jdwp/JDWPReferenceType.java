@@ -71,8 +71,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                answer.writeClassLoaderReference(referenceType.classLoader());
+                answer.writeClassLoaderReference(null);
             }
         }
 
