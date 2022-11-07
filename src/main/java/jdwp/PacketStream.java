@@ -404,9 +404,6 @@ public class PacketStream {
 //        return vm.objectMirror(readObjectRef(), typeKey);
 //    }
 
-    ObjectReferenceImpl readObjectReference() {
-        return gc.vm.objectMirror(readObjectRef());
-    }
     //
 //    StringReferenceImpl readStringReference() {
 //        long ref = readObjectRef();

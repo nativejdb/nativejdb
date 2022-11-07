@@ -8,7 +8,6 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.nodeTypes.NodeWithBody;
-import com.github.javaparser.ast.nodeTypes.NodeWithStatements;
 import com.github.javaparser.resolution.declarations.AssociableToAST;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
@@ -65,19 +64,23 @@ public class TypeEnricher {
     }
 
     private void processType(ReferenceTypes types, TypeDeclaration<?> type, Queue<Path> queue) {
-        ReferenceType referenceType = types.findByClassName(type.getFullyQualifiedName().get());
+        var className = ClassName.fromGDB(type.getFullyQualifiedName().get());
+        ReferenceType referenceType = types.findByClassName(className);
         if (referenceType == null) {
-            var path = type.findCompilationUnit().flatMap(CompilationUnit::getStorage).map(CompilationUnit.Storage::getPath);
-            referenceType = new ReferenceType(types, path.isPresent()?path.get().toString():null, type.getFullyQualifiedName().get());
+            var path = type.findCompilationUnit().flatMap(CompilationUnit::getStorage)
+                    .map(CompilationUnit.Storage::getPath);
+            referenceType = new ReferenceType(types, path.isPresent()?path.get().toString():null, className);
         }
-        var parent = type.resolve().getAncestors(true).stream().filter(rtype -> rtype.getTypeDeclaration().isPresent() && rtype.getTypeDeclaration().get().isClass()).findFirst();
+        var parent = type.resolve().getAncestors(true).stream()
+                .filter(rtype -> rtype.getTypeDeclaration().isPresent() && rtype.getTypeDeclaration().get().isClass())
+                .findFirst();
         ReferenceType finalReferenceType1 = referenceType;
         parent.ifPresent(typ -> {
-            finalReferenceType1.setSuperClassName(typ.getQualifiedName());
+            finalReferenceType1.setSuperClassName(ClassName.fromGDB(typ.getQualifiedName()));
             typ.getTypeDeclaration().ifPresent(typeDecl -> {
                 if (typeDecl instanceof AssociableToAST) {
-                    ((AssociableToAST<?>) typeDecl).toAst().ifPresent(node -> node.findCompilationUnit().
-                            ifPresent(cu -> cu.getStorage().ifPresent(st -> queue.add(st.getPath()))));
+                    ((AssociableToAST<?>) typeDecl).toAst().ifPresent(node -> node.findCompilationUnit()
+                            .ifPresent(cu -> cu.getStorage().ifPresent(st -> queue.add(st.getPath()))));
                 }
 
             });
@@ -93,12 +96,12 @@ public class TypeEnricher {
         AtomicInteger variableIndex = new AtomicInteger();
         ReferenceType finalReferenceType = referenceType;
         method.getBody().ifPresent(blockStmt -> {
-            String methodSignature = getSignature(resolvedMethod);
+            var methodSignature = getSignature(resolvedMethod);
             blockStmt.getRange().ifPresent(r -> {
-                var methodInfo = finalReferenceType.findMethodByNameAndParameters(methodSignature);
+                var methodInfo = finalReferenceType.findBySignature(methodSignature);
                 if (methodInfo != null) {
                     if ((methodInfo.getModifier() & Modifier.STATIC) == 0) {
-                        variables.add(new VariableInfo("this", referenceType.getSignature(),
+                        variables.add(new VariableInfo("this", referenceType.getClassName().getJNI(),
                                 r.begin.line, r.end.line,
                                 variableIndex.getAndIncrement()));
                     }
@@ -134,25 +137,20 @@ public class TypeEnricher {
         return result;
     }
 
-    private String getSignature(ResolvedMethodDeclaration resolvedMethod) {
-        StringBuilder builder = new StringBuilder(resolvedMethod.getName());
-        builder.append('(');
-        for(int i=0; i < resolvedMethod.getNumberOfParams();++i) {
-            var type = resolvedMethod.getParam(i).getType().erasure();
-            if (type instanceof ResolvedReferenceType) {
-                type = ((ResolvedReferenceType) type).toRawType();
-            }
-            if (i > 0) {
-                builder.append(", ");
-            }
-            builder.append(type.describe());
-            /* GDB add this for non primitive parameters */
-            if (!type.isPrimitive()) {
-                builder.append(" *");
-            }
+    private String resolvedType2String(ResolvedType type) {
+        if (type instanceof ResolvedReferenceType) {
+            type = ((ResolvedReferenceType) type).toRawType();
         }
-        builder.append(')');
-        return builder.toString();
+        return type.describe();
+    }
+
+    private MethodSignature getSignature(ResolvedMethodDeclaration resolvedMethod) {
+        var parameterTypes = new ArrayList<String>();
+        for(int i=0; i < resolvedMethod.getNumberOfParams();++i) {
+            parameterTypes.add(resolvedType2String(resolvedMethod.getParam(i).getType().erasure()));
+        }
+        return new MethodSignature(resolvedMethod.getName(), resolvedType2String(resolvedMethod.getReturnType()),
+                parameterTypes, !resolvedMethod.isStatic());
     }
 
     private void getJNIType(ResolvedType type, StringBuilder builder) {

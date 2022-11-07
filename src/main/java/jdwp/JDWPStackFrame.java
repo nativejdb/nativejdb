@@ -99,43 +99,9 @@ public class JDWPStackFrame {
                                     }
                                     String name = variable != null ? variable.getName() : "<slot not found>";
                                     if (!name.equals("this") && !value.equals("<optimized out>")) {
-                                        answer.writeByte(tag); // get value via GDB print cmd: print *print->value
-                                        switch (tag) {
-                                            case JDWP.Tag.ARRAY:
-                                                answer.writeUntaggedValue(null); //TODO Implement
-                                                break;
-                                            case JDWP.Tag.BYTE:
-                                                String[] split = value.split("\\s+");
-                                                answer.writeByte(Byte.parseByte(split[0]));
-                                                break;
-                                            case JDWP.Tag.CHAR:
-                                                answer.writeChar(value.charAt(0));
-                                                break;
-                                            case JDWP.Tag.FLOAT:
-                                                answer.writeFloat(Float.parseFloat(value));
-                                                break;
-                                            case JDWP.Tag.DOUBLE:
-                                                answer.writeDouble(Double.parseDouble(value));
-                                                break;
-                                            case JDWP.Tag.INT:
-                                                answer.writeInt(Integer.parseInt(value));
-                                                break;
-                                            case JDWP.Tag.LONG:
-                                                answer.writeLong(Long.parseLong(value));
-                                                break;
-                                            case JDWP.Tag.SHORT:
-                                                answer.writeShort(Short.parseShort(value));
-                                                break;
-                                            case JDWP.Tag.BOOLEAN:
-                                                answer.writeBoolean(Boolean.parseBoolean(value));
-                                                break;
-                                            case JDWP.Tag.STRING:
-                                                answer.writeString(value);
-                                                break;
-                                            case JDWP.Tag.OBJECT:
-                                                answer.writeObjectRef(Long.decode(value));
-                                        }
+                                        writeValue(answer, tag, value);
                                     } else if (value.equals("<optimized out>")) {
+                                        writeValue(answer, JDWP.Tag.STRING, String.valueOf(JDWP.optimizedVarID));
                                         answer.writeByte(JDWP.Tag.STRING);
                                         answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
                                     } else if (variable.equals("$asm")) {
@@ -249,6 +215,45 @@ public class JDWPStackFrame {
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 JDWP.notImplemented(answer);
             }
+        }
+    }
+
+    public static void writeValue(PacketStream answer, byte tag, String value) {
+        answer.writeByte(tag); // get value via GDB print cmd: print *print->value
+        switch (tag) {
+            case JDWP.Tag.ARRAY:
+                answer.writeObjectRef(Long.decode(value));
+                break;
+            case JDWP.Tag.BYTE:
+                String[] split = value.split("\\s+");
+                answer.writeByte(Byte.parseByte(split[0]));
+                break;
+            case JDWP.Tag.CHAR:
+                answer.writeChar(value.charAt(0));
+                break;
+            case JDWP.Tag.FLOAT:
+                answer.writeFloat(Float.parseFloat(value));
+                break;
+            case JDWP.Tag.DOUBLE:
+                answer.writeDouble(Double.parseDouble(value));
+                break;
+            case JDWP.Tag.INT:
+                answer.writeInt(Integer.parseInt(value));
+                break;
+            case JDWP.Tag.LONG:
+                answer.writeLong(Long.parseLong(value));
+                break;
+            case JDWP.Tag.SHORT:
+                answer.writeShort(Short.parseShort(value));
+                break;
+            case JDWP.Tag.BOOLEAN:
+                answer.writeBoolean(Boolean.parseBoolean(value));
+                break;
+            case JDWP.Tag.STRING:
+                answer.writeString(value);
+                break;
+            case JDWP.Tag.OBJECT:
+                answer.writeObjectRef(Long.decode(value));
         }
     }
 }

@@ -9,13 +9,7 @@ import java.util.*;
 public class MethodInfo {
     private ReferenceType referenceType;
 
-    private String methodName;
-
-    private final String nameAndParameters;
-
-    private String returnType;
-
-    private List<String> argumentTypes = new ArrayList<>();
+    private final MethodSignature signature;
 
     private int modifier = Modifier.STATIC | Modifier.PUBLIC;
 
@@ -26,29 +20,23 @@ public class MethodInfo {
 
     private List<VariableInfo> variables = Collections.emptyList();
 
-    public MethodInfo(ReferenceType referenceType, String nameAndParameters, String name) {
+    public MethodInfo(ReferenceType referenceType, MethodSignature signature) {
         this.referenceType = referenceType;
-        this.nameAndParameters = nameAndParameters;
-        this.methodName = name;
+        this.signature = signature;
         this.uniqueID = counter++;
         referenceType.addMethod(this);
-    }
-
-    public void setReturnType(String returnType) {
-        this.returnType = returnType;
-    }
-
-    public void addArgumentType(String paramType) {
-        argumentTypes.add(paramType);
+        if (signature.isInstanceMethod()) {
+            removeModifier(Modifier.STATIC);
+        }
     }
 
     public String getJNISignature() {
         StringBuilder builder = new StringBuilder("(");
-        for (String argType : argumentTypes) {
-            builder.append(Translator.gdb2JNIType(argType));
+        for (String argType : signature.getParameterTypes()) {
+            builder.append(Translator.gdb2JNI(argType));
         }
         builder.append(')');
-        builder.append(Translator.gdb2JNIType(returnType));
+        builder.append(Translator.gdb2JNI(signature.getReturnType()));
         return builder.toString();
     }
 
@@ -70,7 +58,7 @@ public class MethodInfo {
 
     public void write(PacketStream answer, boolean generic) {
         answer.writeObjectRef(uniqueID);
-        answer.writeString(methodName);
+        answer.writeString(signature.getName());
         answer.writeString(getJNISignature());
         if (generic) {
             answer.writeString("");
@@ -91,8 +79,8 @@ public class MethodInfo {
         return referenceType;
     }
 
-    public String getNameAndParameters() {
-        return nameAndParameters;
+    public MethodSignature getSignature() {
+        return signature;
     }
 
     public List<VariableInfo> getVariables() {
@@ -105,7 +93,7 @@ public class MethodInfo {
     }
 
     public int getArgumentCount() {
-        return argumentTypes.size() + (modifier & Modifier.STATIC) == 0 ? 1 : 0;
+        return signature.getParameterTypes().size() + (modifier & Modifier.STATIC) == 0 ? 1 : 0;
     }
 
     public VariableInfo findVariableBySlot(int slot) {

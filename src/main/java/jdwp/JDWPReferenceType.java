@@ -55,7 +55,7 @@ public class JDWPReferenceType {
                 var referenceTypeID = command.readObjectRef();
                 var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
                 if (referenceType != null) {
-                    answer.writeString(referenceType.getSignature());
+                    answer.writeString(referenceType.getClassName().getJNI());
                 } else {
                     answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
                 }
@@ -332,7 +332,7 @@ public class JDWPReferenceType {
                 var referenceTypeID = command.readObjectRef();
                 var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
                 if (referenceType != null) {
-                    answer.writeString(referenceType.getSignature());
+                    answer.writeString(referenceType.getClassName().getJNI());
                     answer.writeString("");
                 } else {
                     answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);

@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Modifier;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,9 +22,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveBooleanMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "booleanMethod(boolean)", "booleanMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("booleanMethod","void",
+                Collections.singletonList("boolean"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -40,9 +43,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testBooleanMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "booleanMethod(java.lang.Boolean *)", "booleanMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("booleanMethod","void",
+                Collections.singletonList("java.lang.Boolean"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -60,9 +64,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveByteMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "byteMethod(byte)", "byteMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("byteMethod","void",
+                Collections.singletonList("byte"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -80,9 +85,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testByteMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "byteMethod(java.lang.Byte *)", "byteMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("byteMethod","void",
+                Collections.singletonList("java.lang.Byte"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -100,9 +106,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveCharMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "charMethod(char)", "charMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("charMethod","void",
+                Collections.singletonList("char"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -120,9 +127,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testCharMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "charMethod(java.lang.Character *)", "charMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("charMethod","void",
+                Collections.singletonList("java.lang.Character"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -140,9 +148,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveShortMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "shortMethod(short)", "shortMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("shortMethod","void",
+                Collections.singletonList("short"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -160,9 +169,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testShortMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "shortMethod(java.lang.Short *)", "shortMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB((Sample.class.getName())));
+        var signature = new MethodSignature("shortMethod","void",
+                Collections.singletonList("java.lang.Short"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -180,9 +190,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveIntMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "intMethod(int)", "intMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("intMethod","void",
+                Collections.singletonList("int"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -200,9 +211,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testIntMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "intMethod(java.lang.Integer *)", "intMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB((Sample.class.getName())));
+        var signature = new MethodSignature("intMethod","void",
+                Collections.singletonList("java.lang.Integer"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -220,9 +232,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveLongMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "longMethod(long)", "longMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("longMethod","void",
+                Collections.singletonList("long"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -240,9 +253,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testLongMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "longMethod(java.lang.Long *)", "longMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("longMethod","void",
+                Collections.singletonList("java.lang.Long"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -260,9 +274,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveFloatMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "floatMethod(float)", "floatMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("floatMethod","void",
+                Collections.singletonList("float"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -280,9 +295,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testFloatMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "floatMethod(java.lang.Float *)", "floatMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("floatMethod","void",
+                Collections.singletonList("java.lang.Float"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -300,9 +316,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testPrimitiveDoubleMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "doubleMethod(double)", "doubleMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("doubleMethod","void",
+                Collections.singletonList("double"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -320,9 +337,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testDoubleMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "doubleMethod(java.lang.Double *)", "doubleMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("doubleMethod","void",
+                Collections.singletonList("java.lang.Double"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -340,9 +358,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testObjectMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "objectMethod(java.lang.Object *)", "objectMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("objectMethod","void",
+                Collections.singletonList("java.lang.Object"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -360,9 +379,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testClassParameterMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "classParameterTypeMethod(java.lang.Object *)", "classParameterTypeMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("classParameterTypeMethod","void",
+                Collections.singletonList("java.lang.Object"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -380,9 +400,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testMethodParameterMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodParameterTypeMethod(java.lang.Object *)", "methodParameterTypeMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodParameterTypeMethod","void",
+                Collections.singletonList("java.lang.Object"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -400,10 +421,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testParameterTypeMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "parameterTypeMethod(" + Sample.class.getName() + " *)",
-                "parameterTypeMethod");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("parameterTypeMethod","void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -422,10 +443,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testParameterTypeWithExtendsMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "parameterTypeMethod1(" + Sample.class.getName() + " *)",
-                "parameterTypeMethod1");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("parameterTypeMethod1","void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -444,10 +465,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testParameterTypeWithSuperMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "parameterTypeMethod2(" + Sample.class.getName() + " *)",
-                "parameterTypeMethod2");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("parameterTypeMethod2","void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -466,10 +487,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testMethodWith2Parameters() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodWith2Parameters(" + Sample.class.getName() + " *, int)",
-                "methodWith2Parameters");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodWith2Parameters","void",
+                List.of(Sample.class.getName(), "int"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 3);
@@ -493,10 +514,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testMethodWithSingleArg() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodWithSingleArg(" + Sample.class.getName() + " *)",
-                "methodWithSingleArg");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodWithSingleArg","void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 2);
@@ -515,10 +536,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testMethodWithTwoArgs() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodWithTwoArgs(" + Sample.class.getName() + " *, int)",
-                "methodWithTwoArgs");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodWithTwoArgs","void",
+                List.of(Sample.class.getName(), "int"), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 3);
@@ -542,10 +563,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testMethodWithArgAndSingleVariable() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodWithArgAndSingleVariable(" + Sample.class.getName() + " *)",
-                "methodWithArgAndSingleVariable");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodWithArgAndSingleVariable","void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 3);
@@ -569,10 +590,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testMethodWithArgAndTwoVariables() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodWithArgAndTwoVariables(" + Sample.class.getName() + " *)",
-                "methodWithArgAndTwoVariables");
-        info.removeModifier(Modifier.STATIC);
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodWithArgAndTwoVariables","void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertTrue(variables.size() == 4);
@@ -601,9 +622,10 @@ public class TypeEnricherVariablesTest {
 
     @Test
     public void testStaticMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "staticMethod()",
-                "staticMethod");
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("staticMethod","void",
+                Collections.emptyList(), false);
+        var info = new MethodInfo(type, signature);
         var variables = info.getVariables();
         assertNotNull(variables);
         assertEquals(1, variables.size());

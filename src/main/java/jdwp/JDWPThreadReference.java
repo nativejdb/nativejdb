@@ -475,8 +475,8 @@ public class JDWPThreadReference {
         for (MIFrame frame: frames) {
             var location = gc.getReferenceTypes().getLocation(frame.getFunction(),
                     frame.getLine());
-            if (location != null) {
-                frameInfos.add(new FrameInfo(location, frame.getLevel()));
+            if (location.isPresent()) {
+                frameInfos.add(new FrameInfo(location.get(), frame.getLevel()));
             }
         }
         return frameInfos;

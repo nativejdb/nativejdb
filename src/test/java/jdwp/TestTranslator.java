@@ -12,9 +12,7 @@
 
 package jdwp;
 
-import jdwp.model.MethodInfo;
-import jdwp.model.ReferenceType;
-import jdwp.model.ReferenceTypes;
+import jdwp.model.*;
 import org.junit.Test;
 
 import java.lang.reflect.Modifier;
@@ -31,17 +29,17 @@ public class TestTranslator {
     public void testNormalizeFuncName() {
 
         // Tests objects as parameters
-        assertEquals("main", Translator.getClassFunctionNameAndParameters("HelloMethod.HelloMethod::main(java.lang.String[] *)")[1]);
-        assertEquals("main", Translator.getClassFunctionNameAndParameters("main(java.lang.String[] *)")[1]);
-        assertEquals("main", Translator.getClassFunctionNameAndParameters("HelloMethod.HelloMethod::main")[1]);
-        assertEquals("main", Translator.getClassFunctionNameAndParameters("main")[1]);
+        assertEquals("main", Translator.getClassAndMethodName("HelloMethod.HelloMethod::main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassAndMethodName("main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassAndMethodName("HelloMethod.HelloMethod::main")[1]);
+        assertEquals("main", Translator.getClassAndMethodName("main")[1]);
     }
 
     private void testMethodSignature(String type, String jni) {
         ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
-        ReferenceType referenceType = new ReferenceType(types,"", "");
-        MethodInfo info = new MethodInfo(referenceType, "","");
-        Translator.getSignature(type, "", info);
+        ReferenceType referenceType = new ReferenceType(types, "", ClassName.fromGDB(Sample.class.getName()));
+        var signature = Translator.getSignature(type, "", "");
+        var info = new MethodInfo(referenceType, signature);
         assertEquals(jni, info.getJNISignature());
     }
 
@@ -58,6 +56,7 @@ public class TestTranslator {
     public void testShortEmptySignature() {
         testMethodSignature("short (void)", "()S");
     }
+
     @Test
     public void testIntEmptySignature() {
         testMethodSignature("int (void)", "()I");
@@ -97,6 +96,7 @@ public class TestTranslator {
     public void testInterfaceEmptySignature() {
         testMethodSignature("union java.util.Collection *(void)", "()Ljava/util/Collection;");
     }
+
     @Test
     public void testOneDimensionArrayEmptySignature() {
         testMethodSignature("int[] (void)", "()[I");
@@ -110,18 +110,20 @@ public class TestTranslator {
     @Test
     public void testStaticMethod() {
         ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
-        ReferenceType referenceType = new ReferenceType(types, "", "classname");
-        MethodInfo info = new MethodInfo(referenceType, "methodName()", "methodName");
-        Translator.getSignature("boolean (void)", "classname", info);
+        ReferenceType referenceType = new ReferenceType(types, "", ClassName.fromGDB("classname"));
+        var signature = Translator.getSignature("boolean (void)", "classname",
+                "methodName");
+        var info = new MethodInfo(referenceType, signature);
         assertTrue((info.getModifier() & Modifier.STATIC) == Modifier.STATIC);
     }
 
     @Test
     public void testInstanceMethod() {
-        ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
-        ReferenceType referenceType = new ReferenceType(types, "", "classname");
-        MethodInfo info = new MethodInfo(referenceType, "methodName()", "methodName");
-        Translator.getSignature("boolean (classname *)", "classname", info);
+        var types = new ReferenceTypes(Paths.get("src/test/java"));
+        var referenceType = new ReferenceType(types, "", ClassName.fromGDB("classname"));
+        var signature = Translator.getSignature("boolean (classname *)", "classname",
+                "methodName");
+        var info = new MethodInfo(referenceType, signature);
         assertFalse((info.getModifier() & Modifier.STATIC) == Modifier.STATIC);
     }
 

@@ -7,10 +7,10 @@ import jdwp.Translator;
 import java.util.*;
 
 public class ReferenceType {
-    private final String className;
+    private final ClassName className;
 
     private final Map<Long, MethodInfo> methods = new HashMap<>();
-    private final Map<String, MethodInfo> nameAndParametersToMethod = new HashMap<>();
+    private final Map<MethodSignature, MethodInfo> signatureToMethod = new HashMap<>();
 
     private final Long uniqueID;
 
@@ -20,11 +20,13 @@ public class ReferenceType {
 
     private final String sourceFile;
 
-    private String superClassName;
+    private ClassName superClassName;
 
     private boolean enriched;
 
-    public ReferenceType(ReferenceTypes types, String sourceFile, String className) {
+    private byte type = JDWP.TypeTag.CLASS;
+
+    public ReferenceType(ReferenceTypes types, String sourceFile, ClassName className) {
         this.types = types;
         this.sourceFile = sourceFile;
         this.className = className;
@@ -32,13 +34,19 @@ public class ReferenceType {
         types.addReferenceType(this);
     }
 
-    public String getClassName() {
+    public ReferenceType(ReferenceTypes types, ClassName className) {
+        this(types, null, className);
+        this.type = JDWP.TypeTag.ARRAY;
+        System.out.println("className" + className);
+    }
+
+    public ClassName getClassName() {
         return className;
     }
 
     public void addMethod(MethodInfo methodInfo) {
         methods.put(methodInfo.getUniqueID(), methodInfo);
-        nameAndParametersToMethod.put(methodInfo.getNameAndParameters(), methodInfo);
+        signatureToMethod.put(methodInfo.getSignature(), methodInfo);
     }
 
     public Collection<MethodInfo> getMethods() {
@@ -52,7 +60,7 @@ public class ReferenceType {
     public void write(PacketStream answer, boolean generic) {
         answer.writeByte(JDWP.TypeTag.CLASS); //TODO
         answer.writeObjectRef(uniqueID);
-        answer.writeString(getSignature());
+        answer.writeString(getClassName().getJNI());
         if (generic) {
             answer.writeString("");
         }
@@ -63,10 +71,6 @@ public class ReferenceType {
         answer.writeByte(JDWP.TypeTag.CLASS); //TODO
         answer.writeObjectRef(uniqueID);
         answer.writeInt(JDWP.ClassStatus.INITIALIZED | JDWP.ClassStatus.PREPARED | JDWP.ClassStatus.VERIFIED);
-    }
-
-    public String getSignature() {
-        return Translator.gdb2JNIType(className);
     }
 
     public ReferenceTypes getReferenceTypes() {
@@ -86,11 +90,19 @@ public class ReferenceType {
         return methods.get(methodID);
     }
 
-    public MethodInfo findMethodByNameAndParameters(String nameAndParameters) {
-        return nameAndParametersToMethod.get(nameAndParameters);
+    public MethodInfo findBySignature(MethodSignature signature) {
+        return signatureToMethod.get(signature);
     }
 
-    public void setSuperClassName(String className) {
+    public Optional<MethodLocation> findByNameAndLocation(String methodName, int line) {
+        ensureEnriched();
+        return methods.values().stream().filter(info -> methodName.equals(info.getSignature().getName())).
+                filter(info -> info.getLines().isPresent()).
+                filter(info -> info.getLines().get().contains(line)).
+                findFirst().map(info -> new MethodLocation(info, line));
+    }
+
+    public void setSuperClassName(ClassName className) {
         this.superClassName = className;
     }
 
@@ -105,4 +117,9 @@ public class ReferenceType {
             enriched = true;
         }
     }
+
+    public byte getType() {
+        return type;
+    }
+
 }

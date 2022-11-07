@@ -30,6 +30,7 @@ import gdb.mi.service.command.output.MIResultRecord;
 import jdwp.jdi.ObjectReferenceImpl;
 import jdwp.jdi.ReferenceTypeImpl;
 import jdwp.jdi.ThreadReferenceImpl;
+import jdwp.model.ClassName;
 
 import java.util.List;
 
@@ -49,7 +50,7 @@ public class JDWPObjectReference {
 
                 long objectID = command.readObjectRef();
                 if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
-                    var referenceType = gc.getReferenceTypes().findByClassName(String.class.getName());
+                    var referenceType = gc.getReferenceTypes().findByClassName(ClassName.JAVA_LANG_STRING);
                     if (referenceType != null){
                         answer.writeByte(JDWP.TypeTag.CLASS);
                         answer.writeObjectRef(referenceType.getUniqueID());
@@ -72,9 +73,11 @@ public class JDWPObjectReference {
                         if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                             answer.setErrorCode((short) JDWP.Error.INTERNAL);
                         } else {
-                            var referenceType = gc.getReferenceTypes().findByClassName(dataReply.getType().substring(0, Integer.parseInt(lenReply.getValue())));
+                            var referenceType = gc.getReferenceTypes().
+                                    findByClassName(ClassName.fromHub(dataReply.getType().
+                                            substring(0, Integer.parseInt(lenReply.getValue()))));
                             if (referenceType != null) {
-                                answer.writeByte(JDWP.TypeTag.CLASS);
+                                answer.writeByte(referenceType.getType());
                                 answer.writeClassRef(referenceType.getUniqueID());
                             } else {
                                 answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);

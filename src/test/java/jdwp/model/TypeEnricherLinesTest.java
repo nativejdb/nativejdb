@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,9 +21,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveBooleanMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "booleanMethod(boolean)", "booleanMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("booleanMethod", "void",
+                Collections.singletonList("boolean"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(4, lines.iterator().next());
@@ -29,9 +33,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testBooleanMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "booleanMethod(java.lang.Boolean *)", "booleanMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("booleanMethod", "void",
+                Collections.singletonList("java.lang.Boolean"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(5, lines.iterator().next());
@@ -39,9 +45,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveByteMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "byteMethod(byte)", "byteMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("byteMethod", "void",
+                Collections.singletonList("byte"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(6, lines.iterator().next());
@@ -49,9 +57,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testByteMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "byteMethod(java.lang.Byte *)", "byteMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("byteMethod", "void",
+                Collections.singletonList("java.lang.Byte"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(7, lines.iterator().next());
@@ -59,9 +69,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveCharMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "charMethod(char)", "charMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("charMethod", "void",
+                Collections.singletonList("char"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(8, lines.iterator().next());
@@ -69,9 +81,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testCharMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "charMethod(java.lang.Character *)", "charMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("charMethod", "void",
+                Collections.singletonList("java.lang.Character"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(9, lines.iterator().next());
@@ -79,9 +93,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveShortMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "shortMethod(short)", "shortMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("shortMethod", "void",
+                Collections.singletonList("short"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(10, lines.iterator().next());
@@ -89,9 +105,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testShortMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "shortMethod(java.lang.Short *)", "shortMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("shortMethod", "void",
+                Collections.singletonList("java.lang.Short"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(11, lines.iterator().next());
@@ -99,9 +117,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveIntMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "intMethod(int)", "intMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("intMethod", "void",
+                Collections.singletonList("int"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(12, lines.iterator().next());
@@ -109,9 +129,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testIntMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "intMethod(java.lang.Integer *)", "intMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("intMethod", "void",
+                Collections.singletonList("java.lang.Integer"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(13, lines.iterator().next());
@@ -119,9 +141,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveLongMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "longMethod(long)", "longMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("longMethod", "void",
+                Collections.singletonList("long"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(14, lines.iterator().next());
@@ -129,9 +153,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testLongMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "longMethod(java.lang.Long *)", "longMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("longMethod", "void",
+                Collections.singletonList("java.lang.Long"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(15, lines.iterator().next());
@@ -139,9 +165,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveFloatMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "floatMethod(float)", "floatMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("floatMethod", "void",
+                Collections.singletonList("float"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(16, lines.iterator().next());
@@ -149,9 +177,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testFloatMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "floatMethod(java.lang.Float *)", "floatMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("floatMethod", "void",
+                Collections.singletonList("java.lang.Float"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(17, lines.iterator().next());
@@ -159,9 +189,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testPrimitiveDoubleMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "doubleMethod(double)", "doubleMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("doubleMethod", "void",
+                Collections.singletonList("double"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(18, lines.iterator().next());
@@ -169,9 +201,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testDoubleMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "doubleMethod(java.lang.Double *)", "doubleMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("doubleMethod", "void",
+                Collections.singletonList("java.lang.Double"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(19, lines.iterator().next());
@@ -179,9 +213,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testObjectMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "objectMethod(java.lang.Object *)", "objectMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("objectMethod", "void",
+                Collections.singletonList("java.lang.Object"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(20, lines.iterator().next());
@@ -189,9 +225,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testMethodSpanningSeveralLines() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "object1Method(java.lang.Object *)", "object1Method");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("object1Method", "void",
+                Collections.singletonList("java.lang.Object"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 3);
         var iterator = lines.iterator();
@@ -202,10 +240,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testClassParameterMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "classParameterTypeMethod(java.lang.Object *)",
-                "classParameterTypeMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("classParameterTypeMethod", "void",
+                Collections.singletonList("java.lang.Object"), false);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(24, lines.iterator().next());
@@ -213,10 +252,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testMethodParameterMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodParameterTypeMethod(java.lang.Object *)",
-                "methodParameterTypeMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodParameterTypeMethod", "void",
+                Collections.singletonList("java.lang.Object"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(25, lines.iterator().next());
@@ -224,10 +264,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testParameterTypeMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "parameterTypeMethod(" + Sample.class.getName() + " *)",
-                "parameterTypeMethod");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("parameterTypeMethod", "void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(26, lines.iterator().next());
@@ -235,10 +276,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testParameterTypeWithExtendsMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "parameterTypeMethod1(" + Sample.class.getName() + " *)",
-                "parameterTypeMethod1");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("parameterTypeMethod1", "void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(27, lines.iterator().next());
@@ -246,10 +288,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testParameterTypeWithSuperMethod() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "parameterTypeMethod2(" + Sample.class.getName() + " *)",
-                "parameterTypeMethod2");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("parameterTypeMethod2", "void",
+                Collections.singletonList(Sample.class.getName()), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(28, lines.iterator().next());
@@ -257,10 +300,11 @@ public class TypeEnricherLinesTest {
 
     @Test
     public void testMethodWith2Parameters() {
-        ReferenceType type = new ReferenceType(types, FILE_PATH, Sample.class.getName());
-        MethodInfo info = new MethodInfo(type, "methodWith2Parameters(" + Sample.class.getName() + " *, int)",
-                "methodWith2Parameters");
-        Set<Integer> lines = info.getLines().get();
+        var type = new ReferenceType(types, FILE_PATH, ClassName.fromGDB(Sample.class.getName()));
+        var signature = new MethodSignature("methodWith2Parameters", "void",
+                List.of(Sample.class.getName(), "int"), true);
+        var info = new MethodInfo(type, signature);
+        var lines = info.getLines().get();
         assertNotNull(lines);
         assertTrue(lines.size() == 1);
         assertEquals(29, lines.iterator().next());

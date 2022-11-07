@@ -1,5 +1,6 @@
 package jdwp.model;
 
+import jdwp.JDWP;
 import jdwp.Translator;
 
 import java.nio.file.Path;
@@ -8,9 +9,7 @@ import java.util.*;
 public class ReferenceTypes {
     private final TypeEnricher provider;
     private Map<Long, ReferenceType> idToTypes = new HashMap<>();
-    private Map<String, ReferenceType> signatureToTypes = new HashMap<>();
-
-    private Map<String, ReferenceType> classNameToTypes = new HashMap<>();
+    private Map<ClassName, ReferenceType> classNameToTypes = new HashMap<>();
 
     public ReferenceTypes(Path src) {
         provider = TypeEnricherFactory.INSTANCE.getTypeEnricher(src);
@@ -19,7 +18,6 @@ public class ReferenceTypes {
 
     public void addReferenceType(ReferenceType type) {
         idToTypes.put(type.getUniqueID(), type);
-        signatureToTypes.put(type.getSignature(), type);
         classNameToTypes.put(type.getClassName(), type);
     }
 
@@ -28,7 +26,7 @@ public class ReferenceTypes {
     }
 
     public Collection<ReferenceType> findBySignature(String signature) {
-        var referenceType = signatureToTypes.get(signature);
+        var referenceType = classNameToTypes.get(ClassName.fromJNI(signature));
         return referenceType != null ? Collections.singletonList(referenceType) : Collections.emptyList();
     }
 
@@ -40,20 +38,20 @@ public class ReferenceTypes {
         return provider;
     }
 
-    public MethodLocation getLocation(String function, int line) {
-        MethodLocation result = null;
-        var classNameAndMethodAndParameters = Translator.getClassFunctionNameAndParameters(function);
-        var referenceType = classNameToTypes.get(classNameAndMethodAndParameters[0]);
+    public Optional<MethodLocation> getLocation(String function, int line) {
+        var classNameAndMethodName = Translator.getClassAndMethodName(function);
+        var referenceType = classNameToTypes.get(ClassName.fromGDB(classNameAndMethodName[0]));
         if (referenceType != null) {
-            var method = referenceType.findMethodByNameAndParameters(classNameAndMethodAndParameters[1] + classNameAndMethodAndParameters[2]);
-            if (method != null) {
-                result = new MethodLocation(method, line);
-            }
+            return referenceType.findByNameAndLocation(classNameAndMethodName[1], line);
         }
-        return result;
+        return Optional.empty();
     }
 
-    public ReferenceType findByClassName(String className) {
-        return classNameToTypes.get(className);
+    public ReferenceType findByClassName(ClassName className) {
+        var referenceType = classNameToTypes.get(className);
+        if (referenceType == null && className != null && className.isArray()) {
+            referenceType = new ReferenceType(this, className);
+        }
+        return referenceType;
     }
 }

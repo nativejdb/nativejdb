@@ -26,6 +26,8 @@
 package jdwp;
 
 import com.sun.jdi.ClassNotLoadedException;
+import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
+import gdb.mi.service.command.output.MIResultRecord;
 import jdwp.jdi.ArrayReferenceImpl;
 import jdwp.jdi.PrimitiveTypeImpl;
 import jdwp.jdi.TypeImpl;
@@ -43,8 +45,17 @@ public class JDWPArrayReference  {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ArrayReferenceImpl arrayReference = command.readArrayReference();
-                answer.writeInt(arrayReference.length());
+                var objectID = command.readObjectRef();
+                var lenCmd = gc.getCommandFactory().
+                        createMIDataEvaluationExpression("(('java.lang.Object[]'*)(" + objectID + "))->len");
+                var token = JDWP.getNewTokenId();
+                gc.queueCommand(token, lenCmd);
+                var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                } else {
+                    answer.writeInt(Integer.parseInt(lenReply.getValue()));
+                }
             }
         }
 
@@ -56,19 +67,46 @@ public class JDWPArrayReference  {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ArrayReferenceImpl arrayReference = command.readArrayReference();
-                int start = command.readInt();
-                int length = command.readInt();
+                var objectID = command.readObjectRef();
+                var firstIndex = command.readInt();
+                var length = command.readInt();
 
-                byte tag;
-                try {
-                    TypeImpl type = arrayReference.arrayType().componentType();
-                    tag = type instanceof PrimitiveTypeImpl ? ((PrimitiveTypeImpl) type).tag() : JDWP.Tag.OBJECT;
-                } catch (ClassNotLoadedException e) { // fallback to the first element type
-                    tag = ValueImpl.typeValueKey(arrayReference.getValue(0));
+                /* strings are not null terminated so we need to handle the length as well as the buffer */
+                var dataCmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('_objhdr'*)(" + objectID + "))->hub->name->value->data");
+                var token = JDWP.getNewTokenId();
+                gc.queueCommand(token, dataCmd);
+                var dataReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                if (dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                } else {
+                    var lenCmd = gc.getCommandFactory().
+                            createMIDataEvaluationExpression("(('_objhdr'*)(" + objectID +
+                                    "))->hub->name->value->len");
+                    token = JDWP.getNewTokenId();
+                    gc.queueCommand(token, lenCmd);
+                    var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                    } else {
+                        var className = dataReply.getType().substring(0, Integer.parseInt(lenReply.getValue()));
+                        var tag = Translator.arrayClassName2Tag(className);
+                        answer.writeByte(tag);
+                        answer.writeInt(length);
+                        for(int i=firstIndex; i < length;++i) {
+                            var itemCmd = gc.getCommandFactory().
+                                    createMIDataEvaluationExpression("(('java.lang.Object[]'*)(" + objectID + "))->data[" +
+                                            i + "]");
+                            token = JDWP.getNewTokenId();
+                            gc.queueCommand(token, itemCmd);
+                            var itemReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                            if (itemReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                                answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                            } else {
+                                JDWPStackFrame.writeValue(answer, tag, itemReply.getValue());
+                            }
+                        }
+                    }
                 }
-
-                answer.writeArrayRegion(arrayReference.getValues(start, length), tag);
             }
         }
 
