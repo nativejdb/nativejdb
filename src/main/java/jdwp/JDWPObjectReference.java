@@ -74,7 +74,7 @@ public class JDWPObjectReference {
                             answer.setErrorCode((short) JDWP.Error.INTERNAL);
                         } else {
                             var referenceType = gc.getReferenceTypes().
-                                    findByClassName(ClassName.fromHub(dataReply.getType().
+                                    findByClassName(ClassName.fromHub(dataReply.getString().
                                             substring(0, Integer.parseInt(lenReply.getValue()))));
                             if (referenceType != null) {
                                 answer.writeByte(referenceType.getType());

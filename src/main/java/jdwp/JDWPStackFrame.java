@@ -250,10 +250,9 @@ public class JDWPStackFrame {
                 answer.writeBoolean(Boolean.parseBoolean(value));
                 break;
             case JDWP.Tag.STRING:
-                answer.writeString(value);
-                break;
             case JDWP.Tag.OBJECT:
                 answer.writeObjectRef(Long.decode(value));
+                break;
         }
     }
 }

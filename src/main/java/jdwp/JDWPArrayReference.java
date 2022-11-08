@@ -25,13 +25,9 @@
 
 package jdwp;
 
-import com.sun.jdi.ClassNotLoadedException;
 import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
 import gdb.mi.service.command.output.MIResultRecord;
-import jdwp.jdi.ArrayReferenceImpl;
-import jdwp.jdi.PrimitiveTypeImpl;
-import jdwp.jdi.TypeImpl;
-import jdwp.jdi.ValueImpl;
+import jdwp.model.ClassName;
 
 public class JDWPArrayReference  {
     static class ArrayReference {
@@ -88,8 +84,8 @@ public class JDWPArrayReference  {
                     if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
                         answer.setErrorCode((short) JDWP.Error.INTERNAL);
                     } else {
-                        var className = dataReply.getType().substring(0, Integer.parseInt(lenReply.getValue()));
-                        var tag = Translator.arrayClassName2Tag(className);
+                        var className = dataReply.getString().substring(0, Integer.parseInt(lenReply.getValue()));
+                        var tag = Translator.arrayClassName2Tag(ClassName.fromHub(className));
                         answer.writeByte(tag);
                         answer.writeInt(length);
                         for(int i=firstIndex; i < length;++i) {

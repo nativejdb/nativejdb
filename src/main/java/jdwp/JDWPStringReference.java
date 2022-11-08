@@ -27,10 +27,9 @@ package jdwp;
 
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIDataDisassembleInfo;
+import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
 import gdb.mi.service.command.output.MIInstruction;
 import gdb.mi.service.command.output.MIResultRecord;
-import jdwp.jdi.ObjectReferenceImpl;
-import jdwp.jdi.StringReferenceImpl;
 
 public class JDWPStringReference {
     static class StringReference {
@@ -72,12 +71,26 @@ public class JDWPStringReference {
                 } else if (uniqueID == JDWP.optimizedVarID) {
                     answer.writeString("<optimized out>");
                 } else {
-                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(uniqueID);
-                    if (objectReference instanceof StringReferenceImpl) {
-                        answer.writeString(((StringReferenceImpl) objectReference).value());
-                    }
-                    else {
-                        answer.pkt.errorCode = JDWP.Error.INVALID_STRING;
+                    var lenCmd = gc.getCommandFactory().
+                            createMIDataEvaluationExpression("(('java.lang.String'*)(" + uniqueID +
+                                    "))->value->len");
+                    var token = JDWP.getNewTokenId();
+                    gc.queueCommand(token, lenCmd);
+                    var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                    if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                    } else {
+                        var dataCmd = gc.getCommandFactory().
+                                createMIDataEvaluationExpression("(('java.lang.String'*)(" + uniqueID +
+                                        "))->value->data");
+                        token = JDWP.getNewTokenId();
+                        gc.queueCommand(token, dataCmd);
+                        var dataReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+                        if (dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                            answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                        } else {
+                            answer.writeString(dataReply.getString().substring(0, Integer.parseInt(lenReply.getValue())));
+                        }
                     }
                 }
             }

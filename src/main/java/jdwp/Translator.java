@@ -438,26 +438,16 @@ public class Translator {
 		return true;
 	}
 
-	public static byte arrayClassName2Tag(String className) {
-		char type = className.charAt(1);
-		switch (type) {
-			case JDWP.Tag.ARRAY:
-			case JDWP.Tag.BYTE:
-			case JDWP.Tag.CHAR:
-			case JDWP.Tag.FLOAT:
-			case JDWP.Tag.DOUBLE:
-			case JDWP.Tag.INT:
-			case JDWP.Tag.LONG:
-			case JDWP.Tag.SHORT:
-			case JDWP.Tag.VOID:
-			case JDWP.Tag.BOOLEAN:
-				return (byte) type;
-			default:
-				return JDWP.Tag.OBJECT;
-
-
-
+	public static byte arrayClassName2Tag(ClassName className) {
+		var elementClassName = ClassName.fromJNI(className.getJNI().substring(1));
+		var jni = elementClassName.getJNI();
+		var type = jni.charAt(0);
+		if (type == JDWP.Tag.OBJECT) {
+			if (String.class.getName().equals(elementClassName.getPrintable())) {
+				return JDWP.Tag.STRING;
+			}
 		}
+		return (byte) type;
 	}
 }
 

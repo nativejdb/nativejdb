@@ -23,11 +23,11 @@ public class MIDataEvaluateExpressionInfo extends MIInfo {
     }
 
     /**
-     * For value related to Java types, the value has the format:
-     *  0xaddress \"javaType\"
+     * For value related to Java Strings, the value has the format:
+     *  0xaddress \"stringValue\"
      * @return
      */
-    public String getType() {
+    public String getString() {
         var type = getValue().substring(getValue().lastIndexOf(' ') + 1);
         if (type.startsWith("\"")) {
             type = type.substring(1);
