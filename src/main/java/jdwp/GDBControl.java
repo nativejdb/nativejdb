@@ -28,15 +28,15 @@ package jdwp;
 import com.sun.jdi.connect.spi.Connection;
 import gdb.mi.service.command.AbstractMIControl;
 import gdb.mi.service.command.commands.MICommand;
+import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
+import gdb.mi.service.command.output.MIResultRecord;
 import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo;
 import jdwp.jdi.VirtualMachineImpl;
-import jdwp.model.MethodLocation;
+import jdwp.model.ClassName;
 import jdwp.model.ReferenceTypes;
 
 import java.io.*;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
 public class GDBControl extends AbstractMIControl {
     private boolean initialized = false;
@@ -171,5 +171,79 @@ public class GDBControl extends AbstractMIControl {
 
     public boolean hasSteps() {
         return steps;
+    }
+
+    private MIDataEvaluateExpressionInfo getExpression(String baseType, String suffix, long id, boolean compressed) {
+        var type = compressed ? "_z_." + baseType : baseType;
+        var dataCmd = getCommandFactory()
+                .createMIDataEvaluationExpression("(('" + type + "'*)(" + id + "))" + suffix);
+        var token = JDWP.getNewTokenId();
+        queueCommand(token, dataCmd);
+        return (MIDataEvaluateExpressionInfo) getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+    }
+
+    private String getValue(String baseType, String dataSuffix, String lenSuffix, long id, boolean compressed) {
+        var dataReply = getExpression(baseType, dataSuffix,
+                id, compressed);
+        if (!dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            var lenReply = getExpression(baseType, lenSuffix, id, compressed);
+            if (!dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                return dataReply.getString().substring(0, Integer.parseInt(lenReply.getValue()));
+            }
+        }
+        return null;
+    }
+
+    private ClassName getClassName(long id, boolean compressed) {
+        var className = getValue("java.lang.Object", "->hub->name->value->data",
+                "->hub->name->value->len", id, compressed);
+        return className!=null?ClassName.fromHub(className):null;
+    }
+
+    /**
+     * Return the classname for a specific address. As the address maybe compressed, first try as an uncompressed one
+     * and in case of failure, try as a compressed address.
+     *
+     * @param id the object id (ie address)
+     * @return the ClassName object or null
+     */
+    public ClassName getClassName(long id) {
+        var className = getClassName(id, false);
+        return className!=null?className:getClassName(id, true);
+    }
+
+    public int getArrayLength(long id) {
+        var reply = getExpression("java.lang.Object[]", "->len", id, false);
+        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            reply = getExpression("java.lang.Object[]", "->len", id, true);
+        }
+        if (!reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+          return Integer.parseInt(reply.getValue());
+        }
+        return 0;
+    }
+
+    public String getArrayMember(long id, int index) {
+        var reply = getExpression("java.lang.Object[]", "->data[" + index + "]",
+                id, false);
+        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            reply = getExpression("java.lang.Object[]", "->data[" + index + "]",
+                    id, true);
+        }
+        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            return null;
+        } else {
+            return reply.getValue();
+        }
+    }
+
+    public String getStringValue(long id) {
+        var content = getValue("java.lang.String", "->value->data", "->value->len",
+                id, false);
+        if (content == null) {
+            content = getValue("java.lang.String", "->value->data", "->value->len", id,
+                    true);
+        }
+        return content;
     }
 }

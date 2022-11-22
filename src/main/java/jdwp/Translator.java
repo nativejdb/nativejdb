@@ -449,6 +449,15 @@ public class Translator {
 		}
 		return (byte) type;
 	}
+
+	public static long decodeAddress(String address) {
+		long result = 0L;
+		for(int index=2; index < address.length();++index) {
+			result *= 16;
+			result += Character.digit(address.charAt(index), 16);
+		}
+		return result;
+	}
 }
 
 

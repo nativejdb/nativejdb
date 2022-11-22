@@ -25,10 +25,6 @@
 
 package jdwp;
 
-import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
-import gdb.mi.service.command.output.MIResultRecord;
-import jdwp.model.ClassName;
-
 public class JDWPArrayReference  {
     static class ArrayReference {
         static final int COMMAND_SET = 13;
@@ -42,16 +38,7 @@ public class JDWPArrayReference  {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 var objectID = command.readObjectRef();
-                var lenCmd = gc.getCommandFactory().
-                        createMIDataEvaluationExpression("(('java.lang.Object[]'*)(" + objectID + "))->len");
-                var token = JDWP.getNewTokenId();
-                gc.queueCommand(token, lenCmd);
-                var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
-                } else {
-                    answer.writeInt(Integer.parseInt(lenReply.getValue()));
-                }
+                answer.writeInt(gc.getArrayLength(objectID));
             }
         }
 
@@ -67,41 +54,21 @@ public class JDWPArrayReference  {
                 var firstIndex = command.readInt();
                 var length = command.readInt();
 
-                /* strings are not null terminated so we need to handle the length as well as the buffer */
-                var dataCmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('_objhdr'*)(" + objectID + "))->hub->name->value->data");
-                var token = JDWP.getNewTokenId();
-                gc.queueCommand(token, dataCmd);
-                var dataReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                if (dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
-                } else {
-                    var lenCmd = gc.getCommandFactory().
-                            createMIDataEvaluationExpression("(('_objhdr'*)(" + objectID +
-                                    "))->hub->name->value->len");
-                    token = JDWP.getNewTokenId();
-                    gc.queueCommand(token, lenCmd);
-                    var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
-                    } else {
-                        var className = dataReply.getString().substring(0, Integer.parseInt(lenReply.getValue()));
-                        var tag = Translator.arrayClassName2Tag(ClassName.fromHub(className));
-                        answer.writeByte(tag);
-                        answer.writeInt(length);
-                        for(int i=firstIndex; i < length;++i) {
-                            var itemCmd = gc.getCommandFactory().
-                                    createMIDataEvaluationExpression("(('java.lang.Object[]'*)(" + objectID + "))->data[" +
-                                            i + "]");
-                            token = JDWP.getNewTokenId();
-                            gc.queueCommand(token, itemCmd);
-                            var itemReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                            if (itemReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                                answer.setErrorCode((short) JDWP.Error.INTERNAL);
-                            } else {
-                                JDWPStackFrame.writeValue(answer, tag, itemReply.getValue());
-                            }
+                var className = gc.getClassName(objectID);
+                if (className != null) {
+                    var tag = Translator.arrayClassName2Tag(className);
+                    answer.writeByte(tag);
+                    answer.writeInt(length);
+                    for(int i=firstIndex; i < length;++i) {
+                        var item = gc.getArrayMember(objectID, i);
+                        if (item != null) {
+                            JDWPStackFrame.writeValue(answer, tag, item);
+                        } else {
+                            answer.setErrorCode((short) JDWP.Error.INTERNAL);
                         }
                     }
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
                 }
             }
         }

@@ -25,8 +25,6 @@
 
 package jdwp;
 
-import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
-import gdb.mi.service.command.output.MIResultRecord;
 import jdwp.jdi.ObjectReferenceImpl;
 import jdwp.jdi.ReferenceTypeImpl;
 import jdwp.jdi.ThreadReferenceImpl;
@@ -47,7 +45,6 @@ public class JDWPObjectReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-
                 long objectID = command.readObjectRef();
                 if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
                     var referenceType = gc.getReferenceTypes().findByClassName(ClassName.JAVA_LANG_STRING);
@@ -58,31 +55,18 @@ public class JDWPObjectReference {
                         answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                     }
                 } else {
-                    /* strings are not null terminated so we need to handle the length as well as the buffer */
-                    var dataCmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('java.lang.Object'*)(" + objectID + "))->hub->name->value->data");
-                    var token = JDWP.getNewTokenId();
-                    gc.queueCommand(token, dataCmd);
-                    var dataReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
-                    } else {
-                        var lenCmd = gc.getCommandFactory().createMIDataEvaluationExpression("(('java.lang.Object'*)(" + objectID + "))->hub->name->value->len");
-                        token = JDWP.getNewTokenId();
-                        gc.queueCommand(token, lenCmd);
-                        var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                        if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                            answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                    var className = gc.getClassName(objectID);
+                    if (className != null) {
+                        var referenceType = gc.getReferenceTypes().
+                                findByClassName(className);
+                        if (referenceType != null) {
+                            answer.writeByte(referenceType.getType());
+                            answer.writeClassRef(referenceType.getUniqueID());
                         } else {
-                            var referenceType = gc.getReferenceTypes().
-                                    findByClassName(ClassName.fromHub(dataReply.getString().
-                                            substring(0, Integer.parseInt(lenReply.getValue()))));
-                            if (referenceType != null) {
-                                answer.writeByte(referenceType.getType());
-                                answer.writeClassRef(referenceType.getUniqueID());
-                            } else {
-                                answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
-                            }
+                            answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                         }
+                    } else {
+                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
                     }
                 }
             }

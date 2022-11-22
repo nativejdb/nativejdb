@@ -147,4 +147,14 @@ public class TestTranslator {
         String output = "java/util/Map.java";
         assertEquals(output, Translator.getQbiccFilename(input));
     }
+
+    @Test
+    public void testAddressDecode8Bytes() {
+        assertEquals(-2088992, Translator.decodeAddress("0xffffffffffe01fe0"));
+    }
+
+    @Test
+    public void testAddressDecode1Byte() {
+        assertEquals(255, Translator.decodeAddress("0xff"));
+    }
 }

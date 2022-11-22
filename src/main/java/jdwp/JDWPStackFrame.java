@@ -27,10 +27,6 @@ package jdwp;
 
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
-import jdwp.jdi.*;
-import jdwp.model.VariableInfo;
-
-import java.util.ArrayList;
 
 public class JDWPStackFrame {
     static class StackFrame {
@@ -191,7 +187,7 @@ public class JDWPStackFrame {
                     String name = variable.getName();
                     if (name.equals("this")) {
                         answer.writeByte(JDWP.Tag.OBJECT);
-                        answer.writeObjectRef(Long.decode(variable.getValue()));
+                        answer.writeObjectRef(Translator.decodeAddress(variable.getValue()));
                     }
                 }
             }
@@ -222,7 +218,7 @@ public class JDWPStackFrame {
         answer.writeByte(tag); // get value via GDB print cmd: print *print->value
         switch (tag) {
             case JDWP.Tag.ARRAY:
-                answer.writeObjectRef(Long.decode(value));
+                answer.writeObjectRef(Translator.decodeAddress(value));
                 break;
             case JDWP.Tag.BYTE:
                 String[] split = value.split("\\s+");
@@ -251,7 +247,7 @@ public class JDWPStackFrame {
                 break;
             case JDWP.Tag.STRING:
             case JDWP.Tag.OBJECT:
-                answer.writeObjectRef(Long.decode(value));
+                answer.writeObjectRef(Translator.decodeAddress(value));
                 break;
         }
     }

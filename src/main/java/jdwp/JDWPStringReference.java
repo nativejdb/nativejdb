@@ -27,7 +27,6 @@ package jdwp;
 
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIDataDisassembleInfo;
-import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
 import gdb.mi.service.command.output.MIInstruction;
 import gdb.mi.service.command.output.MIResultRecord;
 
@@ -71,26 +70,11 @@ public class JDWPStringReference {
                 } else if (uniqueID == JDWP.optimizedVarID) {
                     answer.writeString("<optimized out>");
                 } else {
-                    var lenCmd = gc.getCommandFactory().
-                            createMIDataEvaluationExpression("(('java.lang.String'*)(" + uniqueID +
-                                    "))->value->len");
-                    var token = JDWP.getNewTokenId();
-                    gc.queueCommand(token, lenCmd);
-                    var lenReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (lenReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                    var content = gc.getStringValue(uniqueID);
+                    if (content != null) {
+                        answer.writeString(content);
                     } else {
-                        var dataCmd = gc.getCommandFactory().
-                                createMIDataEvaluationExpression("(('java.lang.String'*)(" + uniqueID +
-                                        "))->value->data");
-                        token = JDWP.getNewTokenId();
-                        gc.queueCommand(token, dataCmd);
-                        var dataReply = (MIDataEvaluateExpressionInfo) gc.getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
-                        if (dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                            answer.setErrorCode((short) JDWP.Error.INTERNAL);
-                        } else {
-                            answer.writeString(dataReply.getString().substring(0, Integer.parseInt(lenReply.getValue())));
-                        }
+                        answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                     }
                 }
             }
