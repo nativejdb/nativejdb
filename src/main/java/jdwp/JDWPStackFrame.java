@@ -27,6 +27,10 @@ package jdwp;
 
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
+import jdwp.model.ClassName;
+
+import static jdwp.JDWP.OPTIMIZED_OUT;
+import static jdwp.JDWP.VALUE_NOT_FOUND;
 
 public class JDWPStackFrame {
 
@@ -85,26 +89,38 @@ public class JDWPStackFrame {
                                 for (var i = 0; i < slots; i++) {
                                     var slot = command.readInt();
                                     byte tag = command.readByte();
-                                    var variable = location.getMethod().findVariableBySlot(slot);
-                                    MIArg gdbVar = variable != null ? containsInGDBVariables(vals, variable.getName()) : null;
                                     String value;
-                                    if (gdbVar != null) {
-                                        value = gdbVar.getValue();
+                                    var variable = location.getMethod().findVariableBySlot(slot);
+                                    if (variable != null) {
+                                        MIArg gdbVar = variable != null ? containsInGDBVariables(vals, variable.getName()) : null;
+                                        if (gdbVar != null) {
+                                            value = gdbVar.getValue();
+                                        } else {
+                                            value = JDWP.VALUE_NOT_FOUND;
+                                            tag = JDWP.Tag.STRING;
+                                        }
+                                        if (ClassName.JAVA_LANG_STRING.getJNI().equals(variable.getJNISignature())) {
+                                            tag = JDWP.Tag.STRING;
+                                        }
                                     } else {
-                                        value = "<value not found>";
+                                        value = JDWP.VALUE_NOT_FOUND;
                                         tag = JDWP.Tag.STRING;
                                     }
                                     String name = variable != null ? variable.getName() : "<slot not found>";
-                                    if (!name.equals("this") && !value.equals("<optimized out>")) {
+                                    System.out.println("Writing name=" + name + " value=" + value);
+                                    if (name.equals(JDWP.ASM_VARIABLE_NAME)) {
+                                        answer.writeByte(JDWP.Tag.STRING);
+                                        answer.writeObjectRef(JDWP.ASM_ID);
+                                    } else if (!name.equals("this") && !value.equals(OPTIMIZED_OUT)) {
                                         writeValue(answer, tag, value);
-                                    } else if (value.equals("<optimized out>")) {
-                                        writeValue(answer, JDWP.Tag.STRING, String.valueOf(JDWP.optimizedVarID));
+                                    } else if (value.equals(OPTIMIZED_OUT)) {
+                                        //writeValue(answer, JDWP.Tag.STRING, String.valueOf(JDWP.optimizedVarID));
                                         answer.writeByte(JDWP.Tag.STRING);
-                                        answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
-                                    } else if (variable.equals(JDWP.ASM_VARIABLE_NAME)) {
-
+                                        answer.writeObjectRef(JDWP.OPTIMIZED_OUT_ID); // unique ID for optimized string
+                                    } else if (value.equals(VALUE_NOT_FOUND)) {
+                                        //writeValue(answer, JDWP.Tag.STRING, String.valueOf(JDWP.optimizedVarID));
                                         answer.writeByte(JDWP.Tag.STRING);
-                                        answer.writeObjectRef(JDWP.asmIdCounter);
+                                        answer.writeObjectRef(JDWP.VALUE_NOT_FOUND_ID); // unique ID for optimized string
                                     }
                                 }
                             } else {

@@ -43,9 +43,9 @@ public class JDWPStringReference {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 long uniqueID = command.readObjectRef();
-                if (uniqueID == JDWP.asmIdCounter) {
+                if (uniqueID == JDWP.ASM_ID) {
                     StringBuilder instructions = new StringBuilder();
-                    int lines = Integer.parseInt(System.getenv("ASM_LINE"));
+                    int lines = gc.getAssemblyLineNumber();
                     String endLine = "$pc + " + lines * 4;
 
                     // Queue GDB to get instructions
@@ -67,7 +67,7 @@ public class JDWPStringReference {
                         instructions.append("\n");
                     }
                     answer.writeString(instructions.toString());
-                } else if (uniqueID == JDWP.optimizedVarID) {
+                } else if (uniqueID == JDWP.OPTIMIZED_OUT_ID) {
                     answer.writeString("<optimized out>");
                 } else {
                     var content = gc.getStringValue(uniqueID);

@@ -25,15 +25,8 @@
 
 package jdwp;
 
-import com.sun.jdi.AbsentInformationException;
-import jdwp.jdi.LocalVariableImpl;
-import jdwp.jdi.LocationImpl;
 import jdwp.jdi.MethodImpl;
 import jdwp.jdi.ReferenceTypeImpl;
-import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.*;
-
-import java.util.List;
 
 public class JDWPMethod {
     static class Method {
@@ -143,25 +136,6 @@ public class JDWPMethod {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 variableTable(gc, answer, command, true);
-            }
-
-            private LocalVariableImpl containsInVMSlots(List<LocalVariableImpl> variables, String name) {
-                for (LocalVariableImpl variable : variables) {
-                    if (variable.name().equals(name)) {
-                        return variable;
-                    }
-                }
-                return null;
-            }
-
-            private int getGDBVariablesSize(MIArg[] vals) {
-                int gdbSize = vals.length;
-                for (MIArg val : vals) {
-                    if (val.getName().equals("this")) {
-                        gdbSize--;
-                    }
-                }
-                return gdbSize;
             }
         }
     }

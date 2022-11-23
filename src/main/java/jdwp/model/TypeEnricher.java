@@ -16,6 +16,7 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
+import jdwp.JDWP;
 import jdwp.Translator;
 
 import java.io.IOException;
@@ -101,7 +102,7 @@ public class TypeEnricher {
                 var methodInfo = finalReferenceType.findBySignature(methodSignature);
                 if (methodInfo != null) {
                     if ((methodInfo.getModifier() & Modifier.STATIC) == 0) {
-                        variables.add(new VariableInfo("this", referenceType.getClassName().getJNI(),
+                        variables.add(new VariableInfo(JDWP.THIS_VARIABLE, referenceType.getClassName().getJNI(),
                                 r.begin.line, r.end.line,
                                 variableIndex.getAndIncrement()));
                     }
@@ -117,6 +118,8 @@ public class TypeEnricher {
                                 getEndLine(variableDeclarator, blockStmt),
                                 variableIndex.getAndIncrement()));
                     });
+                    variables.add(new VariableInfo(JDWP.ASM_VARIABLE_NAME, JDWP.ASM_VARIABLE_SIGNATURE, r.begin.line,
+                            r.end.line, variableIndex.getAndIncrement()));
                     methodInfo.setLines(toSet(r));
                     methodInfo.setVariables(variables);
                 }

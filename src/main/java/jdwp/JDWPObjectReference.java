@@ -46,9 +46,9 @@ public class JDWPObjectReference {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 long objectID = command.readObjectRef();
-                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
+                if (objectID == JDWP.ASM_ID || objectID == JDWP.OPTIMIZED_OUT_ID) {
                     var referenceType = gc.getReferenceTypes().findByClassName(ClassName.JAVA_LANG_STRING);
-                    if (referenceType != null){
+                    if (referenceType != null) {
                         answer.writeByte(JDWP.TypeTag.CLASS);
                         answer.writeObjectRef(referenceType.getUniqueID());
                     } else {
@@ -84,7 +84,7 @@ public class JDWPObjectReference {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 long objectID = command.readObjectRef();
-                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
+                if (objectID == JDWP.ASM_ID || objectID == JDWP.OPTIMIZED_OUT_ID) {
                     answer.writeInt(0);
                 } else {
                     ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);

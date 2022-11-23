@@ -246,4 +246,15 @@ public class GDBControl extends AbstractMIControl {
         }
         return content;
     }
+
+    public int getAssemblyLineNumber() {
+        var lines = 10;
+        var asmLines = System.getenv("ASM_LINE");
+        if (asmLines != null) {
+            try {
+                lines = Integer.parseInt(asmLines);
+            } catch (NumberFormatException e) {}
+        }
+        return lines;
+    }
 }
