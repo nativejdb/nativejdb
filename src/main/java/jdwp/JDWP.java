@@ -40,6 +40,7 @@ public class JDWP {
      * The default JDI request timeout when no preference is set.
      */
     public static final int DEF_REQUEST_TIMEOUT = 300000;
+    public static final String ASM_VARIABLE_NAME = "$asm";
 
     /**
      * Global maps to store breakpoint information for both async (by bkpt#) and sync (by requestID) processing
@@ -58,7 +59,12 @@ public class JDWP {
      * Unless the value wraps around which is unlikely.
      */
     static int fTokenIdCounter = 0;
-    static long asmIdCounter = 0;
+
+    /*
+     Special id for special assembly code pseudo variable. As addresses are word aligned, choosing an odd value will
+     ensure there will be no conflict with address values returned by GDB.
+     */
+    static long asmIdCounter = 1;
 
     // A variable to be used for local variables that are optimized out by gdb
     final static long optimizedVarID = -Long.MAX_VALUE;
@@ -68,15 +74,6 @@ public class JDWP {
         // If we ever wrap around.
         if (count <= 0) {
             count = fTokenIdCounter = 1;
-        }
-        return count;
-    }
-
-    static long getNewAsmId() {
-        long count = --asmIdCounter;
-        // If we ever wrap around.
-        if (count == optimizedVarID) {
-            count = asmIdCounter = -1;
         }
         return count;
     }

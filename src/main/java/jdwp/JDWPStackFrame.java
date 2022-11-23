@@ -29,6 +29,7 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.*;
 
 public class JDWPStackFrame {
+
     static class StackFrame {
         static final int COMMAND_SET = 16;
         private StackFrame() {}  // hide constructor
@@ -100,11 +101,10 @@ public class JDWPStackFrame {
                                         writeValue(answer, JDWP.Tag.STRING, String.valueOf(JDWP.optimizedVarID));
                                         answer.writeByte(JDWP.Tag.STRING);
                                         answer.writeObjectRef(JDWP.optimizedVarID); // unique ID for optimized string
-                                    } else if (variable.equals("$asm")) {
+                                    } else if (variable.equals(JDWP.ASM_VARIABLE_NAME)) {
 
                                         answer.writeByte(JDWP.Tag.STRING);
-                                        long newAsmId = JDWP.getNewAsmId();
-                                        answer.writeObjectRef(newAsmId);
+                                        answer.writeObjectRef(JDWP.asmIdCounter);
                                     }
                                 }
                             } else {
