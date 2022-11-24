@@ -15,13 +15,19 @@ import gdb.mi.service.command.events.*;
 import gdb.mi.service.command.output.*;
 import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo.SymbolFileInfo;
 import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo.Symbols;
-import jdwp.jdi.LocationImpl;
-import jdwp.jdi.MethodImpl;
-import jdwp.jdi.ConcreteMethodImpl;
-import jdwp.model.*;
+import jdwp.model.ClassName;
+import jdwp.model.JNIConstants;
+import jdwp.model.MethodInfo;
+import jdwp.model.MethodLocation;
+import jdwp.model.MethodSignature;
+import jdwp.model.ReferenceType;
+import jdwp.model.ReferenceTypes;
 
 import javax.lang.model.SourceVersion;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -87,9 +93,9 @@ public class Translator {
 		packetStream.writeByte(eventKind);
 		packetStream.writeInt(event.requestID);
 		packetStream.writeObjectRef(getMainThreadId(gc));
-		packetStream.writeByte(event.referenceType.tag());
-		packetStream.writeObjectRef(event.referenceType.uniqueID());
-		packetStream.writeString(event.referenceType.signature());
+		packetStream.writeByte(event.referenceType.getType());
+		packetStream.writeObjectRef(event.referenceType.getUniqueID());
+		packetStream.writeString(event.referenceType.getClassName().getJNI());
 		packetStream.writeInt(7);
 		return packetStream;
 	}
@@ -329,31 +335,6 @@ public class Translator {
 
 	public static String getPrimitiveJNI(String param) {
 		return typeSignature.get(param);
-	}
-
-	public static LocationImpl locationLookup(String func, int line) {
-		String name = func; //TODO
-		MethodImpl impl = MethodImpl.methods.get(name);
-		if (impl != null) {
-			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(line);
-			if (list != null && list.size() >= 1) {
-				return list.get(0);
-			}
-			return null;
-		}
-		if (!name.contains("(")) {
-			Set<String> keys = MethodImpl.methods.keySet();
-			for (String key: keys) {
-				if (key.contains(name)) {
-					ConcreteMethodImpl impl1 = (ConcreteMethodImpl) MethodImpl.methods.get(key);
-					List<LocationImpl> list = ((ConcreteMethodImpl) impl1).getBaseLocations().lineMapper.get(line);
-					if (list != null && list.size() >= 1) {
-						return list.get(0);
-					}
-				}
-			}
-		}
-		return null;
 	}
 
 	/**

@@ -26,12 +26,11 @@
 package jdwp;
 
 import gdb.mi.service.command.output.MIListThreadGroupsInfo;
-import jdwp.jdi.ThreadGroupReferenceImpl;
-import jdwp.jdi.ThreadReferenceImpl;
+import gdb.mi.service.command.output.MIResultRecord;
+import gdb.mi.service.command.output.MIThreadInfoInfo;
 
-import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
 
 public class JDWPThreadGroupReference {
 
@@ -56,11 +55,6 @@ public class JDWPThreadGroupReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-//                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
-//                answer.writeString(group.name());
-//                long threadGroupId = command.readObjectRef();
-//                String name = JDWPThreadGroupReference.threadGroupById.get(threadGroupId).getName();
-//                answer.writeString(name);
                 answer.writeString("Main Thread Group");
             }
         }
@@ -72,8 +66,7 @@ public class JDWPThreadGroupReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
-                answer.writeThreadGroupReference(group.parent());
+                answer.writeObjectRef(0L);
             }
         }
 
@@ -89,17 +82,20 @@ public class JDWPThreadGroupReference {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadGroupReferenceImpl group = command.readThreadGroupReference();
-                List<ThreadReferenceImpl> threads = group.threads();
-                answer.writeInt(threads.size());
-                for (ThreadReferenceImpl thread : threads) {
-                    answer.writeThreadReference(thread);
-                }
+                var cmd = gc.getCommandFactory().createMIThreadInfo();
+                int tokenID = JDWP.getNewTokenId();
+                gc.queueCommand(tokenID, cmd);
 
-                List<ThreadGroupReferenceImpl> threadGroups = group.threadGroups();
-                answer.writeInt(threadGroups.size());
-                for (ThreadGroupReferenceImpl threadGroup : threadGroups) {
-                    answer.writeThreadGroupReference(threadGroup);
+                var reply = (MIThreadInfoInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+
+                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                } else {
+                    answer.writeInt(reply.getThreadList().length);
+                    for(var thread : reply.getThreadList()) {
+                        answer.writeInt(Integer.parseInt(thread.getThreadId()));
+                    }
+                    answer.writeInt(0);
                 }
             }
         }

@@ -27,16 +27,15 @@ package jdwp;
 
 import com.sun.jdi.VMDisconnectedException;
 import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.*;
-import jdwp.jdi.ReferenceTypeImpl;
-import jdwp.jdi.ThreadGroupReferenceImpl;
-import jdwp.jdi.ThreadReferenceImpl;
+import gdb.mi.service.command.output.MIInfo;
+import gdb.mi.service.command.output.MIListThreadGroupsInfo;
+import gdb.mi.service.command.output.MIResultRecord;
+import gdb.mi.service.command.output.MIThread;
+import gdb.mi.service.command.output.MIThreadInfoInfo;
 import jdwp.model.ReferenceType;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 public class JDWPVirtualMachine {
     static class VirtualMachine {
@@ -169,7 +168,6 @@ public class JDWPVirtualMachine {
                 for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
                     String groupName = group.getName();
                     long groupId = JDWPThreadGroupReference.getNewThreadGroupId();
-                    System.out.println("Writing thread group id: " + groupId);
                     answer.writeObjectRef(groupId);
                     JDWPThreadGroupReference.threadGroupById.put(groupId, group);
                     JDWPThreadGroupReference.threadGroupByName.put(group.getName(), groupId);
@@ -348,13 +346,13 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 12;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeBoolean(gc.vm.canWatchFieldModification());
-                answer.writeBoolean(gc.vm.canWatchFieldAccess());
-                answer.writeBoolean(gc.vm.canGetBytecodes());
-                answer.writeBoolean(gc.vm.canGetSyntheticAttribute());
-                answer.writeBoolean(gc.vm.canGetOwnedMonitorInfo());
-                answer.writeBoolean(gc.vm.canGetCurrentContendedMonitor());
-                answer.writeBoolean(gc.vm.canGetMonitorInfo());
+                answer.writeBoolean(false); //WatchFieldModification
+                answer.writeBoolean(false); //WatchFieldAccess
+                answer.writeBoolean(false); //GetBytecodes
+                answer.writeBoolean(true); //GetSyntheticAttribute
+                answer.writeBoolean(false); //GetOwnedMonitorInfo
+                answer.writeBoolean(false); //GetCurrentContendedMonitor
+                answer.writeBoolean(false); //GetMonitorInfo
             }
         }
 
@@ -367,19 +365,7 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 13;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeString(gc.vm.baseDirectory());
-
-                List<String> classPath = gc.vm.classPath();
-                answer.writeInt(classPath.size());
-                for (String s : classPath) {
-                    answer.writeString(s);
-                }
-
-                List<String> bootClassPath = gc.vm.bootClassPath();
-                answer.writeInt(bootClassPath.size());
-                for (String s : bootClassPath) {
-                    answer.writeString(s);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -463,38 +449,38 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 17;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeBoolean(gc.vm.canWatchFieldModification());
-                answer.writeBoolean(gc.vm.canWatchFieldAccess());
-                answer.writeBoolean(gc.vm.canGetBytecodes());
-                answer.writeBoolean(gc.vm.canGetSyntheticAttribute());
-                answer.writeBoolean(gc.vm.canGetOwnedMonitorInfo());
-                answer.writeBoolean(gc.vm.canGetCurrentContendedMonitor());
-                answer.writeBoolean(gc.vm.canGetMonitorInfo());
-                answer.writeBoolean(gc.vm.canRedefineClasses());
-                answer.writeBoolean(gc.vm.canAddMethod());
-                answer.writeBoolean(gc.vm.canUnrestrictedlyRedefineClasses());
-                answer.writeBoolean(gc.vm.canPopFrames());
-                answer.writeBoolean(gc.vm.canUseInstanceFilters());
-                answer.writeBoolean(gc.vm.canGetSourceDebugExtension());
-                answer.writeBoolean(gc.vm.canRequestVMDeathEvent());
-                answer.writeBoolean(false);
-                answer.writeBoolean(gc.vm.canGetInstanceInfo());
-                answer.writeBoolean(gc.vm.canRequestMonitorEvents());
-                answer.writeBoolean(gc.vm.canGetMonitorFrameInfo());
-                answer.writeBoolean(gc.vm.canUseSourceNameFilters());
-                answer.writeBoolean(gc.vm.canGetConstantPool());
-                answer.writeBoolean(gc.vm.canForceEarlyReturn());
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
+                answer.writeBoolean(false); //WatchFieldModification
+                answer.writeBoolean(false); //WatchFieldAccess
+                answer.writeBoolean(false); //GetBytecodes
+                answer.writeBoolean(true); //GetSyntheticAttribute
+                answer.writeBoolean(false); //GetOwnedMonitorInfo
+                answer.writeBoolean(false); //GetCurrentContendedMonitor
+                answer.writeBoolean(false); //GetMonitorInfo
+                answer.writeBoolean(false); //RedefineClasses
+                answer.writeBoolean(false); //AddMethod
+                answer.writeBoolean(false); //UnrestrictedlyRedefineClasses
+                answer.writeBoolean(true); //PopFrames
+                answer.writeBoolean(true); //UseInstanceFilters
+                answer.writeBoolean(false); //GetSourceDebugExtension
+                answer.writeBoolean(true); //RequestVMDeathEvent
+                answer.writeBoolean(false); //SetDefaultStratum
+                answer.writeBoolean(false); //GetInstanceInfo
+                answer.writeBoolean(false); //RequestMonitorEvents
+                answer.writeBoolean(false); //GetMonitorFrameInfo
+                answer.writeBoolean(false); //UseSourceNameFilters
+                answer.writeBoolean(false); //GetConstantPool
+                answer.writeBoolean(true); //ForceEarlyReturn
+                answer.writeBoolean(false); //reserved22
+                answer.writeBoolean(false); //reserved23
+                answer.writeBoolean(false); //reserved24
+                answer.writeBoolean(false); //reserved25
+                answer.writeBoolean(false); //reserved26
+                answer.writeBoolean(false); //reserved27
+                answer.writeBoolean(false); //reserved28
+                answer.writeBoolean(false); //reserved29
+                answer.writeBoolean(false); //reserved30
+                answer.writeBoolean(false); //reserved31
+                answer.writeBoolean(false); //reserved32
             }
         }
 
@@ -572,16 +558,7 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 21;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                int count = command.readInt();
-                List<ReferenceTypeImpl> refs = new ArrayList<>(count);
-                for (int i = 0; i < count; i++) {
-                    refs.add(command.readReferenceType());
-                }
-                long[] counts = gc.vm.instanceCounts(refs);
-                answer.writeInt(counts.length);
-                for (long l : counts) {
-                    answer.writeLong(l);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 

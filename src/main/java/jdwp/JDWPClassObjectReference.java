@@ -25,9 +25,6 @@
 
 package jdwp;
 
-import jdwp.jdi.ClassObjectReferenceImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-
 public class JDWPClassObjectReference {
 
     static class ClassObjectReference {
@@ -41,15 +38,13 @@ public class JDWPClassObjectReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ClassObjectReferenceImpl reference = command.readClassObjectReference();
-                ReferenceTypeImpl type = reference.reflectedType();
-                if (type == null) {
-                    answer.writeByte(JDWP.TypeTag.CLASS);
-                    answer.writeClassRef(0);
-                }
-                else {
-                    answer.writeByte(type.tag());
-                    answer.writeClassRef(type.uniqueID());
+                var classObjectID = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(classObjectID);
+                if (referenceType != null) {
+                    answer.writeByte(referenceType.getType());
+                    answer.writeObjectRef(referenceType.getUniqueID());
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                 }
             }
         }

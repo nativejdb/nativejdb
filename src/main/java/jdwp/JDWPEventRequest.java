@@ -30,7 +30,6 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIBreakInsertInfo;
 import gdb.mi.service.command.output.MIInfo;
 import gdb.mi.service.command.output.MIResultRecord;
-import jdwp.jdi.ReferenceTypeImpl;
 import jdwp.model.MethodLocation;
 import jdwp.model.MethodInfo;
 
@@ -151,9 +150,9 @@ public class JDWPEventRequest {
                             answer.writeInt(command.pkt.id);
 
                             // The IDE is also expecting an async answer for this Class Prepare request.
-                            ReferenceTypeImpl refType = ReferenceTypeImpl.refTypeByName.get(regex);
-                            if (refType != null) {
-                                MIEvent event = new ClassPrepareEvent(0, null, requestId, suspendPolicy, refType);
+                            for(var referenceType : gc.getReferenceTypes().findByRegularExpression(regex)) {
+                                MIEvent event = new ClassPrepareEvent(0, null, requestId, suspendPolicy,
+                                        referenceType);
                                 asyncEvents.add(event);
                             }
                         }

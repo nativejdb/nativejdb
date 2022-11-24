@@ -25,9 +25,6 @@
 
 package jdwp;
 
-import jdwp.jdi.ClassTypeImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-
 public class JDWPClassType {
     static class ClassType {
         static final int COMMAND_SET = 3;

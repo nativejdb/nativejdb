@@ -31,19 +31,19 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
 import gdb.mi.service.command.output.MIResultRecord;
 import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo;
-import jdwp.jdi.VirtualMachineImpl;
 import jdwp.model.ClassName;
 import jdwp.model.ReferenceTypes;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 
 public class GDBControl extends AbstractMIControl {
     private boolean initialized = false;
     private final Connection myConnection;
-    public VirtualMachineImpl vm;
-
-
     int sizeofFieldRef = 8;
     int sizeofMethodRef = 8;
     int sizeofObjectRef = 8;
@@ -51,17 +51,16 @@ public class GDBControl extends AbstractMIControl {
     int sizeofFrameRef = 8;
 
     OutputStream gdbInput = null;
-    InputStream  gdbOutput = null;
+    InputStream gdbOutput = null;
     InputStream  gdbError = null;
     BufferedReader outputReader = null;
 
     private ReferenceTypes referenceTypes;
     private boolean steps = false;
 
-    public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
+    public GDBControl(Connection myConnection)  {
         super(); //AbstractMIControl sets up command factory
         this.myConnection = myConnection;
-        this.vm = vm;
 
         try {
             String exec = System.getProperty("native.exec");

@@ -1,10 +1,16 @@
 package jdwp.model;
 
-import jdwp.JDWP;
 import jdwp.Translator;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ReferenceTypes {
     private final TypeEnricher provider;
@@ -53,5 +59,12 @@ public class ReferenceTypes {
             referenceType = new ReferenceType(this, className);
         }
         return referenceType;
+    }
+
+    public List<ReferenceType> findByRegularExpression(String regex) {
+        var expression = Pattern.compile(regex);
+        return classNameToTypes.entrySet().stream().filter(entry -> expression.matcher(entry.getKey().getPrintable()).matches())
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
     }
 }

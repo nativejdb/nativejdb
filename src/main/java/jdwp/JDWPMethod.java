@@ -25,9 +25,6 @@
 
 package jdwp;
 
-import jdwp.jdi.MethodImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-
 public class JDWPMethod {
     static class Method {
         static final int COMMAND_SET = 6;
@@ -98,7 +95,7 @@ public class JDWPMethod {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.setErrorCode((short) JDWP.Error.NOT_IMPLEMENTED);
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -114,9 +111,7 @@ public class JDWPMethod {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                answer.writeBoolean(method.isObsolete());
+                JDWP.notImplemented(answer);
             }
         }
 

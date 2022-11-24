@@ -25,12 +25,7 @@
 
 package jdwp;
 
-import jdwp.jdi.ObjectReferenceImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-import jdwp.jdi.ThreadReferenceImpl;
 import jdwp.model.ClassName;
-
-import java.util.List;
 
 public class JDWPObjectReference {
     static class ObjectReference {
@@ -83,19 +78,7 @@ public class JDWPObjectReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                long objectID = command.readObjectRef();
-                if (objectID == JDWP.ASM_ID || objectID == JDWP.OPTIMIZED_OUT_ID) {
-                    answer.writeInt(0);
-                } else {
-                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);
-                    ReferenceTypeImpl referenceType = objectReference.referenceType();
-                    int count = command.readInt();
-                    answer.writeInt(count);
-                    for (int i = 0; i < count; i++) {
-                        long id = command.readFieldRef();
-                        answer.writeValue(objectReference.getValue(referenceType.fieldById(id)));
-                    }
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -128,14 +111,7 @@ public class JDWPObjectReference {
             static final int COMMAND = 5;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                answer.writeThreadReference(objectReference.owningThread());
-                answer.writeInt(objectReference.entryCount());
-                List<ThreadReferenceImpl> waiting = objectReference.waitingThreads();
-                answer.writeInt(waiting.size());
-                for (ThreadReferenceImpl threadReference : waiting) {
-                    answer.writeThreadReference(threadReference);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -256,7 +232,7 @@ public class JDWPObjectReference {
             static final int COMMAND = 9;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeBoolean(false);
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -274,12 +250,7 @@ public class JDWPObjectReference {
             static final int COMMAND = 10;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                List<ObjectReferenceImpl> refs = objectReference.referringObjects(command.readInt());
-                answer.writeInt(refs.size());
-                for (ObjectReferenceImpl ref : refs) {
-                    answer.writeTaggedObjectReference(ref);
-                }
+                JDWP.notImplemented(answer);
             }
         }
     }

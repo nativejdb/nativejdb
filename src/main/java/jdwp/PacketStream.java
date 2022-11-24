@@ -38,12 +38,10 @@
 
 package jdwp;
 
-import jdwp.jdi.*;
 import com.sun.jdi.InternalException;
 import jdwp.model.MethodLocation;
 
 import java.io.ByteArrayOutputStream;
-import java.util.List;
 
 public class PacketStream {
     final GDBControl gc;
@@ -204,51 +202,6 @@ public class PacketStream {
         writeLong(location.getLine());
     }
 
-    void writeLocation(LocationImpl location) {
-        ReferenceTypeImpl refType = location.declaringType();
-        byte tag;
-        if (refType instanceof ClassTypeImpl) {
-            tag = JDWP.TypeTag.CLASS;
-        } else if (refType instanceof InterfaceTypeImpl) {
-            // It's possible to have executable code in an interface
-            tag = JDWP.TypeTag.INTERFACE;
-        } else {
-            throw new InternalException("Invalid Location");
-        }
-        writeByte(tag);
-        writeClassRef(refType.uniqueID());
-        writeMethodRef(location.methodRef());
-        writeLong(location.codeIndexInt());
-    }
-
-    //
-    void writeValue(ValueImpl val) {
-//        try {
-        writeValueChecked(val);
-//        } catch (InvalidTypeException exc) {  // should never happen
-//            throw new RuntimeException(
-//                    "Internal error: Invalid Tag/Type pair");
-//        }
-    }
-
-    void writeValueChecked(ValueImpl val) {
-        writeByte(ValueImpl.typeValueKey(val));
-        writeUntaggedValue(val);
-    }
-
-    void writeUntaggedValue(ValueImpl val) {
-        writeUntaggedValueChecked(val);
-    }
-
-    void writeUntaggedValueChecked(ValueImpl val) {
-        if (val == null) {
-            writeNullObjectRef();
-        }
-        else {
-            val.writeUntaggedValue(this);
-        }
-    }
-
     public void setErrorCode(short errorCode) {
         pkt.errorCode = errorCode;
     }
@@ -386,76 +339,6 @@ public class PacketStream {
         return readID(gc.sizeofClassRef);
     }
 
-    void writeTaggedObjectReference(ObjectReferenceImpl ref) {
-        writeByte(ValueImpl.typeValueKey(ref));
-        writeUntaggedObjectReference(ref);
-    }
-
-    private void writeUntaggedObjectReference(ObjectReferenceImpl ref) {
-        if (ref == null) {
-            writeNullObjectRef();
-        } else {
-            writeObjectRef(ref.uniqueID());
-        }
-    }
-
-//    ObjectReferenceImpl readTaggedObjectReference() {
-//        byte typeKey = readByte();
-//        return vm.objectMirror(readObjectRef(), typeKey);
-//    }
-
-    //
-//    StringReferenceImpl readStringReference() {
-//        long ref = readObjectRef();
-//        return vm.stringMirror(ref);
-//    }
-//
-    public ArrayReferenceImpl readArrayReference() {
-        long ref = readObjectRef();
-        return (ArrayReferenceImpl) gc.vm.objectMirror(ref);
-    }
-    //
-    ThreadReferenceImpl readThreadReference() {
-        return gc.vm.getThreadById(readObjectRef());
-    }
-
-    void writeThreadReference(ThreadReferenceImpl thread) {
-        writeUntaggedObjectReference(thread);
-    }
-    //
-    ThreadGroupReferenceImpl readThreadGroupReference() {
-        long ref = readObjectRef();
-        return gc.vm.getThreadGroupReferenceById(ref);
-    }
-
-    void writeThreadGroupReference(ThreadGroupReferenceImpl ref) {
-        writeUntaggedObjectReference(ref);
-    }
-    //
-    ClassLoaderReferenceImpl readClassLoaderReference() {
-        long ref = readObjectRef();
-        return (ClassLoaderReferenceImpl) gc.vm.objectMirror(ref);
-    }
-
-    ClassObjectReferenceImpl readClassObjectReference() {
-        long ref = readObjectRef();
-        return (ClassObjectReferenceImpl) gc.vm.objectMirror(ref);
-    }
-
-    ReferenceTypeImpl readReferenceType() {
-//        byte tag = readByte();
-        long ref = readObjectRef();
-        return gc.vm.getReferenceTypeById(ref);
-    }
-
-    void writeClassLoaderReference(ClassLoaderReferenceImpl ref) {
-        writeUntaggedObjectReference(ref);
-    }
-
-    void writeClassObjectReference(ClassObjectReferenceImpl ref) {
-        writeObjectRef(ref.uniqueID());
-    }
-
     /**
      * Read method reference represented as vm specific byte sequence.
      */
@@ -486,138 +369,4 @@ public class PacketStream {
         return readID(gc.sizeofFrameRef);
     }
 
-    //    /**
-//     * Read a value, first byte describes type of value to read.
-//     */
-//    ValueImpl readValue() {
-//        byte typeKey = readByte();
-//        return readUntaggedValue(typeKey);
-//    }
-//
-//    ValueImpl readUntaggedValue(byte typeKey) {
-//        ValueImpl val = null;
-//
-//        if (isObjectTag(typeKey)) {
-//            val = vm.objectMirror(readObjectRef(), typeKey);
-//        } else {
-//            switch(typeKey) {
-//                case JDWP.Tag.BYTE:
-//                    val = new ByteValueImpl(vm, readByte());
-//                    break;
-//
-//                case JDWP.Tag.CHAR:
-//                    val = new CharValueImpl(vm, readChar());
-//                    break;
-//
-//                case JDWP.Tag.FLOAT:
-//                    val = new FloatValueImpl(vm, readFloat());
-//                    break;
-//
-//                case JDWP.Tag.DOUBLE:
-//                    val = new DoubleValueImpl(vm, readDouble());
-//                    break;
-//
-//                case JDWP.Tag.INT:
-//                    val = new IntegerValueImpl(vm, readInt());
-//                    break;
-//
-//                case JDWP.Tag.LONG:
-//                    val = new LongValueImpl(vm, readLong());
-//                    break;
-//
-//                case JDWP.Tag.SHORT:
-//                    val = new ShortValueImpl(vm, readShort());
-//                    break;
-//
-//                case JDWP.Tag.BOOLEAN:
-//                    val = new BooleanValueImpl(vm, readBoolean());
-//                    break;
-//
-//                case JDWP.Tag.VOID:
-//                    val = new VoidValueImpl(vm);
-//                    break;
-//            }
-//        }
-//        return val;
-//    }
-//
-//    /**
-//     * Read location represented as vm specific byte sequence.
-//     */
-//    Location readLocation() {
-//        byte tag = readByte();
-//        long classRef = readObjectRef();
-//        long methodRef = readMethodRef();
-//        long codeIndex = readLong();
-//        if (classRef != 0) {
-//            /* Valid location */
-//            ReferenceTypeImpl refType = vm.referenceType(classRef, tag);
-//            return new LocationImpl(vm, refType, methodRef, codeIndex);
-//        } else {
-//            /* Null location (example: uncaught exception) */
-//           return null;
-//        }
-//    }
-//
-    byte[] readByteArray(int length) {
-        byte[] array = new byte[length];
-        System.arraycopy(pkt.data, inCursor, array, 0, length);
-        inCursor += length;
-        return array;
-    }
-//
-//    List<Value> readArrayRegion() {
-//        byte typeKey = readByte();
-//        int length = readInt();
-//        List<Value> list = new ArrayList<Value>(length);
-//        boolean gettingObjects = isObjectTag(typeKey);
-//        for (int i = 0; i < length; i++) {
-//            /*
-//             * Each object comes back with a type key which might
-//             * identify a more specific type than the type key we
-//             * passed in, so we use it in the decodeValue call.
-//             * (For primitives, we just use the original one)
-//             */
-//            if (gettingObjects) {
-//                typeKey = readByte();
-//            }
-//            Value value = readUntaggedValue(typeKey);
-//            list.add(value);
-//        }
-//
-//        return list;
-//    }
-
-    void writeArrayRegion(List<ValueImpl> srcValues, byte typeTag) {
-        writeByte(typeTag);
-        writeInt(srcValues.size());
-        boolean withTags = isObjectTag(typeTag);
-        for (ValueImpl value : srcValues) {
-            if (withTags) {
-                writeValue(value);
-            }
-            else {
-                writeUntaggedValue(value);
-            }
-        }
-    }
-    //
-//    int skipBytes(int n) {
-//        inCursor += n;
-//        return n;
-//    }
-//
-//    byte command() {
-//        return (byte)pkt.cmd;
-//    }
-//
-    static boolean isObjectTag(byte tag) {
-        return (tag == JDWP.Tag.OBJECT) ||
-                (tag == JDWP.Tag.ARRAY) ||
-                (tag == JDWP.Tag.STRING) ||
-                (tag == JDWP.Tag.THREAD) ||
-                (tag == JDWP.Tag.THREAD_GROUP) ||
-                (tag == JDWP.Tag.CLASS_LOADER) ||
-                (tag == JDWP.Tag.CLASS_OBJECT);
-    }
 }

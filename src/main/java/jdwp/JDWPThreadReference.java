@@ -25,20 +25,14 @@
 
 package jdwp;
 
-import com.sun.jdi.IncompatibleThreadStateException;
 import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIFrame;
 import gdb.mi.service.command.output.MIResultRecord;
 import gdb.mi.service.command.output.MIStackListFramesInfo;
 import gdb.mi.service.command.output.MIThread;
 import gdb.mi.service.command.output.MIThreadInfoInfo;
-import jdwp.jdi.MonitorInfoImpl;
-import jdwp.jdi.ObjectReferenceImpl;
-import jdwp.jdi.StackFrameImpl;
-import jdwp.jdi.ThreadReferenceImpl;
 import jdwp.model.FrameInfo;
 
-import java.util.List;
 import java.util.ArrayList;
 
 public class JDWPThreadReference {
@@ -73,13 +67,10 @@ public class JDWPThreadReference {
 
                 long threadId = command.readObjectRef();
                 JDWP.currentThreadID = threadId; //TODO AAV hack!
-                System.out.println("Thread id is:" + threadId);
                 MIThread[] allThreads = reply.getThreadList();
                 for(MIThread thread: allThreads){
                     long id = Long.parseLong(thread.getThreadId());
-                    System.out.println("id is:" + id);
                     if (id == threadId) {
-                        System.out.println("Writing thread name:" + thread.getName());
                         answer.writeString(thread.getName());
                     }
                 }
@@ -139,7 +130,7 @@ public class JDWPThreadReference {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                // try {
-                    System.out.println("Thread - Queueing MI command to resume application " +  command.readThreadReference().uniqueID());
+                    System.out.println("Thread - Queueing MI command to resume application " +  command.readObjectRef());
                     MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
                     int tokenID = JDWP.getNewTokenId();
                     gc.queueCommand(tokenID, cmd);
@@ -164,12 +155,8 @@ public class JDWPThreadReference {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeInt(2);
-                answer.writeInt(1);
-//                ThreadReferenceImpl thread = command.readThreadReference();
-//                answer.writeInt(thread.status());
-//                answer.writeInt(thread.suspendCount());
-//                System.out.println("In Thread STATUS: " + thread.status() + " - suspendCount: " + thread.suspendCount());
+                answer.writeInt(JDWP.ThreadStatus.SLEEPING);
+                answer.writeInt(JDWP.SuspendStatus.SUSPEND_STATUS_SUSPENDED);
             }
         }
 
@@ -180,40 +167,7 @@ public class JDWPThreadReference {
             static final int COMMAND = 5;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-//                String threadId = command.readObjectRef() + "";
-//                System.out.println("Queueing MI command to get thread groups");
-//                MICommand cmd = gc.getCommandFactory().createMIMIListThreadGroups();
-//                int tokenID = JDWP.getNewTokenId();
-//                gc.queueCommand(tokenID, cmd);
-//
-//                MIListThreadGroupsInfo reply = (MIListThreadGroupsInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-//                if (reply.getMIOutput().getMIResultRecord().getResultClass() == MIResultRecord.ERROR) {
-//                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-//                }
-//                MIListThreadGroupsInfo.IThreadGroupInfo[] groupList = reply.getGroupList();
-//                long id = 0;
-//                for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
-//                   MIListThreadGroupsInfo.ThreadGroupInfo groupInfo = (MIListThreadGroupsInfo.ThreadGroupInfo) group;
-//                   if (groupInfo != null) {
-//                       MIThread[] threads = groupInfo.getThreads();
-//                       if (threads != null) {
-//                           for (MIThread thread : threads) {
-//                               if (thread.getThreadId().equals(threadId)) {
-//                                   id = JDWPThreadGroupReference.threadGroupByName.get(group.getName());
-//                               }
-//                           }
-//                       }
-//                   }
-//
-//                }
-//                System.out.println("Writing group id: " + id);
-//                answer.writeObjectRef(id);
-
                 answer.writeObjectRef(JDWPThreadGroupReference.threadGroupId);
-
-//                ThreadReferenceImpl thread = command.readThreadReference();
-//                answer.writeObjectRef(thread.threadGroup().uniqueID());
-
             }
         }
 
@@ -226,15 +180,6 @@ public class JDWPThreadReference {
          */
         static class Frames implements Command  {
             static final int COMMAND = 6;
-
-            static class Frame {
-
-                public static void write(StackFrameImpl frame, GDBControl gc, PacketStream answer) {
-                    answer.writeFrameRef(frame.id());
-                    answer.writeLocation(frame.location());
-                }
-            }
-
 
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
@@ -296,19 +241,7 @@ public class JDWPThreadReference {
             static final int COMMAND = 8;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                List<ObjectReferenceImpl> ownedMonitors;
-                try {
-                    ownedMonitors = thread.ownedMonitors();
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
-                    return;
-                }
-                answer.writeInt(ownedMonitors.size());
-                for (ObjectReferenceImpl ownedMonitor : ownedMonitors) {
-                    answer.writeTaggedObjectReference(ownedMonitor);
-                }
-
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -326,12 +259,7 @@ public class JDWPThreadReference {
             static final int COMMAND = 9;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                try {
-                    answer.writeTaggedObjectReference(thread.currentContendedMonitor());
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -385,26 +313,8 @@ public class JDWPThreadReference {
         static class OwnedMonitorsStackDepthInfo implements Command  {
             static final int COMMAND = 13;
 
-            static class monitor {
-
-                public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ThreadReferenceImpl thread = command.readThreadReference();
-                List<MonitorInfoImpl> list;
-                try {
-                    list = thread.ownedMonitorsAndFrames();
-                } catch (IncompatibleThreadStateException e) {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_THREAD;
-                    return;
-                }
-                answer.writeInt(list.size());
-                for (MonitorInfoImpl o : list) {
-                    answer.writeTaggedObjectReference(o.monitor());
-                    answer.writeInt(o.stackDepth());
-                }
+                JDWP.notImplemented(answer);
             }
         }
 

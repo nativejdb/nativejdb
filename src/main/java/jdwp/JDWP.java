@@ -25,11 +25,13 @@
 
 package jdwp;
 
-import gdb.mi.service.command.output.*;
-import jdwp.jdi.*;
+import gdb.mi.service.command.output.MIBreakInsertInfo;
+import gdb.mi.service.command.output.MIInfo;
 import jdwp.model.MethodLocation;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Java(tm) Debug Wire Protocol
@@ -50,8 +52,6 @@ public class JDWP {
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
 
     static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing
-
-    static ArrayList<ReferenceTypeImpl> stringClasses = new ArrayList<>();  // get java/lang/String class for asm variable
 
     static long currentThreadID = 0;
     /**

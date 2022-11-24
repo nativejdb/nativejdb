@@ -107,7 +107,6 @@ public class JDWPStackFrame {
                                         tag = JDWP.Tag.STRING;
                                     }
                                     String name = variable != null ? variable.getName() : "<slot not found>";
-                                    System.out.println("Writing name=" + name + " value=" + value);
                                     if (name.equals(JDWP.ASM_VARIABLE_NAME)) {
                                         answer.writeByte(JDWP.Tag.STRING);
                                         answer.writeObjectRef(JDWP.ASM_ID);
