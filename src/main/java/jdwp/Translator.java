@@ -419,16 +419,19 @@ public class Translator {
 		return true;
 	}
 
-	public static byte arrayClassName2Tag(ClassName className) {
-		var elementClassName = ClassName.fromJNI(className.getJNI().substring(1));
-		var jni = elementClassName.getJNI();
+	public static byte jni2Tag(String jni) {
 		var type = jni.charAt(0);
 		if (type == JDWP.Tag.OBJECT) {
-			if (String.class.getName().equals(elementClassName.getPrintable())) {
+			if (JDWP.JAVA_LANG_STRING_SIGNATURE.equals(jni)) {
 				return JDWP.Tag.STRING;
 			}
 		}
 		return (byte) type;
+	}
+
+	public static byte arrayClassName2Tag(ClassName className) {
+		var elementClassName = ClassName.fromJNI(className.getJNI().substring(1));
+		return jni2Tag(elementClassName.getJNI());
 	}
 
 	public static long decodeAddress(String address) {

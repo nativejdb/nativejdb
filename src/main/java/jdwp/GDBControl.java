@@ -236,6 +236,18 @@ public class GDBControl extends AbstractMIControl {
         }
     }
 
+    public String getFieldValue(long id, String fieldName) {
+        var className = getClassName(id);
+        if (className != null) {
+            var reply = getExpression(className.getPrintable(), "->" + fieldName, id,
+                    false);
+            if (!reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                return reply.getValue();
+            }
+        }
+        return null;
+    }
+
     public String getStringValue(long id) {
         var content = getValue("java.lang.String", "->value->data", "->value->len",
                 id, false);

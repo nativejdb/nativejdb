@@ -4,6 +4,8 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.Range;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
@@ -65,7 +67,11 @@ public class TypeEnricher {
     }
 
     private void processType(ReferenceTypes types, TypeDeclaration<?> type, Queue<Path> queue) {
-        var className = ClassName.fromGDB(type.getFullyQualifiedName().get());
+        var FQCN = type.isNestedType()?type.findAncestor(TypeDeclaration.class)
+                .map(td -> (TypeDeclaration<?>) td)
+                .flatMap(td -> td.getFullyQualifiedName())
+                .map(fqn -> fqn + '$' + type.getNameAsString()):type.getFullyQualifiedName();
+        var className = ClassName.fromGDB(FQCN.get());
         ReferenceType referenceType = types.findByClassName(className);
         if (referenceType == null) {
             var path = type.findCompilationUnit().flatMap(CompilationUnit::getStorage)
@@ -86,9 +92,16 @@ public class TypeEnricher {
 
             });
         });
-        for(var method : type.findAll(MethodDeclaration.class)) {
+        for(var method : type.findAll(MethodDeclaration.class, Node.TreeTraversal.DIRECT_CHILDREN)) {
             processMethod(referenceType, method);
         }
+        for(var field : type.findAll(FieldDeclaration.class, Node.TreeTraversal.DIRECT_CHILDREN)) {
+            processField(referenceType, field);
+        }
+        for(var nested : type.findAll(TypeDeclaration.class, Node.TreeTraversal.DIRECT_CHILDREN)) {
+            processType(types, nested, queue);
+        }
+        referenceType.setEnriched(true);
     }
 
     private void processMethod(ReferenceType referenceType, MethodDeclaration method) {
@@ -155,6 +168,59 @@ public class TypeEnricher {
         return new MethodSignature(resolvedMethod.getName(), resolvedType2String(resolvedMethod.getReturnType()),
                 parameterTypes, !resolvedMethod.isStatic());
     }
+
+    private void processField(ReferenceType referenceType, FieldDeclaration field) {
+        var modifier = getModifier(field.getModifiers());
+        for(var m : field.getVariables()) {
+            referenceType.addField(new FieldInfo(m.getName().getIdentifier(), getJNIType(m.getType().resolve()),
+                    modifier));
+        }
+    }
+
+    private int getModifier(NodeList<com.github.javaparser.ast.Modifier> modifiers) {
+        int modifier = 0;
+        for(var mod : modifiers) {
+            switch (mod.getKeyword()) {
+                case FINAL:
+                    modifier |= Modifier.FINAL;
+                    break;
+                case NATIVE:
+                    modifier |= Modifier.NATIVE;
+                    break;
+                case PUBLIC:
+                    modifier |= Modifier.PUBLIC;
+                    break;
+                case STATIC:
+                    modifier |= Modifier.STATIC;
+                    break;
+                case ABSTRACT:
+                    modifier |= Modifier.ABSTRACT;
+                    break;
+                case PRIVATE:
+                    modifier |= Modifier.PRIVATE;
+                    break;
+                case PROTECTED:
+                    modifier |= Modifier.PROTECTED;
+                    break;
+                case STRICTFP:
+                    modifier |= Modifier.STRICT;
+                    break;
+                case SYNCHRONIZED:
+                    modifier |= Modifier.SYNCHRONIZED;
+                    break;
+                case TRANSIENT:
+                    modifier |= Modifier.TRANSIENT;
+                    break;
+                case VOLATILE:
+                    modifier |= Modifier.VOLATILE;
+                    break;
+                default:
+                    break;
+            }
+        }
+        return modifier;
+    }
+
 
     private void getJNIType(ResolvedType type, StringBuilder builder) {
         if (type.isArray()) {

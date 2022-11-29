@@ -90,6 +90,26 @@ public class JDWPReferenceType {
             }
         }
 
+        static void processFields(GDBControl gc, PacketStream answer, PacketStream command, boolean generic) {
+            var referenceType = gc.getReferenceTypes().findbyId(command.readObjectRef());
+            if (referenceType != null) {
+                var fields = referenceType.getFields();
+                answer.writeInt(fields.size());
+                for(var field : fields) {
+                    answer.writeObjectRef(field.getUniqueID());
+                    answer.writeString(field.getName());
+                    answer.writeString(field.getJni());
+                    if (generic) {
+                        answer.writeString("");
+                    }
+                    answer.writeInt(field.getModifier());
+                }
+            } else {
+                answer.setErrorCode((short) JDWP.Error.INVALID_OBJECT);
+            }
+
+        }
+
         /**
          * Returns information for each field in a reference type.
          * Inherited fields are not included.
@@ -101,7 +121,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                JDWP.notImplemented(answer);
+                processFields(gc, answer, command, false);
             }
         }
 
@@ -142,7 +162,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 6;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                JDWP.notImplemented(answer);
+                answer.writeInt(0);
             }
         }
 
@@ -273,7 +293,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 14;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeInt(0); //TODO: implement fields retrieval
+                processFields(gc, answer, command, true);
             }
         }
 

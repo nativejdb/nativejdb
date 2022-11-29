@@ -60,12 +60,14 @@ public class JDWP {
      */
     static int fTokenIdCounter = 0;
 
+    public static final String JAVA_LANG_STRING_SIGNATURE = "Ljava/lang/String;";
+
     /*
      Special id for special assembly code pseudo variable. As addresses are word aligned, choosing an odd value will
      ensure there will be no conflict with address values returned by GDB.
      */
     public static final String ASM_VARIABLE_NAME = "$asm";
-    public static final String ASM_VARIABLE_SIGNATURE = "Ljava/lang/String;";
+    public static final String ASM_VARIABLE_SIGNATURE = JAVA_LANG_STRING_SIGNATURE;
     static long ASM_ID = 3;
 
     // A variable to be used for local variables that are optimized out by gdb
@@ -83,6 +85,44 @@ public class JDWP {
             count = fTokenIdCounter = 1;
         }
         return count;
+    }
+
+    public static void writeValue(PacketStream answer, byte tag, String value) {
+        answer.writeByte(tag); // get value via GDB print cmd: print *print->value
+        switch (tag) {
+            case Tag.ARRAY:
+                answer.writeObjectRef(Translator.decodeAddress(value));
+                break;
+            case Tag.BYTE:
+                String[] split = value.split("\\s+");
+                answer.writeByte(Byte.parseByte(split[0]));
+                break;
+            case Tag.CHAR:
+                answer.writeChar(value.charAt(0));
+                break;
+            case Tag.FLOAT:
+                answer.writeFloat(Float.parseFloat(value));
+                break;
+            case Tag.DOUBLE:
+                answer.writeDouble(Double.parseDouble(value));
+                break;
+            case Tag.INT:
+                answer.writeInt(Integer.parseInt(value));
+                break;
+            case Tag.LONG:
+                answer.writeLong(Long.parseLong(value));
+                break;
+            case Tag.SHORT:
+                answer.writeShort(Short.parseShort(value));
+                break;
+            case Tag.BOOLEAN:
+                answer.writeBoolean(Boolean.parseBoolean(value));
+                break;
+            case Tag.STRING:
+            case Tag.OBJECT:
+                answer.writeObjectRef(Translator.decodeAddress(value));
+                break;
+        }
     }
 
     interface Error {

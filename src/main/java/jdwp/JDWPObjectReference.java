@@ -78,7 +78,23 @@ public class JDWPObjectReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                JDWP.notImplemented(answer);
+                var objectID = command.readObjectRef();
+                var nbField = command.readInt();
+                var className = gc.getClassName(objectID);
+                if (className != null) {
+                    var referenceType = gc.getReferenceTypes().findByClassName(className);
+                    if (referenceType != null) {
+                        answer.writeInt(nbField);
+                        for(var i=0; i < nbField;++i) {
+                            var field = referenceType.findFieldByID(command.readObjectRef());
+                            var tag = field !=null ? Translator.jni2Tag(field.getJni()):JDWP.Tag.OBJECT;
+                            var val = field != null ? gc.getFieldValue(objectID, field.getName()):"";
+                            JDWP.writeValue(answer, tag, val);
+                        }
+                    } else {
+                        answer.setErrorCode((short) JDWP.Error.INVALID_OBJECT);
+                    }
+                }
             }
         }
 

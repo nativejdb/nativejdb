@@ -62,7 +62,7 @@ public class JDWPArrayReference  {
                     for(int i=firstIndex; i < length;++i) {
                         var item = gc.getArrayMember(objectID, i);
                         if (item != null) {
-                            JDWPStackFrame.writeValue(answer, tag, item);
+                            JDWP.writeValue(answer, tag, item);
                         } else {
                             answer.setErrorCode((short) JDWP.Error.INTERNAL);
                         }

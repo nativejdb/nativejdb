@@ -12,6 +12,8 @@ public class ReferenceType {
     private final Map<Long, MethodInfo> methods = new HashMap<>();
     private final Map<MethodSignature, MethodInfo> signatureToMethod = new HashMap<>();
 
+    private Map<Long, FieldInfo> fields = new HashMap<>();
+
     private final Long uniqueID;
 
     private static Long counter = 0L;
@@ -111,10 +113,13 @@ public class ReferenceType {
         return getReferenceTypes().findByClassName(superClassName);
     }
 
+    public void setEnriched(boolean enriched) {
+        this.enriched = enriched;
+    }
+
     public void ensureEnriched() {
         if (!enriched) {
             getReferenceTypes().getTypeEnricher().parse(this);
-            enriched = true;
         }
     }
 
@@ -122,4 +127,15 @@ public class ReferenceType {
         return type;
     }
 
+    public void addField(FieldInfo field) {
+        fields.put(field.getUniqueID(), field);
+    }
+
+    public Collection<FieldInfo> getFields() {
+        return fields.values();
+    }
+
+    public FieldInfo findFieldByID(long id) {
+        return fields.get(id);
+    }
 }
