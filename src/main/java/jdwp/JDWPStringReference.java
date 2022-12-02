@@ -29,8 +29,6 @@ import gdb.mi.service.command.commands.MICommand;
 import gdb.mi.service.command.output.MIDataDisassembleInfo;
 import gdb.mi.service.command.output.MIInstruction;
 import gdb.mi.service.command.output.MIResultRecord;
-import jdwp.jdi.ObjectReferenceImpl;
-import jdwp.jdi.StringReferenceImpl;
 
 public class JDWPStringReference {
     static class StringReference {
@@ -45,9 +43,9 @@ public class JDWPStringReference {
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 long uniqueID = command.readObjectRef();
-                if (uniqueID == JDWP.asmIdCounter) {
+                if (uniqueID == JDWP.ASM_ID) {
                     StringBuilder instructions = new StringBuilder();
-                    int lines = Integer.parseInt(System.getenv("ASM_LINE"));
+                    int lines = gc.getAssemblyLineNumber();
                     String endLine = "$pc + " + lines * 4;
 
                     // Queue GDB to get instructions
@@ -69,15 +67,14 @@ public class JDWPStringReference {
                         instructions.append("\n");
                     }
                     answer.writeString(instructions.toString());
-                } else if (uniqueID == JDWP.optimizedVarID) {
+                } else if (uniqueID == JDWP.OPTIMIZED_OUT_ID) {
                     answer.writeString("<optimized out>");
                 } else {
-                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(uniqueID);
-                    if (objectReference instanceof StringReferenceImpl) {
-                        answer.writeString(((StringReferenceImpl) objectReference).value());
-                    }
-                    else {
-                        answer.pkt.errorCode = JDWP.Error.INVALID_STRING;
+                    var content = gc.getStringValue(uniqueID);
+                    if (content != null) {
+                        answer.writeString(content);
+                    } else {
+                        answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
                     }
                 }
             }

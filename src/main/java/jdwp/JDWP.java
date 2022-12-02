@@ -25,10 +25,13 @@
 
 package jdwp;
 
-import gdb.mi.service.command.output.*;
-import jdwp.jdi.*;
+import gdb.mi.service.command.output.MIBreakInsertInfo;
+import gdb.mi.service.command.output.MIInfo;
+import jdwp.model.MethodLocation;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Java(tm) Debug Wire Protocol
@@ -39,21 +42,16 @@ public class JDWP {
      * The default JDI request timeout when no preference is set.
      */
     public static final int DEF_REQUEST_TIMEOUT = 300000;
+    public static final String THIS_VARIABLE = "this";
 
     /**
      * Global maps to store breakpoint information for both async (by bkpt#) and sync (by requestID) processing
      */
     static Map<Integer, MIBreakInsertInfo> bkptsByBreakpointNumber = new HashMap<>(); //for async events processing
-    static Map<Integer, LocationImpl> bkptsLocation = new HashMap<>(); //for async events processing
+    static Map<Integer, MethodLocation> bkptsLocation = new HashMap<>(); //for async events processing
     static Map<Integer, MIBreakInsertInfo> bkptsByRequestID = new HashMap<>(); //for sync event requests
 
     static Map<Long, MIInfo> stepByThreadID = new HashMap<>(); //for async events processing
-
-    static Map<Integer, MIFrame> framesById = new HashMap<>();
-
-    static Map<Integer, LocalVariableImpl> localsByID = new HashMap<>();
-
-    static ArrayList<ReferenceTypeImpl> stringClasses = new ArrayList<>();  // get java/lang/String class for asm variable
 
     static long currentThreadID = 0;
     /**
@@ -61,10 +59,24 @@ public class JDWP {
      * Unless the value wraps around which is unlikely.
      */
     static int fTokenIdCounter = 0;
-    static long asmIdCounter = 0;
+
+    public static final String JAVA_LANG_STRING_SIGNATURE = "Ljava/lang/String;";
+
+    /*
+     Special id for special assembly code pseudo variable. As addresses are word aligned, choosing an odd value will
+     ensure there will be no conflict with address values returned by GDB.
+     */
+    public static final String ASM_VARIABLE_NAME = "$asm";
+    public static final String ASM_VARIABLE_SIGNATURE = JAVA_LANG_STRING_SIGNATURE;
+    static long ASM_ID = 3;
 
     // A variable to be used for local variables that are optimized out by gdb
-    final static long optimizedVarID = -Long.MAX_VALUE;
+    public static final String OPTIMIZED_OUT = "<optimized out>";
+    final static long OPTIMIZED_OUT_ID = ASM_ID + 2;
+
+    public static final String VALUE_NOT_FOUND = "<value not found>";
+
+    final static long VALUE_NOT_FOUND_ID = OPTIMIZED_OUT_ID + 2;
 
     static int getNewTokenId() {
         int count = ++fTokenIdCounter;
@@ -75,13 +87,42 @@ public class JDWP {
         return count;
     }
 
-    static long getNewAsmId() {
-        long count = --asmIdCounter;
-        // If we ever wrap around.
-        if (count == optimizedVarID) {
-            count = asmIdCounter = -1;
+    public static void writeValue(PacketStream answer, byte tag, String value) {
+        answer.writeByte(tag); // get value via GDB print cmd: print *print->value
+        switch (tag) {
+            case Tag.ARRAY:
+                answer.writeObjectRef(Translator.decodeAddress(value));
+                break;
+            case Tag.BYTE:
+                String[] split = value.split("\\s+");
+                answer.writeByte(Byte.parseByte(split[0]));
+                break;
+            case Tag.CHAR:
+                answer.writeChar(value.charAt(0));
+                break;
+            case Tag.FLOAT:
+                answer.writeFloat(Float.parseFloat(value));
+                break;
+            case Tag.DOUBLE:
+                answer.writeDouble(Double.parseDouble(value));
+                break;
+            case Tag.INT:
+                answer.writeInt(Integer.parseInt(value));
+                break;
+            case Tag.LONG:
+                answer.writeLong(Long.parseLong(value));
+                break;
+            case Tag.SHORT:
+                answer.writeShort(Short.parseShort(value));
+                break;
+            case Tag.BOOLEAN:
+                answer.writeBoolean(Boolean.parseBoolean(value));
+                break;
+            case Tag.STRING:
+            case Tag.OBJECT:
+                answer.writeObjectRef(Translator.decodeAddress(value));
+                break;
         }
-        return count;
     }
 
     interface Error {
@@ -185,7 +226,7 @@ public class JDWP {
         int SUSPEND_STATUS_SUSPENDED = 0x1;
     }
 
-    interface ClassStatus {
+    public interface ClassStatus {
         int VERIFIED = 1;
         int PREPARED = 2;
         int INITIALIZED = 4;
@@ -240,6 +281,21 @@ public class JDWP {
     interface InvokeOptions {
         int INVOKE_SINGLE_THREADED = 0x01;
         int INVOKE_NONVIRTUAL = 0x02;
+    }
+
+    interface ModKind {
+        int Count = 1;
+        int Conditional = 2;
+        int ThreadOnly = 3;
+        int ClassOnly = 4;
+        int ClassMatch = 5;
+        int ClassExclude = 6;
+        int LocationOnly = 7;
+        int ExceptionOnly = 8;
+        int FieldOnly = 9;
+        int Step = 10;
+        int InstanceOnly = 11;
+        int SourceNameMatch = 12;
     }
 
     static void notImplemented(PacketStream answer) {

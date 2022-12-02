@@ -27,16 +27,23 @@ package jdwp;
 
 import com.sun.jdi.connect.spi.Connection;
 import gdb.mi.service.command.AbstractMIControl;
-import jdwp.jdi.VirtualMachineImpl;
+import gdb.mi.service.command.commands.MICommand;
+import gdb.mi.service.command.output.MIDataEvaluateExpressionInfo;
+import gdb.mi.service.command.output.MIResultRecord;
+import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo;
+import jdwp.model.ClassName;
+import jdwp.model.ReferenceTypes;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.file.Paths;
 
 public class GDBControl extends AbstractMIControl {
     private boolean initialized = false;
     private final Connection myConnection;
-    public VirtualMachineImpl vm;
-
-
     int sizeofFieldRef = 8;
     int sizeofMethodRef = 8;
     int sizeofObjectRef = 8;
@@ -44,18 +51,21 @@ public class GDBControl extends AbstractMIControl {
     int sizeofFrameRef = 8;
 
     OutputStream gdbInput = null;
-    InputStream  gdbOutput = null;
+    InputStream gdbOutput = null;
     InputStream  gdbError = null;
     BufferedReader outputReader = null;
 
-    public GDBControl(Connection myConnection, VirtualMachineImpl vm)  {
+    private ReferenceTypes referenceTypes;
+    private boolean steps = false;
+
+    public GDBControl(Connection myConnection)  {
         super(); //AbstractMIControl sets up command factory
         this.myConnection = myConnection;
-        this.vm = vm;
 
         try {
             String exec = System.getProperty("native.exec");
             String src = System.getProperty("native.src");
+            referenceTypes = new ReferenceTypes(Paths.get(src));
             ProcessBuilder builder = new ProcessBuilder("gdb", "--interpreter=mi", exec);
             builder.redirectErrorStream(true); // so we can ignore the error stream
 
@@ -98,6 +108,16 @@ public class GDBControl extends AbstractMIControl {
 
             }
         }
+        loadSymbols();
+    }
+
+    private void loadSymbols() {
+        MICommand<MiSymbolInfoFunctionsInfo> cmd = getCommandFactory().createMiSymbolInfoFunctions("", "::", 0, false);
+        int token = JDWP.getNewTokenId();
+        queueCommand(token, cmd);
+        MiSymbolInfoFunctionsInfo response = (MiSymbolInfoFunctionsInfo) getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+        Translator.translateReferenceTypes(referenceTypes, response);
+
     }
 
     void flush() {
@@ -138,5 +158,114 @@ public class GDBControl extends AbstractMIControl {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public ReferenceTypes getReferenceTypes() {
+        return referenceTypes;
+    }
+
+    public void setSteps(boolean steps) {
+        this.steps = steps;
+    }
+
+    public boolean hasSteps() {
+        return steps;
+    }
+
+    private MIDataEvaluateExpressionInfo getExpression(String baseType, String suffix, long id, boolean compressed) {
+        var type = compressed ? "_z_." + baseType : baseType;
+        var dataCmd = getCommandFactory()
+                .createMIDataEvaluationExpression("(('" + type + "'*)(" + id + "))" + suffix);
+        var token = JDWP.getNewTokenId();
+        queueCommand(token, dataCmd);
+        return (MIDataEvaluateExpressionInfo) getResponse(token, JDWP.DEF_REQUEST_TIMEOUT);
+    }
+
+    private String getValue(String baseType, String dataSuffix, String lenSuffix, long id, boolean compressed) {
+        var dataReply = getExpression(baseType, dataSuffix,
+                id, compressed);
+        if (!dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            var lenReply = getExpression(baseType, lenSuffix, id, compressed);
+            if (!dataReply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                return dataReply.getString().substring(0, Integer.parseInt(lenReply.getValue()));
+            }
+        }
+        return null;
+    }
+
+    private ClassName getClassName(long id, boolean compressed) {
+        var className = getValue("java.lang.Object", "->hub->name->value->data",
+                "->hub->name->value->len", id, compressed);
+        return className!=null?ClassName.fromHub(className):null;
+    }
+
+    /**
+     * Return the classname for a specific address. As the address maybe compressed, first try as an uncompressed one
+     * and in case of failure, try as a compressed address.
+     *
+     * @param id the object id (ie address)
+     * @return the ClassName object or null
+     */
+    public ClassName getClassName(long id) {
+        var className = getClassName(id, false);
+        return className!=null?className:getClassName(id, true);
+    }
+
+    public int getArrayLength(long id) {
+        var reply = getExpression("java.lang.Object[]", "->len", id, false);
+        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            reply = getExpression("java.lang.Object[]", "->len", id, true);
+        }
+        if (!reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+          return Integer.parseInt(reply.getValue());
+        }
+        return 0;
+    }
+
+    public String getArrayMember(long id, int index) {
+        var reply = getExpression("java.lang.Object[]", "->data[" + index + "]",
+                id, false);
+        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            reply = getExpression("java.lang.Object[]", "->data[" + index + "]",
+                    id, true);
+        }
+        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+            return null;
+        } else {
+            return reply.getValue();
+        }
+    }
+
+    public String getFieldValue(long id, String fieldName) {
+        var className = getClassName(id);
+        if (className != null) {
+            var reply = getExpression(className.getPrintable(), "->" + fieldName, id,
+                    false);
+            if (!reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                return reply.getValue();
+            }
+        }
+        return null;
+    }
+
+    public String getStringValue(long id) {
+        var content = getValue("java.lang.String", "->value->data", "->value->len",
+                id, false);
+        if (content == null) {
+            content = getValue("java.lang.String", "->value->data", "->value->len", id,
+                    true);
+        }
+        return content;
+    }
+
+    public int getAssemblyLineNumber() {
+        var lines = 10;
+        var asmLines = System.getenv("ASM_LINE");
+        if (asmLines != null) {
+            try {
+                lines = Integer.parseInt(asmLines);
+            } catch (NumberFormatException e) {}
+        }
+        return lines;
     }
 }

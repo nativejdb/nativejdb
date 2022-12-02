@@ -97,7 +97,7 @@ make nativejdb CLASSNAME={nameofjarfile} NATIVEEXEC=apps/{nameofnativeexec} NATI
 
 For a Quarkus application that has its executable and debug sources in [/apps](./apps) directory (like `getting-started-1.0.0-SNAPSHOT-runner`), pass the following input args to make target, along with setting `ISQUARKUS` arg to `true`:
 ```
-make nativejdb CLASSNAME=getting-started-1.0.0-SNAPSHOT-runner ISQUARKUS=true
+make nativejdb CLASSNAME=getting-started-1.0.0-SNAPSHOT-runner
 ```
 
 This will start `nativejdb` in a running Docker container.
@@ -113,7 +113,6 @@ On IntelliJ, from the `nativeJDBExamples` open project: Run ---> Edit Configurat
 
 ## Current limitations:
 
- - Short running programs need a thread sleep (so program does not end before NativeJDB has time to start a scaffolding VM and attach to it)
  - Hot Code Replace not possible
  - Known issue: breakpoints in loops work only once (related to [this](https://github.com/oracle/graal/issues/4379) graalvm issue)
  - Known issue: step operation sometimes continues instead

@@ -14,16 +14,16 @@ package jdwp;
 
 import gdb.mi.service.command.events.MIEvent;
 import gdb.mi.service.command.output.MIResult;
-import jdwp.jdi.ReferenceTypeImpl;
+import jdwp.model.ReferenceType;
 
 public class ClassPrepareEvent extends MIEvent {
 
 	int requestID;
-	ReferenceTypeImpl referenceType;
+	ReferenceType referenceType;
 	byte suspendPolicy;
 
 
-	public ClassPrepareEvent(int token, MIResult[] results, int requestID, byte suspendPolicy, ReferenceTypeImpl referenceType) {
+	public ClassPrepareEvent(int token, MIResult[] results, int requestID, byte suspendPolicy, ReferenceType referenceType) {
 		super(token, results);
 		this.requestID = requestID;
 		this.suspendPolicy = suspendPolicy;

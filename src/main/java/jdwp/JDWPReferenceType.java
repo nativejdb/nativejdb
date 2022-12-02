@@ -25,13 +25,7 @@
 
 package jdwp;
 
-import com.sun.jdi.AbsentInformationException;
-import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.MIResultRecord;
-import gdb.mi.service.command.output.MiSymbolInfoVariablesInfo;
-import jdwp.jdi.*;
-
-import java.util.List;
+import java.lang.reflect.Modifier;
 
 public class JDWPReferenceType {
     static class ReferenceType {
@@ -52,8 +46,13 @@ public class JDWPReferenceType {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                answer.writeString(referenceType.signature());
+                var referenceTypeID = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
+                if (referenceType != null) {
+                    answer.writeString(referenceType.getClassName().getJNI());
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                }
             }
         }
 
@@ -66,8 +65,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                answer.writeClassLoaderReference(referenceType.classLoader());
+                answer.writeObjectRef(0L);
             }
         }
 
@@ -82,9 +80,34 @@ public class JDWPReferenceType {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                answer.writeInt(referenceType.modifiers());
+                var referenceTypeID = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
+                if (referenceType != null) {
+                    answer.writeInt(Modifier.classModifiers());
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                }
             }
+        }
+
+        static void processFields(GDBControl gc, PacketStream answer, PacketStream command, boolean generic) {
+            var referenceType = gc.getReferenceTypes().findbyId(command.readObjectRef());
+            if (referenceType != null) {
+                var fields = referenceType.getFields();
+                answer.writeInt(fields.size());
+                for(var field : fields) {
+                    answer.writeObjectRef(field.getUniqueID());
+                    answer.writeString(field.getName());
+                    answer.writeString(field.getJni());
+                    if (generic) {
+                        answer.writeString("");
+                    }
+                    answer.writeInt(field.getModifier());
+                }
+            } else {
+                answer.setErrorCode((short) JDWP.Error.INVALID_OBJECT);
+            }
+
         }
 
         /**
@@ -97,23 +120,8 @@ public class JDWPReferenceType {
         static class Fields implements Command  {
             static final int COMMAND = 4;
 
-            static class FieldInfo {
-
-                public static void write(FieldImpl field, GDBControl gc, PacketStream answer) {
-                    answer.writeFieldRef(field.uniqueID());
-                    answer.writeString(field.name());
-                    answer.writeString(field.signature());
-                    answer.writeInt(field.modifiers());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<FieldImpl> fields = type.fields();
-                answer.writeInt(fields.size());
-                for (FieldImpl field : fields) {
-                    FieldInfo.write(field, gc, answer);
-                }
+                processFields(gc, answer, command, false);
             }
         }
 
@@ -128,22 +136,17 @@ public class JDWPReferenceType {
         static class Methods implements Command  {
             static final int COMMAND = 5;
 
-            static class MethodInfo {
-
-                public static void write(MethodImpl method, GDBControl gc, PacketStream answer) {
-                    answer.writeMethodRef(method.uniqueID());
-                    answer.writeString(method.name());
-                    answer.writeString(method.signature());
-                    answer.writeInt(method.modifiers());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<MethodImpl> methods = type.methods();
-                answer.writeInt(methods.size());
-                for (MethodImpl method : methods) {
-                    MethodInfo.write(method, gc, answer);
+                long id = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(id);
+                if (referenceType == null) {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                } else {
+                    var methods = referenceType.getMethods();
+                    answer.writeInt(methods.size());
+                    for (var method : methods) {
+                        method.write(answer, false);
+                    }
                 }
             }
         }
@@ -159,54 +162,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 6;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-            /*
-               -symbol-info-variables [--include-nondebug] (Only gives us global field names - no values. Maybe contained in 1.'s output already)
-                        [--type type_regexp]
-                        [--name name_regexp]
-                        [--max-results limit]
-                    Return a list containing the names and types for all global variables taken from the debug information. The variables are grouped by source file, and shown with the line number on which each variable is defined.
-             */
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                int size = command.readInt();
-
-                // -symbol-info-variables --name HelloField::
-                String className = System.getProperty("program.class");
-                System.out.println("Queueing MI command to list global variables (only names) for "+ className);
-                MICommand cmd = gc.getCommandFactory().createMiSymbolInfoVariables("", className+"::", 0, false);
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MiSymbolInfoVariablesInfo replyloc = (MiSymbolInfoVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.INTERNAL;
-                }
-
-                MiSymbolInfoVariablesInfo.SymbolVariableInfo[] files = replyloc.getSymbolVariables();
-                for ( MiSymbolInfoVariablesInfo.SymbolVariableInfo file: files) { // usually only one file in the array due to className filter for GDB command
-                        MiSymbolInfoVariablesInfo.Symbols[] vals = file.getSymbols();
-                        answer.writeInt(size);
-                        for (int i = 0; i < size; i++) {
-                            FieldImpl field = referenceType.fieldById(command.readFieldRef());
-                            ValueImpl value = referenceType.getValue(field);
-                            MiSymbolInfoVariablesInfo.Symbols val = containsInVMFields(vals, field.name());
-                            if (val != null) {
-                                answer.writeValue(value); // TODO Hack
-                            } else {
-                                String tag = val.getType();
-                                // TODO get value of static field from GDB
-                            }
-                        }
-                }
-            }
-
-            private MiSymbolInfoVariablesInfo.Symbols containsInVMFields(MiSymbolInfoVariablesInfo.Symbols[] vals, String name) {
-                for (MiSymbolInfoVariablesInfo.Symbols val : vals) {
-                    String varName = val.getName().split("::")[1]; //Fib.Fib::res
-                    if (varName.equals(name)) {
-                        return val;
-                    }
-                }
-                return null;
+                answer.writeInt(0);
             }
         }
 
@@ -218,11 +174,12 @@ public class JDWPReferenceType {
             static final int COMMAND = 7;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                try {
-                    answer.writeString(type.baseSourceName());
-                } catch (AbsentInformationException e) {
-                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
+                var refType = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(refType);
+                if (referenceType == null) {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                } else {
+                    answer.writeString(referenceType.getBaseSourceFile());
                 }
             }
         }
@@ -234,21 +191,8 @@ public class JDWPReferenceType {
         static class NestedTypes implements Command  {
             static final int COMMAND = 8;
 
-            static class TypeInfo {
-
-                public static void write(ReferenceTypeImpl type, GDBControl gc, PacketStream answer) {
-                    answer.writeByte(type.tag());
-                    answer.writeClassRef(type.uniqueID());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<ReferenceTypeImpl> nestedTypes = type.nestedTypes();
-                answer.writeInt(nestedTypes.size());
-                for (ReferenceTypeImpl nestedType : nestedTypes) {
-                    TypeInfo.write(nestedType, gc, answer);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -268,8 +212,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 9;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                answer.writeInt(type.ref().getClassStatus());
+                answer.writeInt(JDWP.ClassStatus.INITIALIZED | JDWP.ClassStatus.PREPARED | JDWP.ClassStatus.VERIFIED);
             }
         }
 
@@ -282,22 +225,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 10;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<InterfaceTypeImpl> interfaces;
-                if (type instanceof ClassTypeImpl) {
-                    interfaces = ((ClassTypeImpl) type).interfaces();
-                }
-                else if (type instanceof InterfaceTypeImpl) {
-                    interfaces = ((InterfaceTypeImpl) type).superinterfaces();
-                }
-                else {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_CLASS;
-                    return;
-                }
-                answer.writeInt(interfaces.size());
-                for (InterfaceTypeImpl iface : interfaces) {
-                    answer.writeClassRef(iface.uniqueID());
-                }
+                answer.writeInt(0); //TODO: implement interfaces retrieval
             }
         }
 
@@ -308,8 +236,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 11;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                answer.writeClassObjectReference(type.classObject());
+                answer.writeObjectRef(command.readObjectRef());
             }
         }
 
@@ -322,12 +249,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 12;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                try {
-                    answer.writeString(type.sourceDebugExtension());
-                } catch (AbsentInformationException e) {
-                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -344,9 +266,14 @@ public class JDWPReferenceType {
             static final int COMMAND = 13;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                answer.writeString(type.signature());
-                answer.writeStringOrEmpty(type.genericSignature());
+                var referenceTypeID = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
+                if (referenceType != null) {
+                    answer.writeString(referenceType.getClassName().getJNI());
+                    answer.writeString("");
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                }
             }
         }
 
@@ -365,24 +292,8 @@ public class JDWPReferenceType {
         static class FieldsWithGeneric implements Command  {
             static final int COMMAND = 14;
 
-            static class FieldInfo {
-
-                public static void write(FieldImpl field, GDBControl gc, PacketStream answer) {
-                    answer.writeFieldRef(field.uniqueID());
-                    answer.writeString(field.name());
-                    answer.writeString(field.signature());
-                    answer.writeStringOrEmpty(field.genericSignature());
-                    answer.writeInt(field.modifiers());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<FieldImpl> fields = type.fields();
-                answer.writeInt(fields.size());
-                for (FieldImpl field : fields) {
-                    FieldInfo.write(field, gc, answer);
-                }
+                processFields(gc, answer, command, true);
             }
         }
 
@@ -402,23 +313,17 @@ public class JDWPReferenceType {
         static class MethodsWithGeneric implements Command  {
             static final int COMMAND = 15;
 
-            static class MethodInfo {
-
-                public static void write(MethodImpl method, GDBControl gc, PacketStream answer) {
-                    answer.writeMethodRef(method.uniqueID());
-                    answer.writeString(method.name());
-                    answer.writeString(method.signature());
-                    answer.writeStringOrEmpty(method.genericSignature());
-                    answer.writeInt(method.modifiers());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<MethodImpl> methods = type.methods();
-                answer.writeInt(methods.size());
-                for (MethodImpl method : methods) {
-                    MethodInfo.write(method, gc, answer);
+                var id = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(id);
+                if (referenceType == null) {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                } else {
+                    var methods = referenceType.getMethods();
+                    answer.writeInt(methods.size());
+                    for (var method : methods) {
+                        method.write(answer, true);
+                    }
                 }
             }
         }
@@ -434,12 +339,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 16;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                List<ObjectReferenceImpl> instances = type.instances(command.readInt());
-                answer.writeInt(instances.size());
-                for (ObjectReferenceImpl instance : instances) {
-                    answer.writeTaggedObjectReference(instance);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -452,9 +352,8 @@ public class JDWPReferenceType {
             static final int COMMAND = 17;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                answer.writeInt(type.majorVersion());
-                answer.writeInt(type.minorVersion());
+                answer.writeInt(Runtime.version().feature());
+                answer.writeInt(Runtime.version().interim());
             }
         }
 
@@ -470,11 +369,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 18;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                byte[] bytes = type.constantPool();
-                answer.writeInt(type.constantPoolCount());
-                answer.writeInt(bytes.length);
-                answer.writeByteArray(bytes);
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -486,6 +381,7 @@ public class JDWPReferenceType {
             static final int COMMAND = 19;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
+                JDWP.notImplemented(answer);
             }
         }
     }

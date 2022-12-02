@@ -25,9 +25,6 @@
 
 package jdwp;
 
-import jdwp.jdi.ClassTypeImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-
 public class JDWPClassType {
     static class ClassType {
         static final int COMMAND_SET = 3;
@@ -40,18 +37,17 @@ public class JDWPClassType {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl type = command.readReferenceType();
-                if (type instanceof ClassTypeImpl) {
-                    ClassTypeImpl superclass = ((ClassTypeImpl) type).superclass();
-                    if (superclass != null) {
-                        answer.writeClassRef(superclass.uniqueID());
-                    }
-                    else {
+                var classID = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(classID);
+                if (referenceType != null) {
+                    var superReferenceType = referenceType.getSuperReferenceType();
+                    if (superReferenceType != null) {
+                        answer.writeObjectRef(superReferenceType.getUniqueID());
+                    } else {
                         answer.writeNullObjectRef();
                     }
-                }
-                else {
-                    answer.pkt.errorCode = JDWP.Error.INVALID_CLASS;
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
                 }
             }
         }

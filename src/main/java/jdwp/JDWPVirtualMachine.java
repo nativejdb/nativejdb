@@ -27,13 +27,15 @@ package jdwp;
 
 import com.sun.jdi.VMDisconnectedException;
 import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.*;
-import jdwp.jdi.ReferenceTypeImpl;
-import jdwp.jdi.ThreadGroupReferenceImpl;
-import jdwp.jdi.ThreadReferenceImpl;
+import gdb.mi.service.command.output.MIInfo;
+import gdb.mi.service.command.output.MIListThreadGroupsInfo;
+import gdb.mi.service.command.output.MIResultRecord;
+import gdb.mi.service.command.output.MIThread;
+import gdb.mi.service.command.output.MIThreadInfoInfo;
+import jdwp.model.ReferenceType;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.MessageFormat;
+import java.util.Collection;
 
 public class JDWPVirtualMachine {
     static class VirtualMachine {
@@ -48,11 +50,14 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeString(gc.vm.description());
-                answer.writeInt(gc.vm.jdwpMajor());
-                answer.writeInt(gc.vm.jdwpMinor());
-                answer.writeString(gc.vm.version());
-                answer.writeString(gc.vm.name());
+                int major = Integer.parseInt(System.getProperty("java.specification.version"));
+                int minor = 0;
+                answer.writeString(MessageFormat.format("Java Debug Interface (nativejdb) version {0}.{1} \nJVM version {2} ({3},{4})",
+                        major, minor, System.getProperty("java.vm.version"), System.getProperty("java.vm.name"), System.getProperty("java.vm.info")));
+                answer.writeInt(major);
+                answer.writeInt(minor);
+                answer.writeString(System.getProperty("java.vm.version"));
+                answer.writeString(System.getProperty("java.vm.name"));
             }
         }
 
@@ -67,21 +72,12 @@ public class JDWPVirtualMachine {
         static class ClassesBySignature implements Command  {
             static final int COMMAND = 2;
 
-            static class ClassInfo {
-
-                public static void write(ReferenceTypeImpl referenceType, GDBControl gc, PacketStream answer) {
-                    answer.writeByte(referenceType.tag());
-                    answer.writeClassRef(referenceType.uniqueID());
-                    answer.writeInt(referenceType.ref().getClassStatus());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
                 String signature = command.readString();
-                List<ReferenceTypeImpl> referenceTypes = gc.vm.findReferenceTypes(signature);
+                Collection<ReferenceType> referenceTypes = gc.getReferenceTypes().findBySignature(signature);
                 answer.writeInt(referenceTypes.size());
-                for (ReferenceTypeImpl referenceType : referenceTypes) {
-                    VirtualMachine.ClassesBySignature.ClassInfo.write(referenceType, gc, answer);
+                for (var referenceType : referenceTypes) {
+                    referenceType.writeReference(answer);
                 }
             }
         }
@@ -93,39 +89,12 @@ public class JDWPVirtualMachine {
         static class AllClasses implements Command  {
             static final int COMMAND = 3;
 
-            static class ClassInfo {
-
-                public static void write(ReferenceTypeImpl referenceType, PacketStream answer) {
-                    answer.writeByte(referenceType.tag());
-                    answer.writeClassRef(referenceType.uniqueID());
-                    answer.writeString(referenceType.signature());
-                    answer.writeInt(referenceType.ref().getClassStatus());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                List<ReferenceTypeImpl> referenceTypes = gc.vm.allClasses();
-                answer.writeInt(referenceTypes.size());
-                for (ReferenceTypeImpl referenceType : referenceTypes) {
-                    ClassInfo.write(referenceType, answer);
+                Collection<ReferenceType> types = gc.getReferenceTypes().getTypes();
+                answer.writeInt(types.size());
+                for(var type : types) {
+                    type.write(answer, false);
                 }
-
-                /*System.out.println("Queueing MI command to get all classes info");
-                MICommand cmd = gc.getCommandFactory().createMiFileListExecSourceFiles();
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MiSourceFilesInfo reply = (MiSourceFilesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
-                    return;
-                }
-
-                MiSourceFilesInfo.SourceFileInfo[] refTypes = reply.getSourceFiles();
-                answer.writeInt(refTypes.length);
-                for (MiSourceFilesInfo.SourceFileInfo referenceType : refTypes) {
-                    //ClassInfo.write(referenceType, answer);
-                }*/
             }
         }
 
@@ -199,7 +168,6 @@ public class JDWPVirtualMachine {
                 for (MIListThreadGroupsInfo.IThreadGroupInfo group: groupList) {
                     String groupName = group.getName();
                     long groupId = JDWPThreadGroupReference.getNewThreadGroupId();
-                    System.out.println("Writing thread group id: " + groupId);
                     answer.writeObjectRef(groupId);
                     JDWPThreadGroupReference.threadGroupById.put(groupId, group);
                     JDWPThreadGroupReference.threadGroupByName.put(group.getName(), groupId);
@@ -311,36 +279,22 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 9;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                try {
-                    System.out.println("Queueing MI command to resume application");
-                    MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
-                    int tokenID = JDWP.getNewTokenId();
-                    gc.queueCommand(tokenID, cmd);
+                if (!gc.hasSteps()) {
+                    try {
+                        System.out.println("Queueing MI command to resume application");
+                        MICommand cmd = gc.getCommandFactory().createMIExecContinue(true);
+                        int tokenID = JDWP.getNewTokenId();
+                        gc.queueCommand(tokenID, cmd);
 
-                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.INTERNAL; // The virtual machine is not running.
+                        MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
+                        if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
+                            answer.pkt.errorCode = JDWP.Error.INTERNAL; // The virtual machine is not running.
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-
-//                    MIInfo reply = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-//                    if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-//                        if (reply.getErrorMsg().equals("The program is not being run.")) {
-//                            // Need to run the program
-//                            cmd = gc.getCommandFactory().createMIExecRun();
-//                            tokenID = JDWP.getNewTokenId();
-//                            gc.queueCommand(tokenID, cmd);
-//
-//                            MIInfo reply1 = gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-//                            if (reply1.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-//                                answer.pkt.errorCode = JDWP.Error.INTERNAL;
-//                            }
-//
-//                        } else {
-//                            answer.pkt.errorCode = JDWP.Error.VM_DEAD; // The virtual machine is not running.
-//                        }
-//                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } else {
+                    gc.setSteps(false);
                 }
             }
         }
@@ -392,13 +346,13 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 12;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeBoolean(gc.vm.canWatchFieldModification());
-                answer.writeBoolean(gc.vm.canWatchFieldAccess());
-                answer.writeBoolean(gc.vm.canGetBytecodes());
-                answer.writeBoolean(gc.vm.canGetSyntheticAttribute());
-                answer.writeBoolean(gc.vm.canGetOwnedMonitorInfo());
-                answer.writeBoolean(gc.vm.canGetCurrentContendedMonitor());
-                answer.writeBoolean(gc.vm.canGetMonitorInfo());
+                answer.writeBoolean(false); //WatchFieldModification
+                answer.writeBoolean(false); //WatchFieldAccess
+                answer.writeBoolean(false); //GetBytecodes
+                answer.writeBoolean(true); //GetSyntheticAttribute
+                answer.writeBoolean(false); //GetOwnedMonitorInfo
+                answer.writeBoolean(false); //GetCurrentContendedMonitor
+                answer.writeBoolean(false); //GetMonitorInfo
             }
         }
 
@@ -411,19 +365,7 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 13;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeString(gc.vm.baseDirectory());
-
-                List<String> classPath = gc.vm.classPath();
-                answer.writeInt(classPath.size());
-                for (String s : classPath) {
-                    answer.writeString(s);
-                }
-
-                List<String> bootClassPath = gc.vm.bootClassPath();
-                answer.writeInt(bootClassPath.size());
-                for (String s : bootClassPath) {
-                    answer.writeString(s);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -507,38 +449,38 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 17;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeBoolean(gc.vm.canWatchFieldModification());
-                answer.writeBoolean(gc.vm.canWatchFieldAccess());
-                answer.writeBoolean(gc.vm.canGetBytecodes());
-                answer.writeBoolean(gc.vm.canGetSyntheticAttribute());
-                answer.writeBoolean(gc.vm.canGetOwnedMonitorInfo());
-                answer.writeBoolean(gc.vm.canGetCurrentContendedMonitor());
-                answer.writeBoolean(gc.vm.canGetMonitorInfo());
-                answer.writeBoolean(gc.vm.canRedefineClasses());
-                answer.writeBoolean(gc.vm.canAddMethod());
-                answer.writeBoolean(gc.vm.canUnrestrictedlyRedefineClasses());
-                answer.writeBoolean(gc.vm.canPopFrames());
-                answer.writeBoolean(gc.vm.canUseInstanceFilters());
-                answer.writeBoolean(gc.vm.canGetSourceDebugExtension());
-                answer.writeBoolean(gc.vm.canRequestVMDeathEvent());
-                answer.writeBoolean(false);
-                answer.writeBoolean(gc.vm.canGetInstanceInfo());
-                answer.writeBoolean(gc.vm.canRequestMonitorEvents());
-                answer.writeBoolean(gc.vm.canGetMonitorFrameInfo());
-                answer.writeBoolean(gc.vm.canUseSourceNameFilters());
-                answer.writeBoolean(gc.vm.canGetConstantPool());
-                answer.writeBoolean(gc.vm.canForceEarlyReturn());
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
-                answer.writeBoolean(false);
+                answer.writeBoolean(false); //WatchFieldModification
+                answer.writeBoolean(false); //WatchFieldAccess
+                answer.writeBoolean(false); //GetBytecodes
+                answer.writeBoolean(true); //GetSyntheticAttribute
+                answer.writeBoolean(false); //GetOwnedMonitorInfo
+                answer.writeBoolean(false); //GetCurrentContendedMonitor
+                answer.writeBoolean(false); //GetMonitorInfo
+                answer.writeBoolean(false); //RedefineClasses
+                answer.writeBoolean(false); //AddMethod
+                answer.writeBoolean(false); //UnrestrictedlyRedefineClasses
+                answer.writeBoolean(true); //PopFrames
+                answer.writeBoolean(true); //UseInstanceFilters
+                answer.writeBoolean(false); //GetSourceDebugExtension
+                answer.writeBoolean(true); //RequestVMDeathEvent
+                answer.writeBoolean(false); //SetDefaultStratum
+                answer.writeBoolean(false); //GetInstanceInfo
+                answer.writeBoolean(false); //RequestMonitorEvents
+                answer.writeBoolean(false); //GetMonitorFrameInfo
+                answer.writeBoolean(false); //UseSourceNameFilters
+                answer.writeBoolean(false); //GetConstantPool
+                answer.writeBoolean(true); //ForceEarlyReturn
+                answer.writeBoolean(false); //reserved22
+                answer.writeBoolean(false); //reserved23
+                answer.writeBoolean(false); //reserved24
+                answer.writeBoolean(false); //reserved25
+                answer.writeBoolean(false); //reserved26
+                answer.writeBoolean(false); //reserved27
+                answer.writeBoolean(false); //reserved28
+                answer.writeBoolean(false); //reserved29
+                answer.writeBoolean(false); //reserved30
+                answer.writeBoolean(false); //reserved31
+                answer.writeBoolean(false); //reserved32
             }
         }
 
@@ -595,43 +537,12 @@ public class JDWPVirtualMachine {
         static class AllClassesWithGeneric implements Command  {
             static final int COMMAND = 20;
 
-            static class ClassInfo {
-
-                public static void write(ReferenceTypeImpl cls, GDBControl gc, PacketStream answer) {
-                    answer.writeByte(cls.tag());
-                    answer.writeClassRef(cls.uniqueID());
-                    answer.writeString(cls.signature());
-                    answer.writeStringOrEmpty(cls.genericSignature());
-                    answer.writeInt(cls.ref().getClassStatus());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                List<ReferenceTypeImpl> allClasses = gc.vm.allClasses();
-                answer.writeInt(allClasses.size());
-                for (ReferenceTypeImpl cls : allClasses) {
-                    if (cls.signature().contains("Ljava/lang/String;")) {
-                        JDWP.stringClasses.add(cls);
-                    }
-                    ClassInfo.write(cls, gc, answer);
+                var types = gc.getReferenceTypes().getTypes();
+                answer.writeInt(types.size());
+                for(var type : types) {
+                    type.write(answer, true);
                 }
-
-                /*System.out.println("Queueing MI command to get all classes info");
-                MICommand cmd = gc.getCommandFactory().createMiSymbolInfoFunctions();
-                int tokenID = JDWP.getNewTokenId();
-                gc.queueCommand(tokenID, cmd);
-
-                MiSymbolInfoFunctionsInfo reply = (MiSymbolInfoFunctionsInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                if (reply.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                    answer.pkt.errorCode = JDWP.Error.VM_DEAD;
-                    return;
-                }
-
-                MiSymbolInfoFunctionsInfo.SymbolFileInfo[] referenceTypes = reply.getSymbolFiles();
-                answer.writeInt(referenceTypes.length);
-                for (MiSymbolInfoFunctionsInfo.SymbolFileInfo referenceType : referenceTypes) {
-                    //ClassInfo.write(referenceType, answer);
-                }*/
             }
         }
 
@@ -647,16 +558,7 @@ public class JDWPVirtualMachine {
             static final int COMMAND = 21;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                int count = command.readInt();
-                List<ReferenceTypeImpl> refs = new ArrayList<>(count);
-                for (int i = 0; i < count; i++) {
-                    refs.add(command.readReferenceType());
-                }
-                long[] counts = gc.vm.instanceCounts(refs);
-                answer.writeInt(counts.length);
-                for (long l : counts) {
-                    answer.writeLong(l);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 

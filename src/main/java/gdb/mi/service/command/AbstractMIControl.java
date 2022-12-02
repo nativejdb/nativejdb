@@ -119,7 +119,7 @@ public abstract class AbstractMIControl {
 		}
 	}
 
-	public CommandHandle queueCommand(int id, final MICommand<MIInfo> miCommand) {
+	public CommandHandle queueCommand(int id, final MICommand<? extends MIInfo> miCommand) {
 
 		final CommandHandle handle = new CommandHandle(id, miCommand);
 
@@ -212,15 +212,15 @@ public abstract class AbstractMIControl {
 	 */
 	private class CommandHandle {
 
-		private MICommand<MIInfo> fCommand;
+		private MICommand<? extends MIInfo> fCommand;
 		private int fTokenId;
 
-		CommandHandle(int id, MICommand<MIInfo> c) {
+		CommandHandle(int id, MICommand<? extends MIInfo> c) {
 			fCommand = c;
 			fTokenId = id;
 		}
 
-		public MICommand<MIInfo> getCommand() {
+		public MICommand<? extends MIInfo> getCommand() {
 			return fCommand;
 		}
 
@@ -282,6 +282,7 @@ public abstract class AbstractMIControl {
 
 				try {
 					if (fOutputStream != null) {
+						System.out.println(str);
 						fOutputStream.write(str.getBytes());
 						fOutputStream.flush();
 					}
@@ -328,7 +329,7 @@ public abstract class AbstractMIControl {
 				String line;
 				while ((line = reader.readLine()) != null) {
 					if (line.length() != 0) {
-						System.out.println(line);
+						System.out.println(line.substring(0, Math.min(line.length(), 256)));
 						processMIOutput(line);
 					}
 				}

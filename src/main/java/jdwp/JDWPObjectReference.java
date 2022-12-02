@@ -25,11 +25,7 @@
 
 package jdwp;
 
-import jdwp.jdi.ObjectReferenceImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-import jdwp.jdi.ThreadReferenceImpl;
-
-import java.util.List;
+import jdwp.model.ClassName;
 
 public class JDWPObjectReference {
     static class ObjectReference {
@@ -44,18 +40,29 @@ public class JDWPObjectReference {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-
                 long objectID = command.readObjectRef();
-                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
-                    answer.writeByte(JDWP.Tag.STRING);
-
-                    // Class 1 is the ClassTypeImpl of the java/lang/String class
-                    answer.writeObjectRef(JDWP.stringClasses.get(1).uniqueID());
+                if (objectID == JDWP.ASM_ID || objectID == JDWP.OPTIMIZED_OUT_ID) {
+                    var referenceType = gc.getReferenceTypes().findByClassName(ClassName.JAVA_LANG_STRING);
+                    if (referenceType != null) {
+                        answer.writeByte(JDWP.TypeTag.CLASS);
+                        answer.writeObjectRef(referenceType.getUniqueID());
+                    } else {
+                        answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                    }
                 } else {
-                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);
-                    ReferenceTypeImpl referenceType = objectReference.referenceType();
-                    answer.writeByte(referenceType.tag());
-                    answer.writeClassRef(referenceType.uniqueID());
+                    var className = gc.getClassName(objectID);
+                    if (className != null) {
+                        var referenceType = gc.getReferenceTypes().
+                                findByClassName(className);
+                        if (referenceType != null) {
+                            answer.writeByte(referenceType.getType());
+                            answer.writeClassRef(referenceType.getUniqueID());
+                        } else {
+                            answer.setErrorCode((short) JDWP.Error.ABSENT_INFORMATION);
+                        }
+                    } else {
+                        answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                    }
                 }
             }
         }
@@ -71,17 +78,21 @@ public class JDWPObjectReference {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                long objectID = command.readObjectRef();
-                if (objectID == JDWP.asmIdCounter || objectID == JDWP.optimizedVarID) {
-                    answer.writeInt(0);
-                } else {
-                    ObjectReferenceImpl objectReference = gc.vm.objectMirror(objectID);
-                    ReferenceTypeImpl referenceType = objectReference.referenceType();
-                    int count = command.readInt();
-                    answer.writeInt(count);
-                    for (int i = 0; i < count; i++) {
-                        long id = command.readFieldRef();
-                        answer.writeValue(objectReference.getValue(referenceType.fieldById(id)));
+                var objectID = command.readObjectRef();
+                var nbField = command.readInt();
+                var className = gc.getClassName(objectID);
+                if (className != null) {
+                    var referenceType = gc.getReferenceTypes().findByClassName(className);
+                    if (referenceType != null) {
+                        answer.writeInt(nbField);
+                        for(var i=0; i < nbField;++i) {
+                            var field = referenceType.findFieldByID(command.readObjectRef());
+                            var tag = field !=null ? Translator.jni2Tag(field.getJni()):JDWP.Tag.OBJECT;
+                            var val = field != null ? gc.getFieldValue(objectID, field.getName()):"";
+                            JDWP.writeValue(answer, tag, val);
+                        }
+                    } else {
+                        answer.setErrorCode((short) JDWP.Error.INVALID_OBJECT);
                     }
                 }
             }
@@ -116,14 +127,7 @@ public class JDWPObjectReference {
             static final int COMMAND = 5;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                answer.writeThreadReference(objectReference.owningThread());
-                answer.writeInt(objectReference.entryCount());
-                List<ThreadReferenceImpl> waiting = objectReference.waitingThreads();
-                answer.writeInt(waiting.size());
-                for (ThreadReferenceImpl threadReference : waiting) {
-                    answer.writeThreadReference(threadReference);
-                }
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -244,7 +248,7 @@ public class JDWPObjectReference {
             static final int COMMAND = 9;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                answer.writeBoolean(false);
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -262,12 +266,7 @@ public class JDWPObjectReference {
             static final int COMMAND = 10;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ObjectReferenceImpl objectReference = gc.vm.objectMirror(command.readObjectRef());
-                List<ObjectReferenceImpl> refs = objectReference.referringObjects(command.readInt());
-                answer.writeInt(refs.size());
-                for (ObjectReferenceImpl ref : refs) {
-                    answer.writeTaggedObjectReference(ref);
-                }
+                JDWP.notImplemented(answer);
             }
         }
     }

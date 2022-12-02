@@ -25,17 +25,6 @@
 
 package jdwp;
 
-import com.sun.jdi.AbsentInformationException;
-import jdwp.jdi.LocalVariableImpl;
-import jdwp.jdi.LocationImpl;
-import jdwp.jdi.MethodImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-import gdb.mi.service.command.commands.MICommand;
-import gdb.mi.service.command.output.*;
-
-import java.util.Collections;
-import java.util.List;
-
 public class JDWPMethod {
     static class Method {
         static final int COMMAND_SET = 6;
@@ -52,38 +41,32 @@ public class JDWPMethod {
         static class LineTable implements Command  {
             static final int COMMAND = 1;
 
-            static class LineInfo {
-
-                public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-
-                if (method.isNative()) {
-                    answer.pkt.errorCode = JDWP.Error.NATIVE_METHOD;
-                    return;
-                }
-
-                List<LocationImpl> locations = Collections.emptyList();
-                try {
-                    locations = method.allLineLocations();
-                } catch (AbsentInformationException ignored) {
-                }
-                sun.jvm.hotspot.oops.Method ref = method.ref();
-                long start = 0;
-                long end = ref.getCodeSize();
-                if (end == 0) {
-                    start = -1;
-                }
-                answer.writeLong(start);
-                answer.writeLong(end);
-                answer.writeInt(locations.size());
-                for (LocationImpl location : locations) {
-                    answer.writeLong(location.codeIndex());
-                    answer.writeInt(location.lineNumber());
+                long refType = command.readObjectRef();
+                var referenceType = gc.getReferenceTypes().findbyId(refType);
+                if (referenceType ==null) {
+                    answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
+                } else {
+                    var methodID = command.readMethodRef();
+                    var method = referenceType.findMethodById(methodID);
+                    if (method == null) {
+                        answer.setErrorCode((short) JDWP.Error.INVALID_METHODID);
+                    } else {
+                        var olines = method.getLines();
+                        olines.ifPresentOrElse(lines -> {
+                            answer.writeLong(lines.ceiling(Integer.MIN_VALUE));
+                            answer.writeLong(lines.floor(Integer.MAX_VALUE));
+                            answer.writeInt(lines.size());
+                            for(var line : lines) {
+                                answer.writeLong(line);
+                                answer.writeInt(line);
+                            }
+                        }, () -> {
+                        answer.writeLong(-1);
+                        answer.writeLong(-1);
+                        answer.writeInt(0);
+                        });
+                    }
                 }
             }
         }
@@ -97,34 +80,8 @@ public class JDWPMethod {
         static class VariableTable implements Command  {
             static final int COMMAND = 2;
 
-            /**
-             * Information about the variable.
-             */
-            static class SlotInfo {
-
-                public static void write(LocalVariableImpl var, GDBControl gc, PacketStream answer) {
-                    answer.writeLong(var.getStart());
-                    answer.writeString(var.name());
-                    answer.writeString(var.signature());
-                    answer.writeInt(var.getLength());
-                    answer.writeInt(var.slot());
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                try {
-                    List<LocalVariableImpl> variables = method.variables();
-                    answer.writeInt(method.argSlotCount());
-                    answer.writeInt(variables.size());
-                    for (LocalVariableImpl variable : variables) {
-                        SlotInfo.write(variable, gc, answer);
-                    }
-
-                } catch (AbsentInformationException e) {
-                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
-                }
+                variableTable(gc, answer, command, false);
             }
         }
 
@@ -138,11 +95,7 @@ public class JDWPMethod {
             static final int COMMAND = 3;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                byte[] bytecodes = method.bytecodes();
-                answer.writeInt(bytecodes.length);
-                answer.writeByteArray(bytecodes);
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -158,9 +111,7 @@ public class JDWPMethod {
             static final int COMMAND = 4;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                answer.writeBoolean(method.isObsolete());
+                JDWP.notImplemented(answer);
             }
         }
 
@@ -177,110 +128,38 @@ public class JDWPMethod {
          */
         static class VariableTableWithGeneric implements Command  {
             static final int COMMAND = 5;
-            private static final String ASM_VAR_NAME = "$asm";
-            private static final String ASM_VAR_SIGNATURE = "Ljava/lang/String;";
-            private static final String ASM_VAR_GEN_SIGNATURE = null;
-
-            /**
-             * Information about the variable.
-             */
-            static class SlotInfo {
-
-                public static void write(LocalVariableImpl var, GDBControl gc, PacketStream answer) {
-                    answer.writeLong(var.getStart());
-                    answer.writeString(var.name());
-                    answer.writeString(var.signature());
-                    answer.writeStringOrEmpty(var.genericSignature());
-                    answer.writeInt(var.getLength());
-                    answer.writeInt(var.slot());
-                    JDWP.localsByID.put(var.slot(), var);
-                }
-            }
-
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ReferenceTypeImpl referenceType = command.readReferenceType();
-                MethodImpl method = referenceType.methodById(command.readMethodRef());
-                JDWP.localsByID.clear();
-                try {
-                    List<LocalVariableImpl> variables = method.variables();
-                    answer.writeInt(method.argSlotCount());
-                    int maxSlot = 0;
+                variableTable(gc, answer, command, true);
+            }
+        }
+    }
 
-                    System.out.println("Queueing MI command to list local variables and function arguments");
-                    MICommand cmd = gc.getCommandFactory().createMIStackListVariables(true, String.valueOf(JDWP.currentThreadID), String.valueOf(0)); // TODO: AAV No thread and frame info available here!!!
-                    int tokenID = JDWP.getNewTokenId();
-                    gc.queueCommand(tokenID, cmd);
-
-                    MIStackListVariablesInfo replyloc = (MIStackListVariablesInfo) gc.getResponse(tokenID, JDWP.DEF_REQUEST_TIMEOUT);
-                    if (replyloc.getMIOutput().getMIResultRecord().getResultClass().equals(MIResultRecord.ERROR)) {
-                        answer.pkt.errorCode = JDWP.Error.INTERNAL;
+    private static void variableTable(GDBControl gc, PacketStream answer, PacketStream command, boolean generic) {
+        var referenceTypeID = command.readObjectRef();
+        var referenceType = gc.getReferenceTypes().findbyId(referenceTypeID);
+        if (referenceType != null) {
+            var methodID = command.readMethodRef();
+            var method = referenceType.findMethodById(methodID);
+            if (method != null) {
+                answer.writeInt(method.getArgumentCount());
+                answer.writeInt(method.getVariables().size());
+                for(var variable : method.getVariables()) {
+                    answer.writeLong(variable.getStartLine());
+                    answer.writeString(variable.getName());
+                    answer.writeString(variable.getJNISignature());
+                    if (generic) {
+                        answer.writeString("");
                     }
-                    MIArg[] vals = replyloc.getVariables();
-
-                    int gdbSize = getGDBVariablesSize(vals);
-                    int vmSize = variables.size();
-                    answer.writeInt(gdbSize + 1); //Number of slots from GDB, +1 for assembly variable
-                    if (gdbSize != vmSize) {
-                        System.out.println("GDB number of variables different from VM's. GDB: " + gdbSize + " VM:" + vmSize);
-                    }
-                    for (MIArg val: vals) {
-                        if (val.getName().equals("this")) {
-                            continue;
-                        }
-                        LocalVariableImpl variable = containsInVMSlots(variables, val.getName());
-                        if (variable != null) {
-                            if (variable.slot() > maxSlot) {
-                                maxSlot = variable.slot();
-                            }
-                            SlotInfo.write(variable, gc, answer); // TODO Hack
-                        } else {
-                            LocalVariableImpl gdbVar = new LocalVariableImpl(
-                                    method,
-                                    maxSlot + 1,
-                                    new LocationImpl(method, 0),
-                                    new LocationImpl(method, method.ref().getCodeSize() - 1),
-                                    val.getName(),
-                                    "", // TODO need signature of variable that is not in VM list but in GDB list
-                                    ""); // TODO
-                            SlotInfo.write(gdbVar, gc, answer);
-                        }
-                    }
-
-                    // Add assembly variable
-                    LocalVariableImpl asmVar = new LocalVariableImpl(
-                            method,
-                            maxSlot + 1,
-                            new LocationImpl(method, 0),
-                            new LocationImpl(method, method.ref().getCodeSize() - 1),
-                            ASM_VAR_NAME,
-                            ASM_VAR_SIGNATURE,
-                            ASM_VAR_GEN_SIGNATURE);
-                    SlotInfo.write(asmVar, gc, answer);
-
-                } catch (AbsentInformationException e) {
-                    answer.pkt.errorCode = JDWP.Error.ABSENT_INFORMATION;
+                    answer.writeInt(variable.getEndLine() -  variable.getStartLine() + 1);
+                    answer.writeInt(variable.getIndex());
                 }
+            } else {
+                answer.setErrorCode((short) JDWP.Error.INVALID_METHODID);
             }
 
-            private LocalVariableImpl containsInVMSlots(List<LocalVariableImpl> variables, String name) {
-                for (LocalVariableImpl variable : variables) {
-                    if (variable.name().equals(name)) {
-                        return variable;
-                    }
-                }
-                return null;
-            }
-
-            private int getGDBVariablesSize(MIArg[] vals) {
-                int gdbSize = vals.length;
-                for (MIArg val : vals) {
-                    if (val.getName().equals("this")) {
-                        gdbSize--;
-                    }
-                }
-                return gdbSize;
-            }
+        } else {
+            answer.setErrorCode((short) JDWP.Error.INVALID_CLASS);
         }
     }
 }

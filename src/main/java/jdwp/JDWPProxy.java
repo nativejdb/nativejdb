@@ -83,9 +83,9 @@ public class JDWPProxy {
         }
     }
 
-    public static void reply(Connection connection, jdwp.jdi.VirtualMachineImpl vm) throws IOException {
+    public static void reply(Connection connection) throws IOException {
 
-        GDBControl gdbControl = new GDBControl(connection, vm);
+        GDBControl gdbControl = new GDBControl(connection);
         Listener asyncListener = new MIRunControlEventProcessor(gdbControl);
 
         try {
@@ -131,7 +131,6 @@ public class JDWPProxy {
         } catch (VMDisconnectedException ignored) {
         } finally {
             connection.close();
-            gdbControl.vm.dispose();
         }
     }
 

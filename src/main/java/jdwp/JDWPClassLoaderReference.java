@@ -25,11 +25,6 @@
 
 package jdwp;
 
-import jdwp.jdi.ClassLoaderReferenceImpl;
-import jdwp.jdi.ReferenceTypeImpl;
-
-import java.util.List;
-
 public class JDWPClassLoaderReference {
     static class ClassLoaderReference {
         static final int COMMAND_SET = 14;
@@ -54,20 +49,8 @@ public class JDWPClassLoaderReference {
         static class VisibleClasses implements Command  {
             static final int COMMAND = 1;
 
-            static class ClassInfo {
-
-                public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                }
-            }
-
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ClassLoaderReferenceImpl classLoaderReference = command.readClassLoaderReference();
-                List<ReferenceTypeImpl> visibleClasses = classLoaderReference.visibleClasses();
-                answer.writeInt(visibleClasses.size());
-                for (ReferenceTypeImpl visibleClass : visibleClasses) {
-                    answer.writeByte(visibleClass.tag());
-                    answer.writeClassRef(visibleClass.uniqueID());
-                }
+                JDWP.notImplemented(answer);
             }
         }
     }

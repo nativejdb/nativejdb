@@ -12,9 +12,13 @@
 
 package jdwp;
 
+import jdwp.model.*;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import java.lang.reflect.Modifier;
+import java.nio.file.Paths;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests the Translator class for converting C/C++ info to Java.
@@ -22,55 +26,105 @@ import static org.junit.Assert.assertEquals;
 public class TestTranslator {
 
     @Test
-    public void testNormalizeFunc() {
-
-        testNormalizePrimitives();
+    public void testNormalizeFuncName() {
 
         // Tests objects as parameters
-        String input = "HelloMethod.HelloMethod::main(java.lang.String[] *)";
-        String expected = "HelloMethod/HelloMethod::main([Ljava/lang/String;)";
-        String actual = Translator.normalizeFunc(input);
-        assertEquals("Primitive signature tests for one object parameter", expected, actual);
+        assertEquals("main", Translator.getClassAndMethodName("HelloMethod.HelloMethod::main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassAndMethodName("main(java.lang.String[] *)")[1]);
+        assertEquals("main", Translator.getClassAndMethodName("HelloMethod.HelloMethod::main")[1]);
+        assertEquals("main", Translator.getClassAndMethodName("main")[1]);
     }
 
-    /**
-     * Tests for multiple primitive parameters
-     */
+    private void testMethodSignature(String type, String jni) {
+        ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
+        ReferenceType referenceType = new ReferenceType(types, "", ClassName.fromGDB(Sample.class.getName()));
+        var signature = Translator.getSignature(type, "", "");
+        var info = new MethodInfo(referenceType, signature);
+        assertEquals(jni, info.getJNISignature());
+    }
 
-
-    /**
-     * Tests the parameters for all the signatures
-     */
     @Test
-    public void testNormalizePrimitives() {
+    public void testVoidEmptySignature() {
+        testMethodSignature("void (void)", "()V");
+    }
 
-        String[] types = new String[]{Translator.JAVA_BOOLEAN, Translator.JAVA_BYTE,
-                Translator.JAVA_CHAR, Translator.JAVA_SHORT,
-                Translator.JAVA_INT, Translator.JAVA_LONG,
-                Translator.JAVA_FLOAT, Translator.JAVA_DOUBLE,
-                Translator.JAVA_VOID};
-        StringBuilder message = new StringBuilder("Primitive signature for boolean should be converted to Z");
-        StringBuilder gdbInput = new StringBuilder("HelloMethod.HelloMethod::hello(boolean)");
-        StringBuilder expected = new StringBuilder("HelloMethod/HelloMethod::hello(Z)");
-        String        actual;
+    public void testBooleanEmptySignature() {
+        testMethodSignature("boolean (void)", "()Z");
+    }
 
-        int msgIndex = 24;                          // the index for b in boolean
-        int inputIndex = gdbInput.indexOf("(") + 1; // the index for b in boolean
-        int expectedIndex = expected.indexOf("(") + 1;
-        int replaceLen = types[0].length();
+    @Test
+    public void testShortEmptySignature() {
+        testMethodSignature("short (void)", "()S");
+    }
 
-        for (String currType : types) {
-            // Update boolean and Z in message
-            message.replace(msgIndex, msgIndex + replaceLen, currType);
-            message.replace(message.length() - 1, message.length(), Translator.typeSignature.get(currType));
+    @Test
+    public void testIntEmptySignature() {
+        testMethodSignature("int (void)", "()I");
+    }
 
-            // Update parameter type in gdbInput and expected output
-            gdbInput.replace(inputIndex, inputIndex + replaceLen, currType);
-            expected.replace(expectedIndex, expectedIndex + 1, Translator.typeSignature.get(currType));
-            actual = Translator.normalizeFunc(gdbInput.toString());
-            assertEquals(message.toString(), expected.toString(), actual);
-            replaceLen = currType.length();
-        }
+    @Test
+    public void testLongEmptySignature() {
+        testMethodSignature("long (void)", "()J");
+    }
+
+    @Test
+    public void testByteEmptySignature() {
+        testMethodSignature("byte (void)", "()B");
+    }
+
+    @Test
+    public void testCharEmptySignature() {
+        testMethodSignature("char (void)", "()C");
+    }
+
+    @Test
+    public void testDoubleEmptySignature() {
+        testMethodSignature("double (void)", "()D");
+    }
+
+    @Test
+    public void testFloatEmptySignature() {
+        testMethodSignature("float (void)", "()F");
+    }
+
+    @Test
+    public void testClassEmptySignature() {
+        testMethodSignature("class java.lang.String *(void)", "()Ljava/lang/String;");
+    }
+
+    @Test
+    public void testInterfaceEmptySignature() {
+        testMethodSignature("union java.util.Collection *(void)", "()Ljava/util/Collection;");
+    }
+
+    @Test
+    public void testOneDimensionArrayEmptySignature() {
+        testMethodSignature("int[] (void)", "()[I");
+    }
+
+    @Test
+    public void testTwoDimensionArrayEmptySignature() {
+        testMethodSignature("int[][] (void)", "()[[I");
+    }
+
+    @Test
+    public void testStaticMethod() {
+        ReferenceTypes types = new ReferenceTypes(Paths.get("src/test/java"));
+        ReferenceType referenceType = new ReferenceType(types, "", ClassName.fromGDB("classname"));
+        var signature = Translator.getSignature("boolean (void)", "classname",
+                "methodName");
+        var info = new MethodInfo(referenceType, signature);
+        assertTrue((info.getModifier() & Modifier.STATIC) == Modifier.STATIC);
+    }
+
+    @Test
+    public void testInstanceMethod() {
+        var types = new ReferenceTypes(Paths.get("src/test/java"));
+        var referenceType = new ReferenceType(types, "", ClassName.fromGDB("classname"));
+        var signature = Translator.getSignature("boolean (classname *)", "classname",
+                "methodName");
+        var info = new MethodInfo(referenceType, signature);
+        assertFalse((info.getModifier() & Modifier.STATIC) == Modifier.STATIC);
     }
 
     @Test
@@ -92,5 +146,15 @@ public class TestTranslator {
         String input = "_Jjava_util_Map_entry__Ljava_lang_Object_2Ljava_lang_Object_2_Ljava_util_Map_00024Entry_2";
         String output = "java/util/Map.java";
         assertEquals(output, Translator.getQbiccFilename(input));
+    }
+
+    @Test
+    public void testAddressDecode8Bytes() {
+        assertEquals(-2088992, Translator.decodeAddress("0xffffffffffe01fe0"));
+    }
+
+    @Test
+    public void testAddressDecode1Byte() {
+        assertEquals(255, Translator.decodeAddress("0xff"));
     }
 }

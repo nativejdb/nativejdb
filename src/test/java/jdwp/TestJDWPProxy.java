@@ -12,19 +12,10 @@
 
 package jdwp;
 
-import static org.junit.Assert.assertEquals;
-
-import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.connect.spi.Connection;
-import jdwp.*;
-import jdwp.jdi.VirtualMachineImpl;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 
 /**
  * Verifies that the break insert MI command have the correct path substitution.
@@ -39,7 +30,7 @@ public class TestJDWPProxy {
         //VirtualMachineImpl vm = VirtualMachineImpl.dummyVirtualMachine(); //not working HeapVisitor error
         System.setProperty("native.exec", "src/test/data/Hello");
         System.setProperty("native.src", "src/test/data/Hellosources");
-        GDBControl gdbControl = new GDBControl(connection, null);
+        GDBControl gdbControl = new GDBControl(connection);
         gdbControl.startCommandProcessing(gdbControl.gdbOutput, gdbControl.gdbInput, gdbControl.gdbError);
 
         Packet p = new Packet(Packet.NoFlags);

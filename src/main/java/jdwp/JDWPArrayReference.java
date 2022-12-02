@@ -25,12 +25,6 @@
 
 package jdwp;
 
-import com.sun.jdi.ClassNotLoadedException;
-import jdwp.jdi.ArrayReferenceImpl;
-import jdwp.jdi.PrimitiveTypeImpl;
-import jdwp.jdi.TypeImpl;
-import jdwp.jdi.ValueImpl;
-
 public class JDWPArrayReference  {
     static class ArrayReference {
         static final int COMMAND_SET = 13;
@@ -43,8 +37,8 @@ public class JDWPArrayReference  {
             static final int COMMAND = 1;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ArrayReferenceImpl arrayReference = command.readArrayReference();
-                answer.writeInt(arrayReference.length());
+                var objectID = command.readObjectRef();
+                answer.writeInt(gc.getArrayLength(objectID));
             }
         }
 
@@ -56,19 +50,26 @@ public class JDWPArrayReference  {
             static final int COMMAND = 2;
 
             public void reply(GDBControl gc, PacketStream answer, PacketStream command) {
-                ArrayReferenceImpl arrayReference = command.readArrayReference();
-                int start = command.readInt();
-                int length = command.readInt();
+                var objectID = command.readObjectRef();
+                var firstIndex = command.readInt();
+                var length = command.readInt();
 
-                byte tag;
-                try {
-                    TypeImpl type = arrayReference.arrayType().componentType();
-                    tag = type instanceof PrimitiveTypeImpl ? ((PrimitiveTypeImpl) type).tag() : JDWP.Tag.OBJECT;
-                } catch (ClassNotLoadedException e) { // fallback to the first element type
-                    tag = ValueImpl.typeValueKey(arrayReference.getValue(0));
+                var className = gc.getClassName(objectID);
+                if (className != null) {
+                    var tag = Translator.arrayClassName2Tag(className);
+                    answer.writeByte(tag);
+                    answer.writeInt(length);
+                    for(int i=firstIndex; i < length;++i) {
+                        var item = gc.getArrayMember(objectID, i);
+                        if (item != null) {
+                            JDWP.writeValue(answer, tag, item);
+                        } else {
+                            answer.setErrorCode((short) JDWP.Error.INTERNAL);
+                        }
+                    }
+                } else {
+                    answer.setErrorCode((short) JDWP.Error.INTERNAL);
                 }
-
-                answer.writeArrayRegion(arrayReference.getValues(start, length), tag);
             }
         }
 

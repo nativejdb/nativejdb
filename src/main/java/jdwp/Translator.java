@@ -12,16 +12,22 @@
 package jdwp;
 
 import gdb.mi.service.command.events.*;
-import gdb.mi.service.command.output.MIBreakInsertInfo;
-import gdb.mi.service.command.output.MIResult;
-import gdb.mi.service.command.output.MIValue;
-import gdb.mi.service.command.output.MIInfo;
-import jdwp.jdi.LocationImpl;
-import jdwp.jdi.MethodImpl;
-import jdwp.jdi.ConcreteMethodImpl;
-import jdwp.jdi.ThreadReferenceImpl;
+import gdb.mi.service.command.output.*;
+import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo.SymbolFileInfo;
+import gdb.mi.service.command.output.MiSymbolInfoFunctionsInfo.Symbols;
+import jdwp.model.ClassName;
+import jdwp.model.JNIConstants;
+import jdwp.model.MethodInfo;
+import jdwp.model.MethodLocation;
+import jdwp.model.MethodSignature;
+import jdwp.model.ReferenceType;
+import jdwp.model.ReferenceTypes;
 
-import java.util.*;
+import javax.lang.model.SourceVersion;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +43,7 @@ public class Translator {
 	static final String JAVA_DOUBLE = "double";
 	static final String JAVA_VOID = "void";
 
-	static final Map<String, String> typeSignature;	// primitive type signature mapping from C/C++ to JNI
+	public static final Map<String, String> typeSignature;	// primitive type signature mapping from C/C++ to JNI
 	static {
 		typeSignature = new HashMap<>();
 
@@ -87,9 +93,9 @@ public class Translator {
 		packetStream.writeByte(eventKind);
 		packetStream.writeInt(event.requestID);
 		packetStream.writeObjectRef(getMainThreadId(gc));
-		packetStream.writeByte(event.referenceType.tag());
-		packetStream.writeObjectRef(event.referenceType.uniqueID());
-		packetStream.writeString(event.referenceType.signature());
+		packetStream.writeByte(event.referenceType.getType());
+		packetStream.writeObjectRef(event.referenceType.getUniqueID());
+		packetStream.writeString(event.referenceType.getClassName().getJNI());
 		packetStream.writeInt(7);
 		return packetStream;
 	}
@@ -121,11 +127,9 @@ public class Translator {
 		byte suspendPolicy = info.getMIInfoSuspendPolicy();
 		int requestId = info.getMIInfoRequestID();
 		byte eventKind = info.getMIInfoEventKind();
-		LocationImpl loc = JDWP.bkptsLocation.get(eventNumber);
+		MethodLocation loc = JDWP.bkptsLocation.get(eventNumber);
 		long threadID = getThreadId(event);
 		System.out.println("THREAD ID FOR HIT: "+ threadID);
-		//long threadID = getMainThreadId(gc);
-
 		packetStream.writeByte(suspendPolicy);
 		packetStream.writeInt(1); // Number of events in this response packet
 		packetStream.writeByte(eventKind);
@@ -159,104 +163,178 @@ public class Translator {
 
 	private static PacketStream  translateSteppingRange(GDBControl gc, MISteppingRangeEvent event) {
 		System.out.println("Translating end-stepping-range");
-		PacketStream packetStream = new PacketStream(gc);
-		Long threadID = getThreadId(event);
-		//long threadID = getMainThreadId(gc);
-		MIInfo info = JDWP.stepByThreadID.get(threadID);
-		if (info == null) {
-			System.out.println("Returning null");
-			return null;
-		}
-
-		packetStream.writeByte(info.getMIInfoSuspendPolicy());
-		packetStream.writeInt(1); // Number of events in this response packet
-		packetStream.writeByte(info.getMIInfoEventKind());
-		packetStream.writeInt(info.getMIInfoRequestID());
-		packetStream.writeObjectRef(getMainThreadId(gc));
-		LocationImpl loc = locationLookup(event.getFrame().getFunction(), event.getFrame().getLine());
-		if (loc != null) {
-			packetStream.writeLocation(loc);
-			JDWP.stepByThreadID.remove(threadID);
-			return packetStream;
-
+		PacketStream packetStream = null;
+		var location = getMethodLocationFromFuncAndLine(gc, event.getFrame().getFunction(),
+				event.getFrame().getLine());
+		if (location.isPresent()) {
+			var threadID = getThreadId(event);
+			MIInfo info = JDWP.stepByThreadID.get(threadID);
+			if (info != null) {
+				packetStream = new PacketStream(gc);
+				packetStream.writeByte(info.getMIInfoSuspendPolicy());
+				packetStream.writeInt(1); // Number of events in this response packet
+				packetStream.writeByte(info.getMIInfoEventKind());
+				packetStream.writeInt(info.getMIInfoRequestID());
+				packetStream.writeObjectRef(getMainThreadId(gc));
+				if (location != null) {
+					packetStream.writeLocation(location.get());
+					JDWP.stepByThreadID.remove(threadID);
+				}
+			}
 		}
 		return packetStream;
 	}
+
+	public static void translateExecReturn(GDBControl gc, MIInfo info, long threadID) {
+		var event = MIStoppedEvent.parse(info.getMIInfoRequestID(),
+				info.getMIOutput().getMIResultRecord().getMIResults());
+		if (event.getFrame() != null) {
+			var location = getMethodLocationFromFuncAndLine(gc, event.getFrame().getFunction(),
+					event.getFrame().getLine());
+			if (location.isPresent()) {
+					var packetStream = new PacketStream(gc);
+					packetStream.writeByte(info.getMIInfoSuspendPolicy());
+					packetStream.writeInt(1); // Number of events in this response packet
+					packetStream.writeByte(info.getMIInfoEventKind());
+					packetStream.writeInt(info.getMIInfoRequestID());
+					packetStream.writeObjectRef(threadID);
+					packetStream.writeLocation(location.get());
+					packetStream.send();
+				}
+			}
+		}
 
 	private static  boolean isPrimitive(String type) {
 		return typeSignature.containsKey(type);
 	}
 
-	public static String normalizeFunc(String func) {
-		StringBuilder finalSignature = new StringBuilder();
-
-		if (!func.contains("(")) { // Function does not contain parameter types
-			return func;
-		}
-		String start = func.substring(0, func.indexOf("(")).replace(".", "/");
-		String paramList = func.substring(func.indexOf("(") + 1, func.indexOf(")"));
-		String[] params = paramList.split(", ");
-		ArrayList<String> newParams = new ArrayList<>();
-		for (String param: params) {
-			if (param.endsWith("*")) { // zero or more param
-				param = param.substring(0, param.indexOf("*")) + ";";
-			}
-			param = param.replace(" ", "");
-			param = param.replace(".", "/");
-			if (!isPrimitive(param)) {
-				param = "L" + param;
-			} else {
-				// If is primitive, provide JNI signature
-				param = getPrimitiveJNI(param);
-			}
-			if (param.contains("[]")) { // array
-				param = param.replace("[]", "");
-				param = "[" + param;
-			}
-			if (!param.equals("void")) {
-				newParams.add(param);
-			}
-		}
-
-		StringBuilder newParamList = new StringBuilder();
-		for (String newParam : newParams) {
-			newParamList.append(newParam);
-		}
-
-		finalSignature.append(start);
-		finalSignature.append("(");
-		finalSignature.append(newParamList);
-		finalSignature.append(")");
-		return finalSignature.toString();
+	public static MethodInfo createMethodInfoFromGDB(ReferenceType referenceType, String name, String type) {
+		String[] functionNames = getClassAndMethodName(name);
+		var signature = getSignature(type, functionNames[0], functionNames[1]);
+		return new MethodInfo(referenceType, signature);
 	}
 
-	public static String getPrimitiveJNI(String param) {
-		return typeSignature.get(param);
+	public static Optional<MethodLocation> getMethodLocationFromFuncAndLine(GDBControl gc, String func, int line) {
+		var names = getClassAndMethodName(func);
+		var referenceType = gc.getReferenceTypes().findByClassName(ClassName.fromGDB(names[0]));
+		if (referenceType != null) {
+			return referenceType.findByNameAndLocation(names[1], line);
+		}
+		return Optional.empty();
 	}
 
-	public static LocationImpl locationLookup(String func, int line) {
-		String name = normalizeFunc(func);
-		MethodImpl impl = MethodImpl.methods.get(name);
-		if (impl != null) {
-			List<LocationImpl> list = ((ConcreteMethodImpl) impl).getBaseLocations().lineMapper.get(line);
-			if (list != null && list.size() >= 1) {
-				return list.get(0);
-			}
-			return null;
+	public static String normalizeType(String type) {
+		if (type.startsWith("class ")) {
+			type = type.substring(6);
+		} else if (type.startsWith("union ")) {
+			type = type.substring(6);
 		}
-		if (!name.contains("(")) {
-			Set<String> keys = MethodImpl.methods.keySet();
-			for (String key: keys) {
-				if (key.contains(name)) {
-					ConcreteMethodImpl impl1 = (ConcreteMethodImpl) MethodImpl.methods.get(key);
-					List<LocationImpl> list = ((ConcreteMethodImpl) impl1).getBaseLocations().lineMapper.get(line);
-					if (list != null && list.size() >= 1) {
-						return list.get(0);
+		if (type.charAt(type.length() - 1) == '*') {
+			type = type.substring(0, type.length() - 1);
+		}
+		return type.trim();
+	}
+
+	/**
+	 * Normalize a type information returned by GDB to the JNI signature. The type field has the following structure:
+	 * <code>return_type (parm1_type,...)</code>
+	 * where return type can be <code>void, int or union interface_name * or class class_name *</code>
+	 *
+	 * @param type the type information from GDB
+	 * @return the JNI signature
+	 */
+	public static MethodSignature getSignature(String type, String className, String methodName) {
+		String returnType;
+		var parameterTypes = new ArrayList<String>();
+		boolean instanceMethod = false;
+		int index = type.indexOf('(');
+		if (index == (-1)) {
+			returnType = normalizeType(type);
+		} else {
+			returnType = normalizeType(type.substring(0, type.indexOf("(")));
+			String paramList = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
+			String[] params = paramList.split(", ");
+			for (int i=0; i < params.length;++i) {
+				if (!params[i].equals("void")) {
+					String paramType = normalizeType(params[i]);
+					if (i !=0 || !paramType.equals(className)) {
+						parameterTypes.add(paramType);
+					} else {
+						instanceMethod = true;
 					}
 				}
 			}
 		}
-		return null;
+		return new MethodSignature(methodName, returnType, parameterTypes, instanceMethod);
+	}
+
+	/**
+	 * Return the function name from the name field. The returned array is a 2 element array whose first value is the
+	 * class name , the second value is the function (method) name.
+	 * If no class is found then the first element is null.
+	 *
+	 * @param name the GDB name field (ie <code>java.util.List::of</code>)
+	 * @return a 3 element array
+	 */
+	public static String[] getClassAndMethodName(String name) {
+		String[] names = new String[2];
+
+		int index = name.indexOf("::");
+		if (index != (-1)) {
+			names[0] = name.substring(0, index);
+			name = name.substring(index + 2);
+
+		}
+		index = name.indexOf('(');
+		if (index != (-1)) {
+			names[1] = name.substring(0, index);
+		} else {
+			names[1] = name;
+		}
+		return names;
+	}
+
+	public static String gdb2JNI(String param) {
+		if (param.endsWith("*")) { // zero or more param
+			param = param.substring(0, param.indexOf("*"));
+		}
+		param = param.replace(" ", "");
+		param = param.replace(".", "/");
+		String prefix = "";
+		while (param.endsWith("[]")) {
+			param = param.substring(0, param.length() - 2);
+			prefix += "[";
+		}
+		if (!isPrimitive(param)) {
+			param = "L" + param + ";";
+		} else {
+			// If is primitive, provide JNI signature
+			param = getPrimitiveJNI(param);
+		}
+		return prefix + param;
+	}
+
+	public static String JNI2gdb(String JNI) {
+		var prefix = "";
+		var suffix = "";
+		var i=0;
+		for(; i < JNI.length();++i) {
+			if (JNI.charAt(i) == '[') {
+				suffix += "[]";
+			} else {
+				break;
+			}
+		}
+		if (JNI.charAt(JNI.length() - 1) == ';') {
+			prefix = JNI.substring(i + 1, JNI.length() - 1).replace('/', '.');
+		} else {
+			prefix = JNIConstants.fromTag(JNI.charAt(i));
+		}
+		return prefix + suffix;
+	}
+
+	public static String getPrimitiveJNI(String param) {
+		return typeSignature.get(param);
 	}
 
 	/**
@@ -315,6 +393,55 @@ public class Translator {
 		return name.substring(0, name.lastIndexOf("_"));
 	}
 
+	public static void translateReferenceTypes(ReferenceTypes referenceTypes, MiSymbolInfoFunctionsInfo response) {
+		Map<String, ReferenceType> types = new HashMap<>();
+		for(SymbolFileInfo symbolFile : response.getSymbolFiles()) {
+			for(Symbols symbol : symbolFile.getSymbols()) {
+				var index = symbol.getName().indexOf("::");
+				var className = symbol.getName().substring(0, index);
+				if (isJavaClassName(className)) {
+					var refType = types.computeIfAbsent(className,
+							key -> new ReferenceType(referenceTypes, symbolFile.getFilename(),
+									ClassName.fromGDB(className)));
+					createMethodInfoFromGDB(refType, symbol.getName(), symbol.getType());
+				}
+			}
+		}
+	}
+
+	private static boolean isJavaClassName(String className) {
+		String[] members = className.split("\\.");
+		for(String member : members) {
+			if (!SourceVersion.isIdentifier(member)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static byte jni2Tag(String jni) {
+		var type = jni.charAt(0);
+		if (type == JDWP.Tag.OBJECT) {
+			if (JDWP.JAVA_LANG_STRING_SIGNATURE.equals(jni)) {
+				return JDWP.Tag.STRING;
+			}
+		}
+		return (byte) type;
+	}
+
+	public static byte arrayClassName2Tag(ClassName className) {
+		var elementClassName = ClassName.fromJNI(className.getJNI().substring(1));
+		return jni2Tag(elementClassName.getJNI());
+	}
+
+	public static long decodeAddress(String address) {
+		long result = 0L;
+		for(int index=2; index < address.length();++index) {
+			result *= 16;
+			result += Character.digit(address.charAt(index), 16);
+		}
+		return result;
+	}
 }
 
 
