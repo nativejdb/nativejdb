@@ -93,12 +93,10 @@ public class MIRunControlEventProcessor implements Listener {
 
 	public void onEvent(Object output) {
 		if (output instanceof ClassPrepareEvent) {
-//			ClassPrepareEvent event = (ClassPrepareEvent) output;
-//			System.out.println("&&&&& " + event);
-//			PacketStream packetStream = Translator.translate(fCommandControl, event);
-//			if (packetStream != null) {
-//				packetStream.send();
-//			}
+			var packetStream = Translator.translate(fCommandControl, (MIEvent) output);
+			if (packetStream != null) {
+				packetStream.send();
+			}
 			return;
 		}
 		for (MIOOBRecord oobr : ((MIOutput) output).getMIOOBRecords()) {
